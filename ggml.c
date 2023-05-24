@@ -27,73 +27,10 @@
 #define static_assert(cond, msg) struct global_scope_noop_trick
 #endif
 
-#if defined(_WIN32)
-
-#include <windows.h>
-
-typedef volatile LONG atomic_int;
-typedef atomic_int atomic_bool;
-
-static void atomic_store(atomic_int* ptr, LONG val) {
-    InterlockedExchange(ptr, val);
-}
-static LONG atomic_load(atomic_int* ptr) {
-    return InterlockedCompareExchange(ptr, 0, 0);
-}
-static LONG atomic_fetch_add(atomic_int* ptr, LONG inc) {
-    return InterlockedExchangeAdd(ptr, inc);
-}
-static LONG atomic_fetch_sub(atomic_int* ptr, LONG dec) {
-    return atomic_fetch_add(ptr, -(dec));
-}
-
-typedef HANDLE pthread_t;
-
-typedef DWORD thread_ret_t;
-static int pthread_create(pthread_t* out, void* unused, thread_ret_t(*func)(void*), void* arg) {
-    (void) unused;
-    HANDLE handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) func, arg, 0, NULL);
-    if (handle == NULL)
-    {
-        return EAGAIN;
-    }
-
-    *out = handle;
-    return 0;
-}
-
-static int pthread_join(pthread_t thread, void* unused) {
-    (void) unused;
-    return (int) WaitForSingleObject(thread, INFINITE);
-}
-
-static int sched_yield (void) {
-    Sleep (0);
-    return 0;
-}
-#else
 #include <pthread.h>
-#include <stdatomic.h>
+// #include <stdatomic.h>
 
 typedef void* thread_ret_t;
-#endif
-
-// __FMA__ and __F16C__ are not defined in MSVC, however they are implied with AVX2/AVX512
-#if defined(_MSC_VER) && (defined(__AVX2__) || defined(__AVX512F__))
-#ifndef __FMA__
-#define __FMA__
-#endif
-#ifndef __F16C__
-#define __F16C__
-#endif
-#ifndef __SSE3__
-#define __SSE3__
-#endif
-#endif
-
-#ifdef __HAIKU__
-#define static_assert(cond, msg) _Static_assert(cond, msg)
-#endif
 
 /*#define GGML_PERF*/
 #define GGML_DEBUG 0
@@ -115,10 +52,6 @@ typedef void* thread_ret_t;
     #define GGML_MEM_ALIGN 16
 #endif
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
-#define GGML_ALIGNED_MALLOC(size)  _aligned_malloc(size, GGML_MEM_ALIGN)
-#define GGML_ALIGNED_FREE(ptr)     _aligned_free(ptr)
-#else
 inline static void* ggml_aligned_malloc(size_t size) {
     void* aligned_memory = NULL;
     int result = posix_memalign(&aligned_memory, GGML_MEM_ALIGN, size);
@@ -130,10 +63,33 @@ inline static void* ggml_aligned_malloc(size_t size) {
 }
 #define GGML_ALIGNED_MALLOC(size)  ggml_aligned_malloc(size)
 #define GGML_ALIGNED_FREE(ptr)     free(ptr)
-#endif
 
 #define UNUSED(x) (void)(x)
 #define SWAP(x, y, T) do { T SWAP = x; x = y; y = SWAP; } while (0)
+
+/* START FAKE STUFF I ADDED TO MAKE C2RUST WORK */
+
+int atomic_fetch_add(int * ptr, int val) {
+    return __sync_fetch_and_add(ptr, val);
+}
+
+int atomic_fetch_sub(int * ptr, int val) {
+    return __sync_fetch_and_sub(ptr, val);
+}
+
+int atomic_load(int * ptr) {
+    return __sync_fetch_and_add(ptr, 0);
+}
+
+int atomic_store(int * ptr, int val) {
+    return __sync_lock_test_and_set(ptr, val);
+}
+
+int atomic_exchange(int * ptr, int val) {
+    return __sync_lock_test_and_set(ptr, val);
+}
+
+/* END FAKE STUFF I ADDED TO MAKE C2RUST WORK */
 
 #if defined(GGML_USE_ACCELERATE)
 #include <Accelerate/Accelerate.h>
@@ -3675,7 +3631,7 @@ struct ggml_state {
 
 // global state
 static struct ggml_state g_state;
-static atomic_int g_state_barrier = 0;
+static int g_state_barrier = 0;
 
 // barrier via spin lock
 inline static void ggml_critical_section_start(void) {
@@ -13933,7 +13889,7 @@ typedef int ggml_lock_t;
 #define ggml_lock_init(x)    UNUSED(x)
 #define ggml_lock_destroy(x) UNUSED(x)
 #if defined(__x86_64__) || (defined(_MSC_VER) && defined(_M_AMD64))
-#define ggml_lock_lock(x)    _mm_pause()
+#define ggml_lock_lock(x)    UNUSED(x) /* _mm_pause() */
 #else
 #define ggml_lock_lock(x)    UNUSED(x)
 #endif
@@ -13954,9 +13910,9 @@ struct ggml_compute_state_shared {
     int n_threads;
 
     // synchronization primitives
-    atomic_int  n_ready;
-    atomic_bool has_work;
-    atomic_bool stop; // stop all threads
+    int  n_ready;
+    bool has_work;
+    bool stop; // stop all threads
 };
 
 struct ggml_compute_state {
