@@ -49,4 +49,4 @@ perf-*.txt
 
 examples/jeopardy/results.txt
 
-target/
+target
