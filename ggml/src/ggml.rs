@@ -116,7 +116,7 @@ pub struct __loadu_ps {
 #[derive(Copy, Clone)]
 #[repr(C, packed)]
 pub struct __mm_storel_epi64_struct {
-    pub __u: libc::c_longlong,
+    pub __u: i64,
 }
 #[derive(Copy, Clone)]
 #[repr(C, packed)]
@@ -709,16 +709,15 @@ unsafe extern "C" fn bytes_from_bits_32(mut x: *const uint8_t) -> __m256i {
         ::core::mem::size_of::<uint32_t>() as u64,
     );
     let shuf_mask: __m256i = _mm256_set_epi64x(
-        0x303030303030303 as libc::c_long as libc::c_longlong,
-        0x202020202020202 as libc::c_long as libc::c_longlong,
-        0x101010101010101 as libc::c_long as libc::c_longlong,
-        0 as i32 as libc::c_longlong,
+        0x303030303030303 as libc::c_long as i64,
+        0x202020202020202 as libc::c_long as i64,
+        0x101010101010101 as libc::c_long as i64,
+        0 as i32 as i64,
     );
     let mut bytes: __m256i = _mm256_shuffle_epi8(_mm256_set1_epi32(x32 as i32), shuf_mask);
-    let bit_mask: __m256i =
-        _mm256_set1_epi64x(0x7fbfdfeff7fbfdfe as libc::c_long as libc::c_longlong);
+    let bit_mask: __m256i = _mm256_set1_epi64x(0x7fbfdfeff7fbfdfe as libc::c_long as i64);
     bytes = _mm256_or_si256(bytes, bit_mask);
-    _mm256_cmpeq_epi8(bytes, _mm256_set1_epi64x(-(1 as i32) as libc::c_longlong))
+    _mm256_cmpeq_epi8(bytes, _mm256_set1_epi64x(-(1 as i32) as i64))
 }
 #[inline]
 unsafe extern "C" fn bytes_from_nibbles_32(mut rsi: *const uint8_t) -> __m256i {
