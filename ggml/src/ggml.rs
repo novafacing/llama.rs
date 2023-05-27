@@ -85,7 +85,7 @@ extern "C" {
 }
 pub type __int8_t = libc::c_schar;
 pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
+pub type __int16_t = i16;
 pub type __uint16_t = libc::c_ushort;
 pub type __int32_t = i32;
 pub type __uint32_t = u32;
@@ -551,14 +551,14 @@ pub unsafe extern "C" fn atomic_exchange(mut ptr: *mut i32, mut val: i32) -> i32
 #[inline(always)]
 unsafe extern "C" fn _cvtsh_ss(mut __a: libc::c_ushort) -> f32 {
     let mut __v: __v8hi = _mm_setr_epi16(
-        __a as libc::c_short,
-        0 as i32 as libc::c_short,
-        0 as i32 as libc::c_short,
-        0 as i32 as libc::c_short,
-        0 as i32 as libc::c_short,
-        0 as i32 as libc::c_short,
-        0 as i32 as libc::c_short,
-        0 as i32 as libc::c_short,
+        __a as i16,
+        0 as i32 as i16,
+        0 as i32 as i16,
+        0 as i32 as i16,
+        0 as i32 as i16,
+        0 as i32 as i16,
+        0 as i32 as i16,
+        0 as i32 as i16,
     );
     let mut __r: __v4sf = _mm_cvtph_ps(__v);
     ::core::mem::transmute::<
@@ -589,8 +589,7 @@ pub unsafe extern "C" fn ggml_fp32_to_fp16(mut x: f32) -> ggml_fp16_t {
     {
         ::core::mem::transmute::<
             _,
-            [libc::c_short;
-                ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+            [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
         >(_mm_cvtps_ph(
             _mm_setr_ps(x, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
             0 as i32,
@@ -633,8 +632,7 @@ pub unsafe extern "C" fn ggml_fp32_to_fp16_row(
         *y.offset(i as isize) = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(
                     *x.offset(i as isize),
@@ -728,7 +726,7 @@ unsafe extern "C" fn bytes_from_nibbles_32(mut rsi: *const uint8_t) -> __m256i {
 }
 #[inline]
 unsafe extern "C" fn sum_i16_pairs_float(x: __m256i) -> __m256 {
-    let ones: __m256i = _mm256_set1_epi16(1 as i32 as libc::c_short);
+    let ones: __m256i = _mm256_set1_epi16(1 as i32 as i16);
     let summed_pairs: __m256i = _mm256_madd_epi16(ones, x);
     _mm256_cvtepi32_ps(summed_pairs)
 }
@@ -769,8 +767,7 @@ unsafe extern "C" fn quantize_row_q4_0_reference(
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
@@ -831,8 +828,7 @@ unsafe extern "C" fn quantize_row_q4_1_reference(
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
@@ -841,8 +837,7 @@ unsafe extern "C" fn quantize_row_q4_1_reference(
         (*y.offset(i as isize)).m = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(min, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
@@ -901,8 +896,7 @@ unsafe extern "C" fn quantize_row_q5_0_reference(
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
@@ -970,8 +964,7 @@ unsafe extern "C" fn quantize_row_q5_1_reference(
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
@@ -980,8 +973,7 @@ unsafe extern "C" fn quantize_row_q5_1_reference(
         (*y.offset(i as isize)).m = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(min, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
@@ -1034,8 +1026,7 @@ unsafe extern "C" fn quantize_row_q8_0_reference(
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
@@ -1078,8 +1069,7 @@ unsafe extern "C" fn quantize_row_q8_0(mut x: *const f32, mut vy: *mut libc::c_v
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
@@ -2318,8 +2308,7 @@ unsafe extern "C" fn ggml_vec_gelu_f32(n: i32, mut y: *mut f32, mut x: *const f3
         let mut fp16: ggml_fp16_t = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(
                     *x.offset(i as isize),
@@ -2352,8 +2341,7 @@ unsafe extern "C" fn ggml_vec_silu_f32(n: i32, mut y: *mut f32, mut x: *const f3
         let mut fp16: ggml_fp16_t = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(
                     *x.offset(i as isize),
@@ -2391,8 +2379,7 @@ unsafe extern "C" fn ggml_vec_silu_backward_f32(
         let mut fp16: ggml_fp16_t = {
             ::core::mem::transmute::<
                 _,
-                [libc::c_short;
-                    ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
                 _mm_setr_ps(
                     *x.offset(i as isize),
@@ -2883,8 +2870,7 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
             table_gelu_f16[i as usize] = {
                 ::core::mem::transmute::<
                     _,
-                    [libc::c_short;
-                        ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                    [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         ggml_gelu_f32(f),
@@ -2898,8 +2884,7 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
             table_silu_f16[i as usize] = {
                 ::core::mem::transmute::<
                     _,
-                    [libc::c_short;
-                        ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                    [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         ggml_silu_f32(f),
@@ -2913,8 +2898,7 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
             table_exp_f16[i as usize] = {
                 ::core::mem::transmute::<
                     _,
-                    [libc::c_short;
-                        ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                    [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(expf(f), 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                     0 as i32,
@@ -5136,8 +5120,7 @@ pub unsafe extern "C" fn ggml_set_i32_1d(
             *((*tensor).data as *mut ggml_fp16_t).offset(i as isize) = {
                 ::core::mem::transmute::<
                     _,
-                    [libc::c_short;
-                        ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                    [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         value as f32,
@@ -5321,8 +5304,7 @@ pub unsafe extern "C" fn ggml_set_f32_1d(
             *((*tensor).data as *mut ggml_fp16_t).offset(i as isize) = {
                 ::core::mem::transmute::<
                     _,
-                    [libc::c_short;
-                        ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                    [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(value, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                     0 as i32,
@@ -8972,9 +8954,8 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                                 *dst_ptr_0.offset(id_0 as isize) = {
                                     ::core::mem::transmute::<
                                         _,
-                                        [libc::c_short;
-                                            ::core::mem::size_of::<__v8hi>()
-                                                / ::core::mem::size_of::<libc::c_short>()],
+                                        [i16; ::core::mem::size_of::<__v8hi>()
+                                            / ::core::mem::size_of::<i16>()],
                                     >(_mm_cvtps_ph(
                                         _mm_setr_ps(
                                             *src0_ptr_0,
@@ -9108,9 +9089,8 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                             *dst_ptr_3.offset(id_3 as isize) = {
                                 ::core::mem::transmute::<
                                     _,
-                                    [libc::c_short;
-                                        ::core::mem::size_of::<__v8hi>()
-                                            / ::core::mem::size_of::<libc::c_short>()],
+                                    [i16; ::core::mem::size_of::<__v8hi>()
+                                        / ::core::mem::size_of::<i16>()],
                                 >(_mm_cvtps_ph(
                                     _mm_setr_ps(
                                         *src0_ptr_3,
@@ -9278,9 +9258,8 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                         *(dst_ptr_5 as *mut ggml_fp16_t) = {
                             ::core::mem::transmute::<
                                 _,
-                                [libc::c_short;
-                                    ::core::mem::size_of::<__v8hi>()
-                                        / ::core::mem::size_of::<libc::c_short>()],
+                                [i16; ::core::mem::size_of::<__v8hi>()
+                                    / ::core::mem::size_of::<i16>()],
                             >(_mm_cvtps_ph(
                                 _mm_setr_ps(
                                     *(src0_ptr_5 as *const f32),
@@ -9620,9 +9599,7 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f32(
                 *dst_ptr.offset(i as isize) = {
                     ::core::mem::transmute::<
                         _,
-                        [libc::c_short;
-                            ::core::mem::size_of::<__v8hi>()
-                                / ::core::mem::size_of::<libc::c_short>()],
+                        [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                     >(_mm_cvtps_ph(
                         _mm_setr_ps(
                             ggml_lookup_fp16_to_fp32(*src0_ptr.offset(i as isize))
@@ -9771,9 +9748,7 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f16(
                 *dst_ptr.offset(i as isize) = {
                     ::core::mem::transmute::<
                         _,
-                        [libc::c_short;
-                            ::core::mem::size_of::<__v8hi>()
-                                / ::core::mem::size_of::<libc::c_short>()],
+                        [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                     >(_mm_cvtps_ph(
                         _mm_setr_ps(
                             ggml_lookup_fp16_to_fp32(*src0_ptr.offset(i as isize))
@@ -10221,8 +10196,7 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f32(
             *dst_ptr.offset(i as isize) = {
                 ::core::mem::transmute::<
                     _,
-                    [libc::c_short;
-                        ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                    [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         ggml_lookup_fp16_to_fp32(*src0_ptr.offset(i as isize)) + v,
@@ -10359,8 +10333,7 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f16(
             *dst_ptr.offset(i as isize) = {
                 ::core::mem::transmute::<
                     _,
-                    [libc::c_short;
-                        ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                    [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         ggml_lookup_fp16_to_fp32(*src0_ptr.offset(i as isize)) + v,
@@ -12982,9 +12955,8 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f16_f32(
                         *wdata.offset(fresh4 as isize) = {
                             ::core::mem::transmute::<
                                 _,
-                                [libc::c_short;
-                                    ::core::mem::size_of::<__v8hi>()
-                                        / ::core::mem::size_of::<libc::c_short>()],
+                                [i16; ::core::mem::size_of::<__v8hi>()
+                                    / ::core::mem::size_of::<i16>()],
                             >(_mm_cvtps_ph(
                                 _mm_setr_ps(
                                     *(((*src1).data as *mut libc::c_char)
@@ -14356,9 +14328,7 @@ unsafe extern "C" fn ggml_compute_forward_soft_max_f32(
                 let mut s: ggml_fp16_t = {
                     ::core::mem::transmute::<
                         _,
-                        [libc::c_short;
-                            ::core::mem::size_of::<__v8hi>()
-                                / ::core::mem::size_of::<libc::c_short>()],
+                        [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                     >(_mm_cvtps_ph(
                         _mm_setr_ps(
                             *sp.offset(i as isize) - max,
@@ -14954,9 +14924,8 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                             *dst_data.offset(0 as i32 as isize) = {
                                 ::core::mem::transmute::<
                                     _,
-                                    [libc::c_short;
-                                        ::core::mem::size_of::<__v8hi>()
-                                            / ::core::mem::size_of::<libc::c_short>()],
+                                    [i16; ::core::mem::size_of::<__v8hi>()
+                                        / ::core::mem::size_of::<i16>()],
                                 >(_mm_cvtps_ph(
                                     _mm_setr_ps(
                                         x0 * cos_theta - x1 * sin_theta,
@@ -14971,9 +14940,8 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                             *dst_data.offset(1 as i32 as isize) = {
                                 ::core::mem::transmute::<
                                     _,
-                                    [libc::c_short;
-                                        ::core::mem::size_of::<__v8hi>()
-                                            / ::core::mem::size_of::<libc::c_short>()],
+                                    [i16; ::core::mem::size_of::<__v8hi>()
+                                        / ::core::mem::size_of::<i16>()],
                                 >(_mm_cvtps_ph(
                                     _mm_setr_ps(
                                         x0 * sin_theta + x1 * cos_theta,
@@ -15017,9 +14985,8 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                 *dst_data_0.offset(0 as i32 as isize) = {
                                     ::core::mem::transmute::<
                                         _,
-                                        [libc::c_short;
-                                            ::core::mem::size_of::<__v8hi>()
-                                                / ::core::mem::size_of::<libc::c_short>()],
+                                        [i16; ::core::mem::size_of::<__v8hi>()
+                                            / ::core::mem::size_of::<i16>()],
                                     >(_mm_cvtps_ph(
                                         _mm_setr_ps(
                                             x0_0 * cos_theta_0 - x1_0 * sin_theta_0,
@@ -15034,9 +15001,8 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                 *dst_data_0.offset((n_dims / 2 as i32) as isize) = {
                                     ::core::mem::transmute::<
                                         _,
-                                        [libc::c_short;
-                                            ::core::mem::size_of::<__v8hi>()
-                                                / ::core::mem::size_of::<libc::c_short>()],
+                                        [i16; ::core::mem::size_of::<__v8hi>()
+                                            / ::core::mem::size_of::<i16>()],
                                     >(_mm_cvtps_ph(
                                         _mm_setr_ps(
                                             x0_0 * sin_theta_0 + x1_0 * cos_theta_0,
@@ -15297,9 +15263,8 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                             *dx.offset(0 as i32 as isize) = {
                                 ::core::mem::transmute::<
                                     _,
-                                    [libc::c_short;
-                                        ::core::mem::size_of::<__v8hi>()
-                                            / ::core::mem::size_of::<libc::c_short>()],
+                                    [i16; ::core::mem::size_of::<__v8hi>()
+                                        / ::core::mem::size_of::<i16>()],
                                 >(_mm_cvtps_ph(
                                     _mm_setr_ps(
                                         dy0 * cos_theta + dy1 * sin_theta,
@@ -15314,9 +15279,8 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                             *dx.offset(1 as i32 as isize) = {
                                 ::core::mem::transmute::<
                                     _,
-                                    [libc::c_short;
-                                        ::core::mem::size_of::<__v8hi>()
-                                            / ::core::mem::size_of::<libc::c_short>()],
+                                    [i16; ::core::mem::size_of::<__v8hi>()
+                                        / ::core::mem::size_of::<i16>()],
                                 >(_mm_cvtps_ph(
                                     _mm_setr_ps(
                                         -dy0 * sin_theta + dy1 * cos_theta,
@@ -15359,9 +15323,8 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                 *dx_0.offset(0 as i32 as isize) = {
                                     ::core::mem::transmute::<
                                         _,
-                                        [libc::c_short;
-                                            ::core::mem::size_of::<__v8hi>()
-                                                / ::core::mem::size_of::<libc::c_short>()],
+                                        [i16; ::core::mem::size_of::<__v8hi>()
+                                            / ::core::mem::size_of::<i16>()],
                                     >(_mm_cvtps_ph(
                                         _mm_setr_ps(
                                             dy0_0 * cos_theta_0 + dy1_0 * sin_theta_0,
@@ -15376,9 +15339,8 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                 *dx_0.offset((n_dims / 2 as i32) as isize) = {
                                     ::core::mem::transmute::<
                                         _,
-                                        [libc::c_short;
-                                            ::core::mem::size_of::<__v8hi>()
-                                                / ::core::mem::size_of::<libc::c_short>()],
+                                        [i16; ::core::mem::size_of::<__v8hi>()
+                                            / ::core::mem::size_of::<i16>()],
                                     >(_mm_cvtps_ph(
                                         _mm_setr_ps(
                                             -dy0_0 * sin_theta_0 + dy1_0 * cos_theta_0,
@@ -15556,9 +15518,7 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f16_f32(
                 *dst_data_0.offset(((i10 + nh as i64) * ew0 as i64 + i11) as isize) = {
                     ::core::mem::transmute::<
                         _,
-                        [libc::c_short;
-                            ::core::mem::size_of::<__v8hi>()
-                                / ::core::mem::size_of::<libc::c_short>()],
+                        [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                     >(_mm_cvtps_ph(
                         _mm_setr_ps(
                             *src_0.offset(i10 as isize),
@@ -15929,9 +15889,7 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
                 *dst_data_0.offset(((i10 + nh as i64) * ew0 as i64 + i11) as isize) = {
                     ::core::mem::transmute::<
                         _,
-                        [libc::c_short;
-                            ::core::mem::size_of::<__v8hi>()
-                                / ::core::mem::size_of::<libc::c_short>()],
+                        [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                     >(_mm_cvtps_ph(
                         _mm_setr_ps(
                             *src_0.offset(i10 as isize),
@@ -16450,9 +16408,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
                     let mut s: ggml_fp16_t = {
                         ::core::mem::transmute::<
                             _,
-                            [libc::c_short;
-                                ::core::mem::size_of::<__v8hi>()
-                                    / ::core::mem::size_of::<libc::c_short>()],
+                            [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                         >(_mm_cvtps_ph(
                             _mm_setr_ps(
                                 *SS.offset(j as isize) - max,
@@ -16807,9 +16763,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                     let mut s: ggml_fp16_t = {
                         ::core::mem::transmute::<
                             _,
-                            [libc::c_short;
-                                ::core::mem::size_of::<__v8hi>()
-                                    / ::core::mem::size_of::<libc::c_short>()],
+                            [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                         >(_mm_cvtps_ph(
                             _mm_setr_ps(
                                 *SS.offset(j as isize) - max,
@@ -16856,8 +16810,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
             *S16.offset(i_3 as isize) = {
                 ::core::mem::transmute::<
                     _,
-                    [libc::c_short;
-                        ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                    [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         *S.offset(i_3 as isize),
@@ -17248,8 +17201,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
             *S16.offset(i as isize) = {
                 ::core::mem::transmute::<
                     _,
-                    [libc::c_short;
-                        ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<libc::c_short>()],
+                    [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         *S.offset(i as isize),
