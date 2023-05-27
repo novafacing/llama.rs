@@ -66,14 +66,14 @@ extern "C" {
     fn abort() -> !;
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: u64) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: i32, _: u64) -> *mut libc::c_void;
-    fn strncpy(_: *mut libc::c_char, _: *const libc::c_char, _: u64) -> *mut libc::c_char;
-    fn strlen(_: *const libc::c_char) -> u64;
+    fn strncpy(_: *mut i8, _: *const i8, _: u64) -> *mut i8;
+    fn strlen(_: *const i8) -> u64;
     static mut stderr: *mut FILE;
     fn fclose(__stream: *mut FILE) -> i32;
-    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> i32;
-    fn printf(_: *const libc::c_char, _: ...) -> i32;
-    fn snprintf(_: *mut libc::c_char, _: u64, _: *const libc::c_char, _: ...) -> i32;
+    fn fopen(_: *const i8, _: *const i8) -> *mut FILE;
+    fn fprintf(_: *mut FILE, _: *const i8, _: ...) -> i32;
+    fn printf(_: *const i8, _: ...) -> i32;
+    fn snprintf(_: *mut i8, _: u64, _: *const i8, _: ...) -> i32;
     fn pthread_create(
         __newthread: *mut pthread_t,
         __attr: *const pthread_attr_t,
@@ -134,7 +134,7 @@ pub struct ggml_object {
     pub offs: size_t,
     pub size: size_t,
     pub next: *mut ggml_object,
-    pub padding: [libc::c_char; 8],
+    pub padding: [i8; 8],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -255,8 +255,8 @@ pub struct ggml_tensor {
     pub perf_cycles: int64_t,
     pub perf_time_us: int64_t,
     pub data: *mut libc::c_void,
-    pub name: [libc::c_char; 32],
-    pub padding: [libc::c_char; 16],
+    pub name: [i8; 32],
+    pub padding: [i8; 16],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -334,17 +334,17 @@ pub type FILE = _IO_FILE;
 #[repr(C)]
 pub struct _IO_FILE {
     pub _flags: i32,
-    pub _IO_read_ptr: *mut libc::c_char,
-    pub _IO_read_end: *mut libc::c_char,
-    pub _IO_read_base: *mut libc::c_char,
-    pub _IO_write_base: *mut libc::c_char,
-    pub _IO_write_ptr: *mut libc::c_char,
-    pub _IO_write_end: *mut libc::c_char,
-    pub _IO_buf_base: *mut libc::c_char,
-    pub _IO_buf_end: *mut libc::c_char,
-    pub _IO_save_base: *mut libc::c_char,
-    pub _IO_backup_base: *mut libc::c_char,
-    pub _IO_save_end: *mut libc::c_char,
+    pub _IO_read_ptr: *mut i8,
+    pub _IO_read_end: *mut i8,
+    pub _IO_read_base: *mut i8,
+    pub _IO_write_base: *mut i8,
+    pub _IO_write_ptr: *mut i8,
+    pub _IO_write_end: *mut i8,
+    pub _IO_buf_base: *mut i8,
+    pub _IO_buf_end: *mut i8,
+    pub _IO_save_base: *mut i8,
+    pub _IO_backup_base: *mut i8,
+    pub _IO_save_end: *mut i8,
     pub _markers: *mut _IO_marker,
     pub _chain: *mut _IO_FILE,
     pub _fileno: i32,
@@ -352,7 +352,7 @@ pub struct _IO_FILE {
     pub _old_offset: __off_t,
     pub _cur_column: u16,
     pub _vtable_offset: libc::c_schar,
-    pub _shortbuf: [libc::c_char; 1],
+    pub _shortbuf: [i8; 1],
     pub _lock: *mut libc::c_void,
     pub _offset: __off64_t,
     pub _codecvt: *mut _IO_codecvt,
@@ -361,7 +361,7 @@ pub struct _IO_FILE {
     pub _freeres_buf: *mut libc::c_void,
     pub __pad5: size_t,
     pub _mode: i32,
-    pub _unused2: [libc::c_char; 20],
+    pub _unused2: [i8; 20],
 }
 pub type _IO_lock_t = ();
 #[derive(Copy, Clone)]
@@ -451,7 +451,7 @@ pub type thread_ret_t = *mut libc::c_void;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union pthread_attr_t {
-    pub __size: [libc::c_char; 56],
+    pub __size: [i8; 56],
     pub __align: i64,
 }
 pub type ggml_opt_type = u32;
@@ -522,8 +522,8 @@ static mut GGML_OBJECT_SIZE: size_t = ::core::mem::size_of::<ggml_object>() as u
 #[inline]
 unsafe extern "C" fn ggml_aligned_malloc(mut size: size_t) -> *mut libc::c_void {
     let mut aligned_memory: *mut libc::c_void = std::ptr::null_mut::<libc::c_void>();
-    let mut result: i32 = posix_memalign(&mut aligned_memory, 16 as i32 as size_t, size);
-    if result != 0 as i32 {
+    let mut result: i32 = posix_memalign(&mut aligned_memory, 16_i32 as size_t, size);
+    if result != 0_i32 {
         return std::ptr::null_mut::<libc::c_void>();
     }
     aligned_memory
@@ -538,7 +538,7 @@ pub unsafe extern "C" fn atomic_fetch_sub(mut ptr: *mut i32, mut val: i32) -> i3
 }
 #[no_mangle]
 pub unsafe extern "C" fn atomic_load(mut ptr: *mut i32) -> i32 {
-    ::core::intrinsics::atomic_xadd_seqcst(ptr, 0 as i32)
+    ::core::intrinsics::atomic_xadd_seqcst(ptr, 0_i32)
 }
 #[no_mangle]
 pub unsafe extern "C" fn atomic_store(mut ptr: *mut i32, mut val: i32) -> i32 {
@@ -552,19 +552,19 @@ pub unsafe extern "C" fn atomic_exchange(mut ptr: *mut i32, mut val: i32) -> i32
 unsafe extern "C" fn _cvtsh_ss(mut __a: u16) -> f32 {
     let mut __v: __v8hi = _mm_setr_epi16(
         __a as i16,
-        0 as i32 as i16,
-        0 as i32 as i16,
-        0 as i32 as i16,
-        0 as i32 as i16,
-        0 as i32 as i16,
-        0 as i32 as i16,
-        0 as i32 as i16,
+        0_i32 as i16,
+        0_i32 as i16,
+        0_i32 as i16,
+        0_i32 as i16,
+        0_i32 as i16,
+        0_i32 as i16,
+        0_i32 as i16,
     );
     let mut __r: __v4sf = _mm_cvtph_ps(__v);
     ::core::mem::transmute::<
         _,
         [f32; ::core::mem::size_of::<__v4sf>() / ::core::mem::size_of::<f32>()],
-    >(__r)[0 as i32 as usize]
+    >(__r)[0_i32 as usize]
 }
 static mut table_gelu_f16: [ggml_fp16_t; 65536] = [0; 65536];
 static mut table_silu_f16: [ggml_fp16_t; 65536] = [0; 65536];
@@ -591,9 +591,9 @@ pub unsafe extern "C" fn ggml_fp32_to_fp16(mut x: f32) -> ggml_fp16_t {
             _,
             [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
         >(_mm_cvtps_ph(
-            _mm_setr_ps(x, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-            0 as i32,
-        ))[0 as i32 as usize] as u16
+            _mm_setr_ps(x, 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+            0_i32,
+        ))[0_i32 as usize] as u16
     }
 }
 #[no_mangle]
@@ -602,7 +602,7 @@ pub unsafe extern "C" fn ggml_fp16_to_fp32_row(
     mut y: *mut f32,
     mut n: size_t,
 ) {
-    let mut i: size_t = 0 as i32 as size_t;
+    let mut i: size_t = 0_i32 as size_t;
     while i < n {
         *y.offset(i as isize) = ggml_lookup_fp16_to_fp32(*x.offset(i as isize));
         i = i.wrapping_add(1);
@@ -615,18 +615,18 @@ pub unsafe extern "C" fn ggml_fp32_to_fp16_row(
     mut y: *mut ggml_fp16_t,
     mut n: size_t,
 ) {
-    let mut i: size_t = 0 as i32 as size_t;
-    while i.wrapping_add(7 as i32 as u64) < n {
+    let mut i: size_t = 0_i32 as size_t;
+    while i.wrapping_add(7_i32 as u64) < n {
         let mut x_vec: __m256 = _mm256_loadu_ps(x.offset(i as isize));
-        let mut y_vec: __m128i = _mm256_cvtps_ph(x_vec, 0 as i32);
+        let mut y_vec: __m128i = _mm256_cvtps_ph(x_vec, 0_i32);
         _mm_storeu_si128(y.offset(i as isize) as *mut __m128i, y_vec);
-        i = (i as u64).wrapping_add(8 as i32 as u64) as size_t as size_t;
+        i = (i as u64).wrapping_add(8_i32 as u64) as size_t as size_t;
     }
-    while i.wrapping_add(3 as i32 as u64) < n {
+    while i.wrapping_add(3_i32 as u64) < n {
         let mut x_vec_0: __m128 = _mm_loadu_ps(x.offset(i as isize));
-        let mut y_vec_0: __m128i = _mm_cvtps_ph(x_vec_0, 0 as i32);
+        let mut y_vec_0: __m128i = _mm_cvtps_ph(x_vec_0, 0_i32);
         _mm_storel_epi64(y.offset(i as isize) as *mut __m128i, y_vec_0);
-        i = (i as u64).wrapping_add(4 as i32 as u64) as size_t as size_t;
+        i = (i as u64).wrapping_add(4_i32 as u64) as size_t as size_t;
     }
     while i < n {
         *y.offset(i as isize) = {
@@ -636,12 +636,12 @@ pub unsafe extern "C" fn ggml_fp32_to_fp16_row(
             >(_mm_cvtps_ph(
                 _mm_setr_ps(
                     *x.offset(i as isize),
-                    0 as i32 as f32,
-                    0 as i32 as f32,
-                    0 as i32 as f32,
+                    0_i32 as f32,
+                    0_i32 as f32,
+                    0_i32 as f32,
                 ),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
         i = i.wrapping_add(1);
         i;
@@ -655,8 +655,8 @@ pub unsafe extern "C" fn ggml_time_ms() -> int64_t {
         tv_sec: 0,
         tv_nsec: 0,
     };
-    clock_gettime(1 as i32, &mut ts);
-    ts.tv_sec * 1000 as i32 as i64 + ts.tv_nsec / 1000000 as i32 as i64
+    clock_gettime(1_i32, &mut ts);
+    ts.tv_sec * 1000_i32 as i64 + ts.tv_nsec / 1000000_i32 as i64
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_time_us() -> int64_t {
@@ -664,8 +664,8 @@ pub unsafe extern "C" fn ggml_time_us() -> int64_t {
         tv_sec: 0,
         tv_nsec: 0,
     };
-    clock_gettime(1 as i32, &mut ts);
-    ts.tv_sec * 1000000 as i32 as i64 + ts.tv_nsec / 1000 as i32 as i64
+    clock_gettime(1_i32, &mut ts);
+    ts.tv_sec * 1000000_i32 as i64 + ts.tv_nsec / 1000_i32 as i64
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cycles() -> int64_t {
@@ -673,12 +673,12 @@ pub unsafe extern "C" fn ggml_cycles() -> int64_t {
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cycles_per_ms() -> int64_t {
-    1000000 as i32 as __clock_t / 1000 as i32 as i64
+    1000000_i32 as __clock_t / 1000_i32 as i64
 }
 static mut CACHE_LINE_SIZE_F32: size_t = 0;
 #[inline]
 unsafe extern "C" fn hsum_float_8(x: __m256) -> f32 {
-    let mut res: __m128 = _mm256_extractf128_ps(x, 1 as i32);
+    let mut res: __m128 = _mm256_extractf128_ps(x, 1_i32);
     res = _mm_add_ps(res, _mm256_castps256_ps128(x));
     res = _mm_add_ps(res, _mm_movehl_ps(res, res));
     res = _mm_add_ss(res, _mm_movehdup_ps(res));
@@ -688,13 +688,13 @@ unsafe extern "C" fn hsum_float_8(x: __m256) -> f32 {
 unsafe extern "C" fn hsum_i32_8(a: __m256i) -> i32 {
     let sum128: __m128i = _mm_add_epi32(
         _mm256_castsi256_si128(a),
-        _mm_castps_si128(_mm256_extractf128_ps(_mm256_castsi256_ps(a), 1 as i32)),
+        _mm_castps_si128(_mm256_extractf128_ps(_mm256_castsi256_ps(a), 1_i32)),
     );
     let hi64: __m128i = _mm_unpackhi_epi64(sum128, sum128);
     let sum64: __m128i = _mm_add_epi32(hi64, sum128);
     let hi32: __m128i = _mm_shuffle_epi32(
         sum64,
-        (2 as i32) << 6 as i32 | (3 as i32) << 4 as i32 | (0 as i32) << 2 as i32 | 1 as i32,
+        2_i32 << 6_i32 | 3_i32 << 4_i32 | 0_i32 << 2_i32 | 1_i32,
     );
     _mm_cvtsi128_si32(_mm_add_epi32(sum64, hi32))
 }
@@ -707,26 +707,26 @@ unsafe extern "C" fn bytes_from_bits_32(mut x: *const uint8_t) -> __m256i {
         ::core::mem::size_of::<uint32_t>() as u64,
     );
     let shuf_mask: __m256i = _mm256_set_epi64x(
-        0x303030303030303 as i64 as i64,
-        0x202020202020202 as i64 as i64,
-        0x101010101010101 as i64 as i64,
-        0 as i32 as i64,
+        0x303030303030303_i64 as i64,
+        0x202020202020202_i64 as i64,
+        0x101010101010101_i64 as i64,
+        0_i32 as i64,
     );
     let mut bytes: __m256i = _mm256_shuffle_epi8(_mm256_set1_epi32(x32 as i32), shuf_mask);
-    let bit_mask: __m256i = _mm256_set1_epi64x(0x7fbfdfeff7fbfdfe as i64 as i64);
+    let bit_mask: __m256i = _mm256_set1_epi64x(0x7fbfdfeff7fbfdfe_i64 as i64);
     bytes = _mm256_or_si256(bytes, bit_mask);
-    _mm256_cmpeq_epi8(bytes, _mm256_set1_epi64x(-(1 as i32) as i64))
+    _mm256_cmpeq_epi8(bytes, _mm256_set1_epi64x(-1_i32 as i64))
 }
 #[inline]
 unsafe extern "C" fn bytes_from_nibbles_32(mut rsi: *const uint8_t) -> __m256i {
     let tmp: __m128i = _mm_loadu_si128(rsi as *const __m128i);
-    let bytes: __m256i = _mm256_set_m128i(_mm_srli_epi16(tmp, 4 as i32), tmp);
-    let lowMask: __m256i = _mm256_set1_epi8(0xf as i32 as libc::c_char);
+    let bytes: __m256i = _mm256_set_m128i(_mm_srli_epi16(tmp, 4_i32), tmp);
+    let lowMask: __m256i = _mm256_set1_epi8(0xf_i32 as i8);
     _mm256_and_si256(lowMask, bytes)
 }
 #[inline]
 unsafe extern "C" fn sum_i16_pairs_float(x: __m256i) -> __m256 {
-    let ones: __m256i = _mm256_set1_epi16(1 as i32 as i16);
+    let ones: __m256i = _mm256_set1_epi16(1_i32 as i16);
     let summed_pairs: __m256i = _mm256_madd_epi16(ones, x);
     _mm256_cvtepi32_ps(summed_pairs)
 }
@@ -746,13 +746,13 @@ unsafe extern "C" fn quantize_row_q4_0_reference(
     mut y: *mut block_q4_0,
     mut k: i32,
 ) {
-    static mut qk: i32 = 32 as i32;
+    static mut qk: i32 = 32_i32;
     let nb: i32 = k / qk;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let mut amax: f32 = 0.0f32;
         let mut max: f32 = 0.0f32;
-        let mut j: i32 = 0 as i32;
+        let mut j: i32 = 0_i32;
         while j < qk {
             let v: f32 = *x.offset((i * qk + j) as isize);
             if amax < fabsf(v) {
@@ -762,34 +762,34 @@ unsafe extern "C" fn quantize_row_q4_0_reference(
             j += 1;
             j;
         }
-        let d: f32 = max / -(8 as i32) as f32;
+        let d: f32 = max / -8_i32 as f32;
         let id: f32 = if d != 0. { 1.0f32 / d } else { 0.0f32 };
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
                 [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
-                _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                _mm_setr_ps(d, 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
-        let mut j_0: i32 = 0 as i32;
-        while j_0 < qk / 2 as i32 {
-            let x0: f32 = *x.offset((i * qk + 0 as i32 + j_0) as isize) * id;
-            let x1: f32 = *x.offset((i * qk + qk / 2 as i32 + j_0) as isize) * id;
-            let xi0: uint8_t = (if (15 as i32) < (x0 + 8.5f32) as int8_t as i32 {
-                15 as i32
+        let mut j_0: i32 = 0_i32;
+        while j_0 < qk / 2_i32 {
+            let x0: f32 = *x.offset((i * qk + 0_i32 + j_0) as isize) * id;
+            let x1: f32 = *x.offset((i * qk + qk / 2_i32 + j_0) as isize) * id;
+            let xi0: uint8_t = (if 15_i32 < (x0 + 8.5f32) as int8_t as i32 {
+                15_i32
             } else {
                 (x0 + 8.5f32) as int8_t as i32
             }) as uint8_t;
-            let xi1: uint8_t = (if (15 as i32) < (x1 + 8.5f32) as int8_t as i32 {
-                15 as i32
+            let xi1: uint8_t = (if 15_i32 < (x1 + 8.5f32) as int8_t as i32 {
+                15_i32
             } else {
                 (x1 + 8.5f32) as int8_t as i32
             }) as uint8_t;
             (*y.offset(i as isize)).qs[j_0 as usize] = xi0;
             let fresh0 = &mut (*y.offset(i as isize)).qs[j_0 as usize];
-            *fresh0 = (*fresh0 as i32 | (xi1 as i32) << 4 as i32) as uint8_t;
+            *fresh0 = (*fresh0 as i32 | (xi1 as i32) << 4_i32) as uint8_t;
             j_0 += 1;
             j_0;
         }
@@ -805,13 +805,13 @@ unsafe extern "C" fn quantize_row_q4_1_reference(
     mut y: *mut block_q4_1,
     mut k: i32,
 ) {
-    let qk: i32 = 32 as i32;
+    let qk: i32 = 32_i32;
     let nb: i32 = k / qk;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let mut min: f32 = 3.402_823_5e38_f32;
         let mut max: f32 = -3.402_823_5e38_f32;
-        let mut j: i32 = 0 as i32;
+        let mut j: i32 = 0_i32;
         while j < qk {
             let v: f32 = *x.offset((i * qk + j) as isize);
             if v < min {
@@ -823,43 +823,43 @@ unsafe extern "C" fn quantize_row_q4_1_reference(
             j += 1;
             j;
         }
-        let d: f32 = (max - min) / (((1 as i32) << 4 as i32) - 1 as i32) as f32;
+        let d: f32 = (max - min) / ((1_i32 << 4_i32) - 1_i32) as f32;
         let id: f32 = if d != 0. { 1.0f32 / d } else { 0.0f32 };
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
                 [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
-                _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                _mm_setr_ps(d, 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
         (*y.offset(i as isize)).m = {
             ::core::mem::transmute::<
                 _,
                 [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
-                _mm_setr_ps(min, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                _mm_setr_ps(min, 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
-        let mut j_0: i32 = 0 as i32;
-        while j_0 < qk / 2 as i32 {
-            let x0: f32 = (*x.offset((i * qk + 0 as i32 + j_0) as isize) - min) * id;
-            let x1: f32 = (*x.offset((i * qk + qk / 2 as i32 + j_0) as isize) - min) * id;
-            let xi0: uint8_t = (if (15 as i32) < (x0 + 0.5f32) as int8_t as i32 {
-                15 as i32
+        let mut j_0: i32 = 0_i32;
+        while j_0 < qk / 2_i32 {
+            let x0: f32 = (*x.offset((i * qk + 0_i32 + j_0) as isize) - min) * id;
+            let x1: f32 = (*x.offset((i * qk + qk / 2_i32 + j_0) as isize) - min) * id;
+            let xi0: uint8_t = (if 15_i32 < (x0 + 0.5f32) as int8_t as i32 {
+                15_i32
             } else {
                 (x0 + 0.5f32) as int8_t as i32
             }) as uint8_t;
-            let xi1: uint8_t = (if (15 as i32) < (x1 + 0.5f32) as int8_t as i32 {
-                15 as i32
+            let xi1: uint8_t = (if 15_i32 < (x1 + 0.5f32) as int8_t as i32 {
+                15_i32
             } else {
                 (x1 + 0.5f32) as int8_t as i32
             }) as uint8_t;
             (*y.offset(i as isize)).qs[j_0 as usize] = xi0;
             let fresh1 = &mut (*y.offset(i as isize)).qs[j_0 as usize];
-            *fresh1 = (*fresh1 as i32 | (xi1 as i32) << 4 as i32) as uint8_t;
+            *fresh1 = (*fresh1 as i32 | (xi1 as i32) << 4_i32) as uint8_t;
             j_0 += 1;
             j_0;
         }
@@ -875,13 +875,13 @@ unsafe extern "C" fn quantize_row_q5_0_reference(
     mut y: *mut block_q5_0,
     mut k: i32,
 ) {
-    static mut qk: i32 = 32 as i32;
+    static mut qk: i32 = 32_i32;
     let nb: i32 = k / qk;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let mut amax: f32 = 0.0f32;
         let mut max: f32 = 0.0f32;
-        let mut j: i32 = 0 as i32;
+        let mut j: i32 = 0_i32;
         while j < qk {
             let v: f32 = *x.offset((i * qk + j) as isize);
             if amax < fabsf(v) {
@@ -891,36 +891,36 @@ unsafe extern "C" fn quantize_row_q5_0_reference(
             j += 1;
             j;
         }
-        let d: f32 = max / -(16 as i32) as f32;
+        let d: f32 = max / -16_i32 as f32;
         let id: f32 = if d != 0. { 1.0f32 / d } else { 0.0f32 };
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
                 [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
-                _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                _mm_setr_ps(d, 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
-        let mut qh: uint32_t = 0 as i32 as uint32_t;
-        let mut j_0: i32 = 0 as i32;
-        while j_0 < qk / 2 as i32 {
-            let x0: f32 = *x.offset((i * qk + 0 as i32 + j_0) as isize) * id;
-            let x1: f32 = *x.offset((i * qk + qk / 2 as i32 + j_0) as isize) * id;
-            let xi0: uint8_t = (if (31 as i32) < (x0 + 16.5f32) as int8_t as i32 {
-                31 as i32
+        let mut qh: uint32_t = 0_i32 as uint32_t;
+        let mut j_0: i32 = 0_i32;
+        while j_0 < qk / 2_i32 {
+            let x0: f32 = *x.offset((i * qk + 0_i32 + j_0) as isize) * id;
+            let x1: f32 = *x.offset((i * qk + qk / 2_i32 + j_0) as isize) * id;
+            let xi0: uint8_t = (if 31_i32 < (x0 + 16.5f32) as int8_t as i32 {
+                31_i32
             } else {
                 (x0 + 16.5f32) as int8_t as i32
             }) as uint8_t;
-            let xi1: uint8_t = (if (31 as i32) < (x1 + 16.5f32) as int8_t as i32 {
-                31 as i32
+            let xi1: uint8_t = (if 31_i32 < (x1 + 16.5f32) as int8_t as i32 {
+                31_i32
             } else {
                 (x1 + 16.5f32) as int8_t as i32
             }) as uint8_t;
             (*y.offset(i as isize)).qs[j_0 as usize] =
-                (xi0 as i32 & 0xf as i32 | (xi1 as i32 & 0xf as i32) << 4 as i32) as uint8_t;
-            qh |= (((xi0 as i32 & 0x10 as i32) >> 4 as i32) << (j_0 + 0 as i32)) as u32;
-            qh |= (((xi1 as i32 & 0x10 as i32) >> 4 as i32) << (j_0 + qk / 2 as i32)) as u32;
+                (xi0 as i32 & 0xf_i32 | (xi1 as i32 & 0xf_i32) << 4_i32) as uint8_t;
+            qh |= (((xi0 as i32 & 0x10_i32) >> 4_i32) << (j_0 + 0_i32)) as u32;
+            qh |= (((xi1 as i32 & 0x10_i32) >> 4_i32) << (j_0 + qk / 2_i32)) as u32;
             j_0 += 1;
             j_0;
         }
@@ -941,13 +941,13 @@ unsafe extern "C" fn quantize_row_q5_1_reference(
     mut y: *mut block_q5_1,
     mut k: i32,
 ) {
-    let qk: i32 = 32 as i32;
+    let qk: i32 = 32_i32;
     let nb: i32 = k / qk;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let mut min: f32 = 3.402_823_5e38_f32;
         let mut max: f32 = -3.402_823_5e38_f32;
-        let mut j: i32 = 0 as i32;
+        let mut j: i32 = 0_i32;
         while j < qk {
             let v: f32 = *x.offset((i * qk + j) as isize);
             if v < min {
@@ -959,37 +959,37 @@ unsafe extern "C" fn quantize_row_q5_1_reference(
             j += 1;
             j;
         }
-        let d: f32 = (max - min) / (((1 as i32) << 5 as i32) - 1 as i32) as f32;
+        let d: f32 = (max - min) / ((1_i32 << 5_i32) - 1_i32) as f32;
         let id: f32 = if d != 0. { 1.0f32 / d } else { 0.0f32 };
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
                 [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
-                _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                _mm_setr_ps(d, 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
         (*y.offset(i as isize)).m = {
             ::core::mem::transmute::<
                 _,
                 [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
-                _mm_setr_ps(min, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                _mm_setr_ps(min, 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
-        let mut qh: uint32_t = 0 as i32 as uint32_t;
-        let mut j_0: i32 = 0 as i32;
-        while j_0 < qk / 2 as i32 {
-            let x0: f32 = (*x.offset((i * qk + 0 as i32 + j_0) as isize) - min) * id;
-            let x1: f32 = (*x.offset((i * qk + qk / 2 as i32 + j_0) as isize) - min) * id;
+        let mut qh: uint32_t = 0_i32 as uint32_t;
+        let mut j_0: i32 = 0_i32;
+        while j_0 < qk / 2_i32 {
+            let x0: f32 = (*x.offset((i * qk + 0_i32 + j_0) as isize) - min) * id;
+            let x1: f32 = (*x.offset((i * qk + qk / 2_i32 + j_0) as isize) - min) * id;
             let xi0: uint8_t = (x0 + 0.5f32) as uint8_t;
             let xi1: uint8_t = (x1 + 0.5f32) as uint8_t;
             (*y.offset(i as isize)).qs[j_0 as usize] =
-                (xi0 as i32 & 0xf as i32 | (xi1 as i32 & 0xf as i32) << 4 as i32) as uint8_t;
-            qh |= (((xi0 as i32 & 0x10 as i32) >> 4 as i32) << (j_0 + 0 as i32)) as u32;
-            qh |= (((xi1 as i32 & 0x10 as i32) >> 4 as i32) << (j_0 + qk / 2 as i32)) as u32;
+                (xi0 as i32 & 0xf_i32 | (xi1 as i32 & 0xf_i32) << 4_i32) as uint8_t;
+            qh |= (((xi0 as i32 & 0x10_i32) >> 4_i32) << (j_0 + 0_i32)) as u32;
+            qh |= (((xi1 as i32 & 0x10_i32) >> 4_i32) << (j_0 + qk / 2_i32)) as u32;
             j_0 += 1;
             j_0;
         }
@@ -1010,31 +1010,31 @@ unsafe extern "C" fn quantize_row_q8_0_reference(
     mut y: *mut block_q8_0,
     mut k: i32,
 ) {
-    let nb: i32 = k / 32 as i32;
-    let mut i: i32 = 0 as i32;
+    let nb: i32 = k / 32_i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let mut amax: f32 = 0.0f32;
-        let mut j: i32 = 0 as i32;
-        while j < 32 as i32 {
-            let v: f32 = *x.offset((i * 32 as i32 + j) as isize);
+        let mut j: i32 = 0_i32;
+        while j < 32_i32 {
+            let v: f32 = *x.offset((i * 32_i32 + j) as isize);
             amax = if amax > fabsf(v) { amax } else { fabsf(v) };
             j += 1;
             j;
         }
-        let d: f32 = amax / (((1 as i32) << 7 as i32) - 1 as i32) as f32;
+        let d: f32 = amax / ((1_i32 << 7_i32) - 1_i32) as f32;
         let id: f32 = if d != 0. { 1.0f32 / d } else { 0.0f32 };
         (*y.offset(i as isize)).d = {
             ::core::mem::transmute::<
                 _,
                 [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
-                _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                _mm_setr_ps(d, 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
-        let mut j_0: i32 = 0 as i32;
-        while j_0 < 32 as i32 {
-            let x0: f32 = *x.offset((i * 32 as i32 + j_0) as isize) * id;
+        let mut j_0: i32 = 0_i32;
+        while j_0 < 32_i32 {
+            let x0: f32 = *x.offset((i * 32_i32 + j_0) as isize) * id;
             (*y.offset(i as isize)).qs[j_0 as usize] = roundf(x0) as int8_t;
             j_0 += 1;
             j_0;
@@ -1044,22 +1044,22 @@ unsafe extern "C" fn quantize_row_q8_0_reference(
     }
 }
 unsafe extern "C" fn quantize_row_q8_0(mut x: *const f32, mut vy: *mut libc::c_void, mut k: i32) {
-    let nb: i32 = k / 32 as i32;
+    let nb: i32 = k / 32_i32;
     let mut y: *mut block_q8_0 = vy as *mut block_q8_0;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let mut v0: __m256 = _mm256_loadu_ps(x);
-        let mut v1: __m256 = _mm256_loadu_ps(x.offset(8 as i32 as isize));
-        let mut v2: __m256 = _mm256_loadu_ps(x.offset(16 as i32 as isize));
-        let mut v3: __m256 = _mm256_loadu_ps(x.offset(24 as i32 as isize));
-        x = x.offset(32 as i32 as isize);
+        let mut v1: __m256 = _mm256_loadu_ps(x.offset(8_i32 as isize));
+        let mut v2: __m256 = _mm256_loadu_ps(x.offset(16_i32 as isize));
+        let mut v3: __m256 = _mm256_loadu_ps(x.offset(24_i32 as isize));
+        x = x.offset(32_i32 as isize);
         let signBit: __m256 = _mm256_set1_ps(-0.0f32);
         let mut maxAbs: __m256 = _mm256_andnot_ps(signBit, v0);
         maxAbs = _mm256_max_ps(maxAbs, _mm256_andnot_ps(signBit, v1));
         maxAbs = _mm256_max_ps(maxAbs, _mm256_andnot_ps(signBit, v2));
         maxAbs = _mm256_max_ps(maxAbs, _mm256_andnot_ps(signBit, v3));
         let mut max4: __m128 = _mm_max_ps(
-            _mm256_extractf128_ps(maxAbs, 1 as i32),
+            _mm256_extractf128_ps(maxAbs, 1_i32),
             _mm256_castps256_ps128(maxAbs),
         );
         max4 = _mm_max_ps(max4, _mm_movehl_ps(max4, max4));
@@ -1071,9 +1071,9 @@ unsafe extern "C" fn quantize_row_q8_0(mut x: *const f32, mut vy: *mut libc::c_v
                 _,
                 [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
             >(_mm_cvtps_ph(
-                _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                _mm_setr_ps(d, 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
         let id: f32 = if maxScalar != 0.0f32 {
             127.0f32 / maxScalar
@@ -1085,10 +1085,10 @@ unsafe extern "C" fn quantize_row_q8_0(mut x: *const f32, mut vy: *mut libc::c_v
         v1 = _mm256_mul_ps(v1, mul);
         v2 = _mm256_mul_ps(v2, mul);
         v3 = _mm256_mul_ps(v3, mul);
-        v0 = _mm256_round_ps(v0, 0 as u32 as i32);
-        v1 = _mm256_round_ps(v1, 0 as u32 as i32);
-        v2 = _mm256_round_ps(v2, 0 as u32 as i32);
-        v3 = _mm256_round_ps(v3, 0 as u32 as i32);
+        v0 = _mm256_round_ps(v0, 0_u32 as i32);
+        v1 = _mm256_round_ps(v1, 0_u32 as i32);
+        v2 = _mm256_round_ps(v2, 0_u32 as i32);
+        v3 = _mm256_round_ps(v3, 0_u32 as i32);
         let mut i0: __m256i = _mm256_cvtps_epi32(v0);
         let mut i1: __m256i = _mm256_cvtps_epi32(v1);
         let mut i2: __m256i = _mm256_cvtps_epi32(v2);
@@ -1097,7 +1097,7 @@ unsafe extern "C" fn quantize_row_q8_0(mut x: *const f32, mut vy: *mut libc::c_v
         i2 = _mm256_packs_epi32(i2, i3);
         i0 = _mm256_packs_epi16(i0, i2);
         let perm: __m256i = _mm256_setr_epi32(
-            0 as i32, 4 as i32, 1 as i32, 5 as i32, 2 as i32, 6 as i32, 3 as i32, 7 as i32,
+            0_i32, 4_i32, 1_i32, 5_i32, 2_i32, 6_i32, 3_i32, 7_i32,
         );
         i0 = _mm256_permutevar8x32_epi32(i0, perm);
         _mm256_storeu_si256(
@@ -1113,30 +1113,30 @@ unsafe extern "C" fn quantize_row_q8_1_reference(
     mut y: *mut block_q8_1,
     mut k: i32,
 ) {
-    let nb: i32 = k / 32 as i32;
-    let mut i: i32 = 0 as i32;
+    let nb: i32 = k / 32_i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let mut amax: f32 = 0.0f32;
-        let mut j: i32 = 0 as i32;
-        while j < 32 as i32 {
-            let v: f32 = *x.offset((i * 32 as i32 + j) as isize);
+        let mut j: i32 = 0_i32;
+        while j < 32_i32 {
+            let v: f32 = *x.offset((i * 32_i32 + j) as isize);
             amax = if amax > fabsf(v) { amax } else { fabsf(v) };
             j += 1;
             j;
         }
-        let d: f32 = amax / (((1 as i32) << 7 as i32) - 1 as i32) as f32;
+        let d: f32 = amax / ((1_i32 << 7_i32) - 1_i32) as f32;
         let id: f32 = if d != 0. { 1.0f32 / d } else { 0.0f32 };
         (*y.offset(i as isize)).d = d;
-        let mut sum: i32 = 0 as i32;
-        let mut j_0: i32 = 0 as i32;
-        while j_0 < 32 as i32 / 2 as i32 {
-            let v0: f32 = *x.offset((i * 32 as i32 + j_0) as isize) * id;
-            let v1: f32 = *x.offset((i * 32 as i32 + 32 as i32 / 2 as i32 + j_0) as isize) * id;
+        let mut sum: i32 = 0_i32;
+        let mut j_0: i32 = 0_i32;
+        while j_0 < 32_i32 / 2_i32 {
+            let v0: f32 = *x.offset((i * 32_i32 + j_0) as isize) * id;
+            let v1: f32 = *x.offset((i * 32_i32 + 32_i32 / 2_i32 + j_0) as isize) * id;
             (*y.offset(i as isize)).qs[j_0 as usize] = roundf(v0) as int8_t;
-            (*y.offset(i as isize)).qs[(32 as i32 / 2 as i32 + j_0) as usize] =
+            (*y.offset(i as isize)).qs[(32_i32 / 2_i32 + j_0) as usize] =
                 roundf(v1) as int8_t;
             sum += (*y.offset(i as isize)).qs[j_0 as usize] as i32;
-            sum += (*y.offset(i as isize)).qs[(32 as i32 / 2 as i32 + j_0) as usize] as i32;
+            sum += (*y.offset(i as isize)).qs[(32_i32 / 2_i32 + j_0) as usize] as i32;
             j_0 += 1;
             j_0;
         }
@@ -1146,22 +1146,22 @@ unsafe extern "C" fn quantize_row_q8_1_reference(
     }
 }
 unsafe extern "C" fn quantize_row_q8_1(mut x: *const f32, mut vy: *mut libc::c_void, mut k: i32) {
-    let nb: i32 = k / 32 as i32;
+    let nb: i32 = k / 32_i32;
     let mut y: *mut block_q8_1 = vy as *mut block_q8_1;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let mut v0: __m256 = _mm256_loadu_ps(x);
-        let mut v1: __m256 = _mm256_loadu_ps(x.offset(8 as i32 as isize));
-        let mut v2: __m256 = _mm256_loadu_ps(x.offset(16 as i32 as isize));
-        let mut v3: __m256 = _mm256_loadu_ps(x.offset(24 as i32 as isize));
-        x = x.offset(32 as i32 as isize);
+        let mut v1: __m256 = _mm256_loadu_ps(x.offset(8_i32 as isize));
+        let mut v2: __m256 = _mm256_loadu_ps(x.offset(16_i32 as isize));
+        let mut v3: __m256 = _mm256_loadu_ps(x.offset(24_i32 as isize));
+        x = x.offset(32_i32 as isize);
         let signBit: __m256 = _mm256_set1_ps(-0.0f32);
         let mut maxAbs: __m256 = _mm256_andnot_ps(signBit, v0);
         maxAbs = _mm256_max_ps(maxAbs, _mm256_andnot_ps(signBit, v1));
         maxAbs = _mm256_max_ps(maxAbs, _mm256_andnot_ps(signBit, v2));
         maxAbs = _mm256_max_ps(maxAbs, _mm256_andnot_ps(signBit, v3));
         let mut max4: __m128 = _mm_max_ps(
-            _mm256_extractf128_ps(maxAbs, 1 as i32),
+            _mm256_extractf128_ps(maxAbs, 1_i32),
             _mm256_castps256_ps128(maxAbs),
         );
         max4 = _mm_max_ps(max4, _mm_movehl_ps(max4, max4));
@@ -1179,10 +1179,10 @@ unsafe extern "C" fn quantize_row_q8_1(mut x: *const f32, mut vy: *mut libc::c_v
         v1 = _mm256_mul_ps(v1, mul);
         v2 = _mm256_mul_ps(v2, mul);
         v3 = _mm256_mul_ps(v3, mul);
-        v0 = _mm256_round_ps(v0, 0 as u32 as i32);
-        v1 = _mm256_round_ps(v1, 0 as u32 as i32);
-        v2 = _mm256_round_ps(v2, 0 as u32 as i32);
-        v3 = _mm256_round_ps(v3, 0 as u32 as i32);
+        v0 = _mm256_round_ps(v0, 0_u32 as i32);
+        v1 = _mm256_round_ps(v1, 0_u32 as i32);
+        v2 = _mm256_round_ps(v2, 0_u32 as i32);
+        v3 = _mm256_round_ps(v3, 0_u32 as i32);
         let mut i0: __m256i = _mm256_cvtps_epi32(v0);
         let mut i1: __m256i = _mm256_cvtps_epi32(v1);
         let mut i2: __m256i = _mm256_cvtps_epi32(v2);
@@ -1195,7 +1195,7 @@ unsafe extern "C" fn quantize_row_q8_1(mut x: *const f32, mut vy: *mut libc::c_v
         i2 = _mm256_packs_epi32(i2, i3);
         i0 = _mm256_packs_epi16(i0, i2);
         let perm: __m256i = _mm256_setr_epi32(
-            0 as i32, 4 as i32, 1 as i32, 5 as i32, 2 as i32, 6 as i32, 3 as i32, 7 as i32,
+            0_i32, 4_i32, 1_i32, 5_i32, 2_i32, 6_i32, 3_i32, 7_i32,
         );
         i0 = _mm256_permutevar8x32_epi32(i0, perm);
         _mm256_storeu_si256(
@@ -1207,17 +1207,17 @@ unsafe extern "C" fn quantize_row_q8_1(mut x: *const f32, mut vy: *mut libc::c_v
     }
 }
 unsafe extern "C" fn dequantize_row_q4_0(mut x: *const block_q4_0, mut y: *mut f32, mut k: i32) {
-    static mut qk: i32 = 32 as i32;
+    static mut qk: i32 = 32_i32;
     let nb: i32 = k / qk;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let d: f32 = ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).d);
-        let mut j: i32 = 0 as i32;
-        while j < qk / 2 as i32 {
-            let x0: i32 = ((*x.offset(i as isize)).qs[j as usize] as i32 & 0xf as i32) - 8 as i32;
-            let x1: i32 = ((*x.offset(i as isize)).qs[j as usize] as i32 >> 4 as i32) - 8 as i32;
-            *y.offset((i * qk + j + 0 as i32) as isize) = x0 as f32 * d;
-            *y.offset((i * qk + j + qk / 2 as i32) as isize) = x1 as f32 * d;
+        let mut j: i32 = 0_i32;
+        while j < qk / 2_i32 {
+            let x0: i32 = ((*x.offset(i as isize)).qs[j as usize] as i32 & 0xf_i32) - 8_i32;
+            let x1: i32 = ((*x.offset(i as isize)).qs[j as usize] as i32 >> 4_i32) - 8_i32;
+            *y.offset((i * qk + j + 0_i32) as isize) = x0 as f32 * d;
+            *y.offset((i * qk + j + qk / 2_i32) as isize) = x1 as f32 * d;
             j += 1;
             j;
         }
@@ -1226,18 +1226,18 @@ unsafe extern "C" fn dequantize_row_q4_0(mut x: *const block_q4_0, mut y: *mut f
     }
 }
 unsafe extern "C" fn dequantize_row_q4_1(mut x: *const block_q4_1, mut y: *mut f32, mut k: i32) {
-    static mut qk: i32 = 32 as i32;
+    static mut qk: i32 = 32_i32;
     let nb: i32 = k / qk;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let d: f32 = ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).d);
         let m: f32 = ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).m);
-        let mut j: i32 = 0 as i32;
-        while j < qk / 2 as i32 {
-            let x0: i32 = (*x.offset(i as isize)).qs[j as usize] as i32 & 0xf as i32;
-            let x1: i32 = (*x.offset(i as isize)).qs[j as usize] as i32 >> 4 as i32;
-            *y.offset((i * qk + j + 0 as i32) as isize) = x0 as f32 * d + m;
-            *y.offset((i * qk + j + qk / 2 as i32) as isize) = x1 as f32 * d + m;
+        let mut j: i32 = 0_i32;
+        while j < qk / 2_i32 {
+            let x0: i32 = (*x.offset(i as isize)).qs[j as usize] as i32 & 0xf_i32;
+            let x1: i32 = (*x.offset(i as isize)).qs[j as usize] as i32 >> 4_i32;
+            *y.offset((i * qk + j + 0_i32) as isize) = x0 as f32 * d + m;
+            *y.offset((i * qk + j + qk / 2_i32) as isize) = x1 as f32 * d + m;
             j += 1;
             j;
         }
@@ -1246,9 +1246,9 @@ unsafe extern "C" fn dequantize_row_q4_1(mut x: *const block_q4_1, mut y: *mut f
     }
 }
 unsafe extern "C" fn dequantize_row_q5_0(mut x: *const block_q5_0, mut y: *mut f32, mut k: i32) {
-    static mut qk: i32 = 32 as i32;
+    static mut qk: i32 = 32_i32;
     let nb: i32 = k / qk;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let d: f32 = ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).d);
         let mut qh: uint32_t = 0;
@@ -1257,19 +1257,19 @@ unsafe extern "C" fn dequantize_row_q5_0(mut x: *const block_q5_0, mut y: *mut f
             ((*x.offset(i as isize)).qh).as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<uint32_t>() as u64,
         );
-        let mut j: i32 = 0 as i32;
-        while j < qk / 2 as i32 {
+        let mut j: i32 = 0_i32;
+        while j < qk / 2_i32 {
             let xh_0: uint8_t =
-                ((qh >> (j + 0 as i32)) << 4 as i32 & 0x10 as i32 as u32) as uint8_t;
-            let xh_1: uint8_t = (qh >> (j + 12 as i32) & 0x10 as i32 as u32) as uint8_t;
-            let x0: int32_t = ((*x.offset(i as isize)).qs[j as usize] as i32 & 0xf as i32
+                ((qh >> (j + 0_i32)) << 4_i32 & 0x10_i32 as u32) as uint8_t;
+            let xh_1: uint8_t = (qh >> (j + 12_i32) & 0x10_i32 as u32) as uint8_t;
+            let x0: int32_t = ((*x.offset(i as isize)).qs[j as usize] as i32 & 0xf_i32
                 | xh_0 as i32)
-                - 16 as i32;
-            let x1: int32_t = ((*x.offset(i as isize)).qs[j as usize] as i32 >> 4 as i32
+                - 16_i32;
+            let x1: int32_t = ((*x.offset(i as isize)).qs[j as usize] as i32 >> 4_i32
                 | xh_1 as i32)
-                - 16 as i32;
-            *y.offset((i * qk + j + 0 as i32) as isize) = x0 as f32 * d;
-            *y.offset((i * qk + j + qk / 2 as i32) as isize) = x1 as f32 * d;
+                - 16_i32;
+            *y.offset((i * qk + j + 0_i32) as isize) = x0 as f32 * d;
+            *y.offset((i * qk + j + qk / 2_i32) as isize) = x1 as f32 * d;
             j += 1;
             j;
         }
@@ -1278,9 +1278,9 @@ unsafe extern "C" fn dequantize_row_q5_0(mut x: *const block_q5_0, mut y: *mut f
     }
 }
 unsafe extern "C" fn dequantize_row_q5_1(mut x: *const block_q5_1, mut y: *mut f32, mut k: i32) {
-    static mut qk: i32 = 32 as i32;
+    static mut qk: i32 = 32_i32;
     let nb: i32 = k / qk;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let d: f32 = ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).d);
         let m: f32 = ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).m);
@@ -1290,15 +1290,15 @@ unsafe extern "C" fn dequantize_row_q5_1(mut x: *const block_q5_1, mut y: *mut f
             ((*x.offset(i as isize)).qh).as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<uint32_t>() as u64,
         );
-        let mut j: i32 = 0 as i32;
-        while j < qk / 2 as i32 {
+        let mut j: i32 = 0_i32;
+        while j < qk / 2_i32 {
             let xh_0: uint8_t =
-                ((qh >> (j + 0 as i32)) << 4 as i32 & 0x10 as i32 as u32) as uint8_t;
-            let xh_1: uint8_t = (qh >> (j + 12 as i32) & 0x10 as i32 as u32) as uint8_t;
-            let x0: i32 = (*x.offset(i as isize)).qs[j as usize] as i32 & 0xf as i32 | xh_0 as i32;
-            let x1: i32 = (*x.offset(i as isize)).qs[j as usize] as i32 >> 4 as i32 | xh_1 as i32;
-            *y.offset((i * qk + j + 0 as i32) as isize) = x0 as f32 * d + m;
-            *y.offset((i * qk + j + qk / 2 as i32) as isize) = x1 as f32 * d + m;
+                ((qh >> (j + 0_i32)) << 4_i32 & 0x10_i32 as u32) as uint8_t;
+            let xh_1: uint8_t = (qh >> (j + 12_i32) & 0x10_i32 as u32) as uint8_t;
+            let x0: i32 = (*x.offset(i as isize)).qs[j as usize] as i32 & 0xf_i32 | xh_0 as i32;
+            let x1: i32 = (*x.offset(i as isize)).qs[j as usize] as i32 >> 4_i32 | xh_1 as i32;
+            *y.offset((i * qk + j + 0_i32) as isize) = x0 as f32 * d + m;
+            *y.offset((i * qk + j + qk / 2_i32) as isize) = x1 as f32 * d + m;
             j += 1;
             j;
         }
@@ -1307,13 +1307,13 @@ unsafe extern "C" fn dequantize_row_q5_1(mut x: *const block_q5_1, mut y: *mut f
     }
 }
 unsafe extern "C" fn dequantize_row_q8_0(mut vx: *const libc::c_void, mut y: *mut f32, mut k: i32) {
-    static mut qk: i32 = 32 as i32;
+    static mut qk: i32 = 32_i32;
     let nb: i32 = k / qk;
     let mut x: *const block_q8_0 = vx as *const block_q8_0;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let d: f32 = ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).d);
-        let mut j: i32 = 0 as i32;
+        let mut j: i32 = 0_i32;
         while j < qk {
             *y.offset((i * qk + j) as isize) =
                 (*x.offset(i as isize)).qs[j as usize] as i32 as f32 * d;
@@ -1588,10 +1588,10 @@ pub unsafe extern "C" fn ggml_internal_get_quantize_fn(mut i: size_t) -> quantiz
     if i >= GGML_TYPE_COUNT as i32 as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            1526 as i32,
-            b"i < GGML_TYPE_COUNT\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            1526_i32,
+            b"i < GGML_TYPE_COUNT\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -1599,7 +1599,7 @@ pub unsafe extern "C" fn ggml_internal_get_quantize_fn(mut i: size_t) -> quantiz
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_set_i8(n: i32, mut x: *mut int8_t, v: int8_t) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *x.offset(i as isize) = v;
         i += 1;
@@ -1608,7 +1608,7 @@ unsafe extern "C" fn ggml_vec_set_i8(n: i32, mut x: *mut int8_t, v: int8_t) {
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_set_i16(n: i32, mut x: *mut int16_t, v: int16_t) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *x.offset(i as isize) = v;
         i += 1;
@@ -1617,7 +1617,7 @@ unsafe extern "C" fn ggml_vec_set_i16(n: i32, mut x: *mut int16_t, v: int16_t) {
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_set_i32(n: i32, mut x: *mut int32_t, v: int32_t) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *x.offset(i as isize) = v;
         i += 1;
@@ -1626,7 +1626,7 @@ unsafe extern "C" fn ggml_vec_set_i32(n: i32, mut x: *mut int32_t, v: int32_t) {
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_set_f16(n: i32, mut x: *mut ggml_fp16_t, v: int32_t) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *x.offset(i as isize) = v as ggml_fp16_t;
         i += 1;
@@ -1640,7 +1640,7 @@ unsafe extern "C" fn ggml_vec_add_f32(
     mut x: *const f32,
     mut y: *const f32,
 ) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *z.offset(i as isize) = *x.offset(i as isize) + *y.offset(i as isize);
         i += 1;
@@ -1649,7 +1649,7 @@ unsafe extern "C" fn ggml_vec_add_f32(
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_add1_f32(n: i32, mut z: *mut f32, mut x: *const f32, v: f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *z.offset(i as isize) = *x.offset(i as isize) + v;
         i += 1;
@@ -1658,7 +1658,7 @@ unsafe extern "C" fn ggml_vec_add1_f32(n: i32, mut z: *mut f32, mut x: *const f3
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_acc_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) += *x.offset(i as isize);
         i += 1;
@@ -1667,7 +1667,7 @@ unsafe extern "C" fn ggml_vec_acc_f32(n: i32, mut y: *mut f32, mut x: *const f32
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_acc1_f32(n: i32, mut y: *mut f32, v: f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) += v;
         i += 1;
@@ -1681,7 +1681,7 @@ unsafe extern "C" fn ggml_vec_sub_f32(
     mut x: *const f32,
     mut y: *const f32,
 ) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *z.offset(i as isize) = *x.offset(i as isize) - *y.offset(i as isize);
         i += 1;
@@ -1690,7 +1690,7 @@ unsafe extern "C" fn ggml_vec_sub_f32(
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_set_f32(n: i32, mut x: *mut f32, v: f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *x.offset(i as isize) = v;
         i += 1;
@@ -1699,7 +1699,7 @@ unsafe extern "C" fn ggml_vec_set_f32(n: i32, mut x: *mut f32, v: f32) {
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_cpy_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) = *x.offset(i as isize);
         i += 1;
@@ -1708,7 +1708,7 @@ unsafe extern "C" fn ggml_vec_cpy_f32(n: i32, mut y: *mut f32, mut x: *const f32
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_neg_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) = -*x.offset(i as isize);
         i += 1;
@@ -1722,7 +1722,7 @@ unsafe extern "C" fn ggml_vec_mul_f32(
     mut x: *const f32,
     mut y: *const f32,
 ) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *z.offset(i as isize) = *x.offset(i as isize) * *y.offset(i as isize);
         i += 1;
@@ -1736,7 +1736,7 @@ unsafe extern "C" fn ggml_vec_div_f32(
     mut x: *const f32,
     mut y: *const f32,
 ) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *z.offset(i as isize) = *x.offset(i as isize) / *y.offset(i as isize);
         i += 1;
@@ -1751,7 +1751,7 @@ unsafe extern "C" fn ggml_vec_dot_f32(
     mut y: *const f32,
 ) {
     let mut sumf: f32 = 0.0f32;
-    let np: i32 = n & !(32 as i32 - 1 as i32);
+    let np: i32 = n & !(32_i32 - 1_i32);
     let mut sum: [__m256; 4] = [
         _mm256_setzero_ps(),
         _mm256_setzero_ps(),
@@ -1760,48 +1760,48 @@ unsafe extern "C" fn ggml_vec_dot_f32(
     ];
     let mut ax: [__m256; 4] = [_mm256_setzero_ps(); 4];
     let mut ay: [__m256; 4] = [_mm256_setzero_ps(); 4];
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < np {
-        let mut j: i32 = 0 as i32;
-        while j < 32 as i32 / 8 as i32 {
-            ax[j as usize] = _mm256_loadu_ps(x.offset(i as isize).offset((j * 8 as i32) as isize));
-            ay[j as usize] = _mm256_loadu_ps(y.offset(i as isize).offset((j * 8 as i32) as isize));
+        let mut j: i32 = 0_i32;
+        while j < 32_i32 / 8_i32 {
+            ax[j as usize] = _mm256_loadu_ps(x.offset(i as isize).offset((j * 8_i32) as isize));
+            ay[j as usize] = _mm256_loadu_ps(y.offset(i as isize).offset((j * 8_i32) as isize));
             sum[j as usize] = _mm256_fmadd_ps(ax[j as usize], ay[j as usize], sum[j as usize]);
             j += 1;
             j;
         }
-        i += 32 as i32;
+        i += 32_i32;
     }
-    let mut i_0: i32 = 0 as i32;
-    while i_0 < 32 as i32 / 8 as i32 / 2 as i32 {
-        sum[(2 as i32 * i_0) as usize] = _mm256_add_ps(
-            sum[(2 as i32 * i_0) as usize],
-            sum[(2 as i32 * i_0 + 1 as i32) as usize],
+    let mut i_0: i32 = 0_i32;
+    while i_0 < 32_i32 / 8_i32 / 2_i32 {
+        sum[(2_i32 * i_0) as usize] = _mm256_add_ps(
+            sum[(2_i32 * i_0) as usize],
+            sum[(2_i32 * i_0 + 1_i32) as usize],
         );
         i_0 += 1;
         i_0;
     }
-    let mut i_1: i32 = 0 as i32;
-    while i_1 < 32 as i32 / 8 as i32 / 4 as i32 {
-        sum[(4 as i32 * i_1) as usize] = _mm256_add_ps(
-            sum[(4 as i32 * i_1) as usize],
-            sum[(4 as i32 * i_1 + 2 as i32) as usize],
+    let mut i_1: i32 = 0_i32;
+    while i_1 < 32_i32 / 8_i32 / 4_i32 {
+        sum[(4_i32 * i_1) as usize] = _mm256_add_ps(
+            sum[(4_i32 * i_1) as usize],
+            sum[(4_i32 * i_1 + 2_i32) as usize],
         );
         i_1 += 1;
         i_1;
     }
-    let mut i_2: i32 = 0 as i32;
-    while i_2 < 32 as i32 / 8 as i32 / 8 as i32 {
-        sum[(8 as i32 * i_2) as usize] = _mm256_add_ps(
-            sum[(8 as i32 * i_2) as usize],
-            sum[(8 as i32 * i_2 + 4 as i32) as usize],
+    let mut i_2: i32 = 0_i32;
+    while i_2 < 32_i32 / 8_i32 / 8_i32 {
+        sum[(8_i32 * i_2) as usize] = _mm256_add_ps(
+            sum[(8_i32 * i_2) as usize],
+            sum[(8_i32 * i_2 + 4_i32) as usize],
         );
         i_2 += 1;
         i_2;
     }
     let t0: __m128 = _mm_add_ps(
-        _mm256_castps256_ps128(sum[0 as i32 as usize]),
-        _mm256_extractf128_ps(sum[0 as i32 as usize], 1 as i32),
+        _mm256_castps256_ps128(sum[0_i32 as usize]),
+        _mm256_extractf128_ps(sum[0_i32 as usize], 1_i32),
     );
     let t1: __m128 = _mm_hadd_ps(t0, t0);
     sumf = _mm_cvtss_f32(_mm_hadd_ps(t1, t1));
@@ -1821,7 +1821,7 @@ unsafe extern "C" fn ggml_vec_dot_f16(
     mut y: *mut ggml_fp16_t,
 ) {
     let mut sumf: ggml_float = 0.0f64;
-    let np: i32 = n & !(32 as i32 - 1 as i32);
+    let np: i32 = n & !(32_i32 - 1_i32);
     let mut sum: [__m256; 4] = [
         _mm256_setzero_ps(),
         _mm256_setzero_ps(),
@@ -1830,52 +1830,52 @@ unsafe extern "C" fn ggml_vec_dot_f16(
     ];
     let mut ax: [__m256; 4] = [_mm256_setzero_ps(); 4];
     let mut ay: [__m256; 4] = [_mm256_setzero_ps(); 4];
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < np {
-        let mut j: i32 = 0 as i32;
-        while j < 32 as i32 / 8 as i32 {
+        let mut j: i32 = 0_i32;
+        while j < 32_i32 / 8_i32 {
             ax[j as usize] = _mm256_cvtph_ps(_mm_loadu_si128(
-                x.offset(i as isize).offset((j * 8 as i32) as isize) as *mut __m128i,
+                x.offset(i as isize).offset((j * 8_i32) as isize) as *mut __m128i,
             ));
             ay[j as usize] = _mm256_cvtph_ps(_mm_loadu_si128(
-                y.offset(i as isize).offset((j * 8 as i32) as isize) as *mut __m128i,
+                y.offset(i as isize).offset((j * 8_i32) as isize) as *mut __m128i,
             ));
             sum[j as usize] = _mm256_fmadd_ps(ax[j as usize], ay[j as usize], sum[j as usize]);
             j += 1;
             j;
         }
-        i += 32 as i32;
+        i += 32_i32;
     }
-    let mut i_0: i32 = 0 as i32;
-    while i_0 < 32 as i32 / 8 as i32 / 2 as i32 {
-        sum[(2 as i32 * i_0) as usize] = _mm256_add_ps(
-            sum[(2 as i32 * i_0) as usize],
-            sum[(2 as i32 * i_0 + 1 as i32) as usize],
+    let mut i_0: i32 = 0_i32;
+    while i_0 < 32_i32 / 8_i32 / 2_i32 {
+        sum[(2_i32 * i_0) as usize] = _mm256_add_ps(
+            sum[(2_i32 * i_0) as usize],
+            sum[(2_i32 * i_0 + 1_i32) as usize],
         );
         i_0 += 1;
         i_0;
     }
-    let mut i_1: i32 = 0 as i32;
-    while i_1 < 32 as i32 / 8 as i32 / 4 as i32 {
-        sum[(4 as i32 * i_1) as usize] = _mm256_add_ps(
-            sum[(4 as i32 * i_1) as usize],
-            sum[(4 as i32 * i_1 + 2 as i32) as usize],
+    let mut i_1: i32 = 0_i32;
+    while i_1 < 32_i32 / 8_i32 / 4_i32 {
+        sum[(4_i32 * i_1) as usize] = _mm256_add_ps(
+            sum[(4_i32 * i_1) as usize],
+            sum[(4_i32 * i_1 + 2_i32) as usize],
         );
         i_1 += 1;
         i_1;
     }
-    let mut i_2: i32 = 0 as i32;
-    while i_2 < 32 as i32 / 8 as i32 / 8 as i32 {
-        sum[(8 as i32 * i_2) as usize] = _mm256_add_ps(
-            sum[(8 as i32 * i_2) as usize],
-            sum[(8 as i32 * i_2 + 4 as i32) as usize],
+    let mut i_2: i32 = 0_i32;
+    while i_2 < 32_i32 / 8_i32 / 8_i32 {
+        sum[(8_i32 * i_2) as usize] = _mm256_add_ps(
+            sum[(8_i32 * i_2) as usize],
+            sum[(8_i32 * i_2 + 4_i32) as usize],
         );
         i_2 += 1;
         i_2;
     }
     let t0: __m128 = _mm_add_ps(
-        _mm256_castps256_ps128(sum[0 as i32 as usize]),
-        _mm256_extractf128_ps(sum[0 as i32 as usize], 1 as i32),
+        _mm256_castps256_ps128(sum[0_i32 as usize]),
+        _mm256_extractf128_ps(sum[0_i32 as usize], 1_i32),
     );
     let t1: __m128 = _mm_hadd_ps(t0, t0);
     sumf = _mm_cvtss_f32(_mm_hadd_ps(t1, t1)) as ggml_float;
@@ -1894,19 +1894,19 @@ unsafe extern "C" fn ggml_vec_dot_q4_0_q8_0(
     mut vx: *const libc::c_void,
     mut vy: *const libc::c_void,
 ) {
-    let qk: i32 = 32 as i32;
+    let qk: i32 = 32_i32;
     let nb: i32 = n / qk;
     let mut x: *const block_q4_0 = vx as *const block_q4_0;
     let mut y: *const block_q8_0 = vy as *const block_q8_0;
     let mut acc: __m256 = _mm256_setzero_ps();
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let d: __m256 = _mm256_set1_ps(
             ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).d)
                 * ggml_lookup_fp16_to_fp32((*y.offset(i as isize)).d),
         );
         let mut bx: __m256i = bytes_from_nibbles_32(((*x.offset(i as isize)).qs).as_ptr());
-        let off: __m256i = _mm256_set1_epi8(8 as i32 as libc::c_char);
+        let off: __m256i = _mm256_set1_epi8(8_i32 as i8);
         bx = _mm256_sub_epi8(bx, off);
         let mut by: __m256i =
             _mm256_loadu_si256(((*y.offset(i as isize)).qs).as_ptr() as *const __m256i);
@@ -1923,13 +1923,13 @@ unsafe extern "C" fn ggml_vec_dot_q4_1_q8_1(
     mut vx: *const libc::c_void,
     mut vy: *const libc::c_void,
 ) {
-    let qk: i32 = 32 as i32;
+    let qk: i32 = 32_i32;
     let nb: i32 = n / qk;
     let mut x: *const block_q4_1 = vx as *const block_q4_1;
     let mut y: *const block_q8_1 = vy as *const block_q8_1;
     let mut acc: __m256 = _mm256_setzero_ps();
-    let mut summs: f32 = 0 as i32 as f32;
-    let mut i: i32 = 0 as i32;
+    let mut summs: f32 = 0_i32 as f32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let d0: f32 = ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).d);
         let d1: f32 = (*y.offset(i as isize)).d;
@@ -1953,12 +1953,12 @@ unsafe extern "C" fn ggml_vec_dot_q5_0_q8_0(
     mut vx: *const libc::c_void,
     mut vy: *const libc::c_void,
 ) {
-    let qk: i32 = 32 as i32;
+    let qk: i32 = 32_i32;
     let nb: i32 = n / qk;
     let mut x: *const block_q5_0 = vx as *const block_q5_0;
     let mut y: *const block_q8_0 = vy as *const block_q8_0;
     let mut acc: __m256 = _mm256_setzero_ps();
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let d: __m256 = _mm256_set1_ps(
             ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).d)
@@ -1966,7 +1966,7 @@ unsafe extern "C" fn ggml_vec_dot_q5_0_q8_0(
         );
         let mut bx: __m256i = bytes_from_nibbles_32(((*x.offset(i as isize)).qs).as_ptr());
         let mut bxhi: __m256i = bytes_from_bits_32(((*x.offset(i as isize)).qh).as_ptr());
-        bxhi = _mm256_andnot_si256(bxhi, _mm256_set1_epi8(0xf0 as i32 as libc::c_char));
+        bxhi = _mm256_andnot_si256(bxhi, _mm256_set1_epi8(0xf0_i32 as i8));
         bx = _mm256_or_si256(bx, bxhi);
         let mut by: __m256i =
             _mm256_loadu_si256(((*y.offset(i as isize)).qs).as_ptr() as *const __m256i);
@@ -1983,19 +1983,19 @@ unsafe extern "C" fn ggml_vec_dot_q5_1_q8_1(
     mut vx: *const libc::c_void,
     mut vy: *const libc::c_void,
 ) {
-    let qk: i32 = 32 as i32;
+    let qk: i32 = 32_i32;
     let nb: i32 = n / qk;
     let mut x: *const block_q5_1 = vx as *const block_q5_1;
     let mut y: *const block_q8_1 = vy as *const block_q8_1;
     let mut acc: __m256 = _mm256_setzero_ps();
     let mut summs: f32 = 0.0f32;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let dx: __m256 = _mm256_set1_ps(ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).d));
         summs += ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).m) * (*y.offset(i as isize)).s;
         let mut bx: __m256i = bytes_from_nibbles_32(((*x.offset(i as isize)).qs).as_ptr());
         let mut bxhi: __m256i = bytes_from_bits_32(((*x.offset(i as isize)).qh).as_ptr());
-        bxhi = _mm256_and_si256(bxhi, _mm256_set1_epi8(0x10 as i32 as libc::c_char));
+        bxhi = _mm256_and_si256(bxhi, _mm256_set1_epi8(0x10_i32 as i8));
         bx = _mm256_or_si256(bx, bxhi);
         let dy: __m256 = _mm256_set1_ps((*y.offset(i as isize)).d);
         let by: __m256i =
@@ -2013,12 +2013,12 @@ unsafe extern "C" fn ggml_vec_dot_q8_0_q8_0(
     mut vx: *const libc::c_void,
     mut vy: *const libc::c_void,
 ) {
-    let qk: i32 = 32 as i32;
+    let qk: i32 = 32_i32;
     let nb: i32 = n / qk;
     let mut x: *const block_q8_0 = vx as *const block_q8_0;
     let mut y: *const block_q8_0 = vy as *const block_q8_0;
     let mut acc: __m256 = _mm256_setzero_ps();
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nb {
         let d: __m256 = _mm256_set1_ps(
             ggml_lookup_fp16_to_fp32((*x.offset(i as isize)).d)
@@ -2045,13 +2045,13 @@ unsafe extern "C" fn ggml_vec_dot_f16_unroll(
 ) {
     let mut sumf: [ggml_float; 2] = [0.0f64, 0.];
     let mut x: [*mut ggml_fp16_t; 2] = [std::ptr::null_mut::<ggml_fp16_t>(); 2];
-    let mut i: i32 = 0 as i32;
-    while i < 2 as i32 {
-        x[i as usize] = (xv as *mut libc::c_char).offset((i * xs) as isize) as *mut ggml_fp16_t;
+    let mut i: i32 = 0_i32;
+    while i < 2_i32 {
+        x[i as usize] = (xv as *mut i8).offset((i * xs) as isize) as *mut ggml_fp16_t;
         i += 1;
         i;
     }
-    let np: i32 = n & !(32 as i32 - 1 as i32);
+    let np: i32 = n & !(32_i32 - 1_i32);
     let mut sum: [[__m256; 4]; 2] = [
         [
             _mm256_setzero_ps(),
@@ -2063,19 +2063,19 @@ unsafe extern "C" fn ggml_vec_dot_f16_unroll(
     ];
     let mut ax: [__m256; 4] = [_mm256_setzero_ps(); 4];
     let mut ay: [__m256; 4] = [_mm256_setzero_ps(); 4];
-    let mut i_0: i32 = 0 as i32;
+    let mut i_0: i32 = 0_i32;
     while i_0 < np {
-        let mut j: i32 = 0 as i32;
-        while j < 32 as i32 / 8 as i32 {
+        let mut j: i32 = 0_i32;
+        while j < 32_i32 / 8_i32 {
             ay[j as usize] = _mm256_cvtph_ps(_mm_loadu_si128(
-                y.offset(i_0 as isize).offset((j * 8 as i32) as isize) as *mut __m128i,
+                y.offset(i_0 as isize).offset((j * 8_i32) as isize) as *mut __m128i,
             ));
-            let mut k: i32 = 0 as i32;
-            while k < 2 as i32 {
+            let mut k: i32 = 0_i32;
+            while k < 2_i32 {
                 ax[j as usize] = _mm256_cvtph_ps(_mm_loadu_si128(
                     (x[k as usize])
                         .offset(i_0 as isize)
-                        .offset((j * 8 as i32) as isize) as *mut __m128i,
+                        .offset((j * 8_i32) as isize) as *mut __m128i,
                 ));
                 sum[k as usize][j as usize] =
                     _mm256_fmadd_ps(ax[j as usize], ay[j as usize], sum[k as usize][j as usize]);
@@ -2085,40 +2085,40 @@ unsafe extern "C" fn ggml_vec_dot_f16_unroll(
             j += 1;
             j;
         }
-        i_0 += 32 as i32;
+        i_0 += 32_i32;
     }
-    let mut k_0: i32 = 0 as i32;
-    while k_0 < 2 as i32 {
-        let mut i_1: i32 = 0 as i32;
-        while i_1 < 32 as i32 / 8 as i32 / 2 as i32 {
-            sum[k_0 as usize][(2 as i32 * i_1) as usize] = _mm256_add_ps(
-                sum[k_0 as usize][(2 as i32 * i_1) as usize],
-                sum[k_0 as usize][(2 as i32 * i_1 + 1 as i32) as usize],
+    let mut k_0: i32 = 0_i32;
+    while k_0 < 2_i32 {
+        let mut i_1: i32 = 0_i32;
+        while i_1 < 32_i32 / 8_i32 / 2_i32 {
+            sum[k_0 as usize][(2_i32 * i_1) as usize] = _mm256_add_ps(
+                sum[k_0 as usize][(2_i32 * i_1) as usize],
+                sum[k_0 as usize][(2_i32 * i_1 + 1_i32) as usize],
             );
             i_1 += 1;
             i_1;
         }
-        let mut i_2: i32 = 0 as i32;
-        while i_2 < 32 as i32 / 8 as i32 / 4 as i32 {
-            sum[k_0 as usize][(4 as i32 * i_2) as usize] = _mm256_add_ps(
-                sum[k_0 as usize][(4 as i32 * i_2) as usize],
-                sum[k_0 as usize][(4 as i32 * i_2 + 2 as i32) as usize],
+        let mut i_2: i32 = 0_i32;
+        while i_2 < 32_i32 / 8_i32 / 4_i32 {
+            sum[k_0 as usize][(4_i32 * i_2) as usize] = _mm256_add_ps(
+                sum[k_0 as usize][(4_i32 * i_2) as usize],
+                sum[k_0 as usize][(4_i32 * i_2 + 2_i32) as usize],
             );
             i_2 += 1;
             i_2;
         }
-        let mut i_3: i32 = 0 as i32;
-        while i_3 < 32 as i32 / 8 as i32 / 8 as i32 {
-            sum[k_0 as usize][(8 as i32 * i_3) as usize] = _mm256_add_ps(
-                sum[k_0 as usize][(8 as i32 * i_3) as usize],
-                sum[k_0 as usize][(8 as i32 * i_3 + 4 as i32) as usize],
+        let mut i_3: i32 = 0_i32;
+        while i_3 < 32_i32 / 8_i32 / 8_i32 {
+            sum[k_0 as usize][(8_i32 * i_3) as usize] = _mm256_add_ps(
+                sum[k_0 as usize][(8_i32 * i_3) as usize],
+                sum[k_0 as usize][(8_i32 * i_3 + 4_i32) as usize],
             );
             i_3 += 1;
             i_3;
         }
         let t0: __m128 = _mm_add_ps(
-            _mm256_castps256_ps128(sum[k_0 as usize][0 as i32 as usize]),
-            _mm256_extractf128_ps(sum[k_0 as usize][0 as i32 as usize], 1 as i32),
+            _mm256_castps256_ps128(sum[k_0 as usize][0_i32 as usize]),
+            _mm256_extractf128_ps(sum[k_0 as usize][0_i32 as usize], 1_i32),
         );
         let t1: __m128 = _mm_hadd_ps(t0, t0);
         sumf[k_0 as usize] = _mm_cvtss_f32(_mm_hadd_ps(t1, t1)) as ggml_float;
@@ -2127,8 +2127,8 @@ unsafe extern "C" fn ggml_vec_dot_f16_unroll(
     }
     let mut i_4: i32 = np;
     while i_4 < n {
-        let mut j_0: i32 = 0 as i32;
-        while j_0 < 2 as i32 {
+        let mut j_0: i32 = 0_i32;
+        while j_0 < 2_i32 {
             sumf[j_0 as usize] +=
                 (ggml_lookup_fp16_to_fp32(*(x[j_0 as usize]).offset(i_4 as isize))
                     * ggml_lookup_fp16_to_fp32(*y.offset(i_4 as isize)))
@@ -2139,8 +2139,8 @@ unsafe extern "C" fn ggml_vec_dot_f16_unroll(
         i_4 += 1;
         i_4;
     }
-    let mut i_5: i32 = 0 as i32;
-    while i_5 < 2 as i32 {
+    let mut i_5: i32 = 0_i32;
+    while i_5 < 2_i32 {
         *s.offset(i_5 as isize) = sumf[i_5 as usize] as f32;
         i_5 += 1;
         i_5;
@@ -2148,25 +2148,25 @@ unsafe extern "C" fn ggml_vec_dot_f16_unroll(
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_mad_f32(n: i32, mut y: *mut f32, mut x: *const f32, v: f32) {
-    let np: i32 = n & !(32 as i32 - 1 as i32);
+    let np: i32 = n & !(32_i32 - 1_i32);
     let mut vx: __m256 = _mm256_set1_ps(v);
     let mut ax: [__m256; 4] = [_mm256_setzero_ps(); 4];
     let mut ay: [__m256; 4] = [_mm256_setzero_ps(); 4];
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < np {
-        let mut j: i32 = 0 as i32;
-        while j < 32 as i32 / 8 as i32 {
-            ax[j as usize] = _mm256_loadu_ps(x.offset(i as isize).offset((j * 8 as i32) as isize));
-            ay[j as usize] = _mm256_loadu_ps(y.offset(i as isize).offset((j * 8 as i32) as isize));
+        let mut j: i32 = 0_i32;
+        while j < 32_i32 / 8_i32 {
+            ax[j as usize] = _mm256_loadu_ps(x.offset(i as isize).offset((j * 8_i32) as isize));
+            ay[j as usize] = _mm256_loadu_ps(y.offset(i as isize).offset((j * 8_i32) as isize));
             ay[j as usize] = _mm256_fmadd_ps(ax[j as usize], vx, ay[j as usize]);
             _mm256_storeu_ps(
-                y.offset(i as isize).offset((j * 8 as i32) as isize),
+                y.offset(i as isize).offset((j * 8_i32) as isize),
                 ay[j as usize],
             );
             j += 1;
             j;
         }
-        i += 32 as i32;
+        i += 32_i32;
     }
     let mut i_0: i32 = np;
     while i_0 < n {
@@ -2177,23 +2177,23 @@ unsafe extern "C" fn ggml_vec_mad_f32(n: i32, mut y: *mut f32, mut x: *const f32
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_scale_f32(n: i32, mut y: *mut f32, v: f32) {
-    let np: i32 = n & !(32 as i32 - 1 as i32);
+    let np: i32 = n & !(32_i32 - 1_i32);
     let mut vx: __m256 = _mm256_set1_ps(v);
     let mut ay: [__m256; 4] = [_mm256_setzero_ps(); 4];
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < np {
-        let mut j: i32 = 0 as i32;
-        while j < 32 as i32 / 8 as i32 {
-            ay[j as usize] = _mm256_loadu_ps(y.offset(i as isize).offset((j * 8 as i32) as isize));
+        let mut j: i32 = 0_i32;
+        while j < 32_i32 / 8_i32 {
+            ay[j as usize] = _mm256_loadu_ps(y.offset(i as isize).offset((j * 8_i32) as isize));
             ay[j as usize] = _mm256_mul_ps(ay[j as usize], vx);
             _mm256_storeu_ps(
-                y.offset(i as isize).offset((j * 8 as i32) as isize),
+                y.offset(i as isize).offset((j * 8_i32) as isize),
                 ay[j as usize],
             );
             j += 1;
             j;
         }
-        i += 32 as i32;
+        i += 32_i32;
     }
     let mut i_0: i32 = np;
     while i_0 < n {
@@ -2209,7 +2209,7 @@ unsafe extern "C" fn ggml_vec_norm_f32(n: i32, mut s: *mut f32, mut x: *const f3
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_sqr_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) = *x.offset(i as isize) * *x.offset(i as isize);
         i += 1;
@@ -2218,7 +2218,7 @@ unsafe extern "C" fn ggml_vec_sqr_f32(n: i32, mut y: *mut f32, mut x: *const f32
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_sqrt_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) = sqrtf(*x.offset(i as isize));
         i += 1;
@@ -2227,7 +2227,7 @@ unsafe extern "C" fn ggml_vec_sqrt_f32(n: i32, mut y: *mut f32, mut x: *const f3
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_log_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) = logf(*x.offset(i as isize));
         i += 1;
@@ -2236,7 +2236,7 @@ unsafe extern "C" fn ggml_vec_log_f32(n: i32, mut y: *mut f32, mut x: *const f32
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_abs_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) = fabsf(*x.offset(i as isize));
         i += 1;
@@ -2245,7 +2245,7 @@ unsafe extern "C" fn ggml_vec_abs_f32(n: i32, mut y: *mut f32, mut x: *const f32
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_sgn_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) = if *x.offset(i as isize) > 0.0f32 {
             1.0f32
@@ -2260,7 +2260,7 @@ unsafe extern "C" fn ggml_vec_sgn_f32(n: i32, mut y: *mut f32, mut x: *const f32
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_step_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) = if *x.offset(i as isize) > 0.0f32 {
             1.0f32
@@ -2273,7 +2273,7 @@ unsafe extern "C" fn ggml_vec_step_f32(n: i32, mut y: *mut f32, mut x: *const f3
 }
 #[inline]
 unsafe extern "C" fn ggml_vec_relu_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) = if *x.offset(i as isize) > 0.0f32 {
             *x.offset(i as isize)
@@ -2293,7 +2293,7 @@ unsafe extern "C" fn ggml_gelu_f32(mut x: f32) -> f32 {
 #[inline]
 unsafe extern "C" fn ggml_vec_gelu_f16(n: i32, mut y: *mut ggml_fp16_t, mut x: *const ggml_fp16_t) {
     let mut i16: *const uint16_t = x as *const uint16_t;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         *y.offset(i as isize) = table_gelu_f16[*i16.offset(i as isize) as usize];
         i += 1;
@@ -2303,7 +2303,7 @@ unsafe extern "C" fn ggml_vec_gelu_f16(n: i32, mut y: *mut ggml_fp16_t, mut x: *
 #[inline]
 unsafe extern "C" fn ggml_vec_gelu_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
     let mut t: uint16_t = 0;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         let mut fp16: ggml_fp16_t = {
             ::core::mem::transmute::<
@@ -2312,12 +2312,12 @@ unsafe extern "C" fn ggml_vec_gelu_f32(n: i32, mut y: *mut f32, mut x: *const f3
             >(_mm_cvtps_ph(
                 _mm_setr_ps(
                     *x.offset(i as isize),
-                    0 as i32 as f32,
-                    0 as i32 as f32,
-                    0 as i32 as f32,
+                    0_i32 as f32,
+                    0_i32 as f32,
+                    0_i32 as f32,
                 ),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
         memcpy(
             &mut t as *mut uint16_t as *mut libc::c_void,
@@ -2336,7 +2336,7 @@ unsafe extern "C" fn ggml_silu_f32(mut x: f32) -> f32 {
 #[inline]
 unsafe extern "C" fn ggml_vec_silu_f32(n: i32, mut y: *mut f32, mut x: *const f32) {
     let mut t: uint16_t = 0;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         let mut fp16: ggml_fp16_t = {
             ::core::mem::transmute::<
@@ -2345,12 +2345,12 @@ unsafe extern "C" fn ggml_vec_silu_f32(n: i32, mut y: *mut f32, mut x: *const f3
             >(_mm_cvtps_ph(
                 _mm_setr_ps(
                     *x.offset(i as isize),
-                    0 as i32 as f32,
-                    0 as i32 as f32,
-                    0 as i32 as f32,
+                    0_i32 as f32,
+                    0_i32 as f32,
+                    0_i32 as f32,
                 ),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
         memcpy(
             &mut t as *mut uint16_t as *mut libc::c_void,
@@ -2374,7 +2374,7 @@ unsafe extern "C" fn ggml_vec_silu_backward_f32(
     mut x: *const f32,
     mut dy: *const f32,
 ) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         let mut fp16: ggml_fp16_t = {
             ::core::mem::transmute::<
@@ -2383,12 +2383,12 @@ unsafe extern "C" fn ggml_vec_silu_backward_f32(
             >(_mm_cvtps_ph(
                 _mm_setr_ps(
                     *x.offset(i as isize),
-                    0 as i32 as f32,
-                    0 as i32 as f32,
-                    0 as i32 as f32,
+                    0_i32 as f32,
+                    0_i32 as f32,
+                    0_i32 as f32,
                 ),
-                0 as i32,
-            ))[0 as i32 as usize] as u16
+                0_i32,
+            ))[0_i32 as usize] as u16
         };
         let mut usedx: f32 = ggml_lookup_fp16_to_fp32(fp16);
         *dx.offset(i as isize) = ggml_silu_backward_f32(usedx, *dy.offset(i as isize));
@@ -2399,7 +2399,7 @@ unsafe extern "C" fn ggml_vec_silu_backward_f32(
 #[inline]
 unsafe extern "C" fn ggml_vec_sum_f32(n: i32, mut s: *mut f32, mut x: *const f32) {
     let mut sum: ggml_float = 0.0f64;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         sum += *x.offset(i as isize) as ggml_float;
         i += 1;
@@ -2410,7 +2410,7 @@ unsafe extern "C" fn ggml_vec_sum_f32(n: i32, mut s: *mut f32, mut x: *const f32
 #[inline]
 unsafe extern "C" fn ggml_vec_sum_ggf(n: i32, mut s: *mut ggml_float, mut x: *const f32) {
     let mut sum: ggml_float = 0.0f64;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         sum += *x.offset(i as isize) as ggml_float;
         i += 1;
@@ -2421,7 +2421,7 @@ unsafe extern "C" fn ggml_vec_sum_ggf(n: i32, mut s: *mut ggml_float, mut x: *co
 #[inline]
 unsafe extern "C" fn ggml_vec_max_f32(n: i32, mut s: *mut f32, mut x: *const f32) {
     let mut max: f32 = -::core::f32::INFINITY;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         max = if max > *x.offset(i as isize) {
             max
@@ -2439,8 +2439,8 @@ unsafe extern "C" fn ggml_vec_norm_inv_f32(n: i32, mut s: *mut f32, mut x: *cons
     *s = 1.0f32 / *s;
 }
 static mut GGML_BLCK_SIZE: [i32; 13] = [
-    1 as i32, 1 as i32, 32 as i32, 32 as i32, 0, 0, 32 as i32, 32 as i32, 32 as i32, 32 as i32,
-    1 as i32, 1 as i32, 1 as i32,
+    1_i32, 1_i32, 32_i32, 32_i32, 0, 0, 32_i32, 32_i32, 32_i32, 32_i32,
+    1_i32, 1_i32, 1_i32,
 ];
 static mut GGML_TYPE_SIZE: [size_t; 13] = [
     ::core::mem::size_of::<f32>() as u64,
@@ -2457,141 +2457,141 @@ static mut GGML_TYPE_SIZE: [size_t; 13] = [
     ::core::mem::size_of::<int16_t>() as u64,
     ::core::mem::size_of::<int32_t>() as u64,
 ];
-static mut GGML_TYPE_NAME: [*const libc::c_char; 13] = [
-    b"f32\0" as *const u8 as *const libc::c_char,
-    b"f16\0" as *const u8 as *const libc::c_char,
-    b"q4_0\0" as *const u8 as *const libc::c_char,
-    b"q4_1\0" as *const u8 as *const libc::c_char,
-    0 as *const libc::c_char,
-    0 as *const libc::c_char,
-    b"q5_0\0" as *const u8 as *const libc::c_char,
-    b"q5_1\0" as *const u8 as *const libc::c_char,
-    b"q8_0\0" as *const u8 as *const libc::c_char,
-    b"q8_1\0" as *const u8 as *const libc::c_char,
-    b"i8\0" as *const u8 as *const libc::c_char,
-    b"i16\0" as *const u8 as *const libc::c_char,
-    b"i32\0" as *const u8 as *const libc::c_char,
+static mut GGML_TYPE_NAME: [*const i8; 13] = [
+    b"f32\0" as *const u8 as *const i8,
+    b"f16\0" as *const u8 as *const i8,
+    b"q4_0\0" as *const u8 as *const i8,
+    b"q4_1\0" as *const u8 as *const i8,
+    0 as *const i8,
+    0 as *const i8,
+    b"q5_0\0" as *const u8 as *const i8,
+    b"q5_1\0" as *const u8 as *const i8,
+    b"q8_0\0" as *const u8 as *const i8,
+    b"q8_1\0" as *const u8 as *const i8,
+    b"i8\0" as *const u8 as *const i8,
+    b"i16\0" as *const u8 as *const i8,
+    b"i32\0" as *const u8 as *const i8,
 ];
 static mut GGML_IS_QUANTIZED: [bool; 13] = [
-    0 as i32 != 0,
-    0 as i32 != 0,
-    1 as i32 != 0,
-    1 as i32 != 0,
+    0_i32 != 0,
+    0_i32 != 0,
+    1_i32 != 0,
+    1_i32 != 0,
     false,
     false,
-    1 as i32 != 0,
-    1 as i32 != 0,
-    1 as i32 != 0,
-    1 as i32 != 0,
-    0 as i32 != 0,
-    0 as i32 != 0,
-    0 as i32 != 0,
+    1_i32 != 0,
+    1_i32 != 0,
+    1_i32 != 0,
+    1_i32 != 0,
+    0_i32 != 0,
+    0_i32 != 0,
+    0_i32 != 0,
 ];
-static mut GGML_OP_LABEL: [*const libc::c_char; 51] = [
-    b"NONE\0" as *const u8 as *const libc::c_char,
-    b"DUP\0" as *const u8 as *const libc::c_char,
-    b"ADD\0" as *const u8 as *const libc::c_char,
-    b"ADD1\0" as *const u8 as *const libc::c_char,
-    b"ACC\0" as *const u8 as *const libc::c_char,
-    b"SUB\0" as *const u8 as *const libc::c_char,
-    b"MUL\0" as *const u8 as *const libc::c_char,
-    b"DIV\0" as *const u8 as *const libc::c_char,
-    b"SQR\0" as *const u8 as *const libc::c_char,
-    b"SQRT\0" as *const u8 as *const libc::c_char,
-    b"LOG\0" as *const u8 as *const libc::c_char,
-    b"SUM\0" as *const u8 as *const libc::c_char,
-    b"SUM_ROWS\0" as *const u8 as *const libc::c_char,
-    b"MEAN\0" as *const u8 as *const libc::c_char,
-    b"REPEAT\0" as *const u8 as *const libc::c_char,
-    b"ABS\0" as *const u8 as *const libc::c_char,
-    b"SGN\0" as *const u8 as *const libc::c_char,
-    b"NEG\0" as *const u8 as *const libc::c_char,
-    b"STEP\0" as *const u8 as *const libc::c_char,
-    b"RELU\0" as *const u8 as *const libc::c_char,
-    b"GELU\0" as *const u8 as *const libc::c_char,
-    b"SILU\0" as *const u8 as *const libc::c_char,
-    b"SILU_BACK\0" as *const u8 as *const libc::c_char,
-    b"NORM\0" as *const u8 as *const libc::c_char,
-    b"RMS_NORM\0" as *const u8 as *const libc::c_char,
-    b"RMS_NORM_BACK\0" as *const u8 as *const libc::c_char,
-    b"MUL_MAT\0" as *const u8 as *const libc::c_char,
-    b"SCALE\0" as *const u8 as *const libc::c_char,
-    b"SET\0" as *const u8 as *const libc::c_char,
-    b"CPY\0" as *const u8 as *const libc::c_char,
-    b"CONT\0" as *const u8 as *const libc::c_char,
-    b"RESHAPE\0" as *const u8 as *const libc::c_char,
-    b"VIEW\0" as *const u8 as *const libc::c_char,
-    b"PERMUTE\0" as *const u8 as *const libc::c_char,
-    b"TRANSPOSE\0" as *const u8 as *const libc::c_char,
-    b"GET_ROWS\0" as *const u8 as *const libc::c_char,
-    b"GET_ROWS_BACK\0" as *const u8 as *const libc::c_char,
-    b"DIAG\0" as *const u8 as *const libc::c_char,
-    b"DIAG_MASK_INF\0" as *const u8 as *const libc::c_char,
-    b"DIAG_MASK_ZERO\0" as *const u8 as *const libc::c_char,
-    b"SOFT_MAX\0" as *const u8 as *const libc::c_char,
-    b"ROPE\0" as *const u8 as *const libc::c_char,
-    b"ROPE_BACK\0" as *const u8 as *const libc::c_char,
-    b"ALIBI\0" as *const u8 as *const libc::c_char,
-    b"CLAMP\0" as *const u8 as *const libc::c_char,
-    b"CONV_1D_1S\0" as *const u8 as *const libc::c_char,
-    b"CONV_1D_2S\0" as *const u8 as *const libc::c_char,
-    b"FLASH_ATTN\0" as *const u8 as *const libc::c_char,
-    b"FLASH_FF\0" as *const u8 as *const libc::c_char,
-    b"MAP_UNARY\0" as *const u8 as *const libc::c_char,
-    b"MAP_BINARY\0" as *const u8 as *const libc::c_char,
+static mut GGML_OP_LABEL: [*const i8; 51] = [
+    b"NONE\0" as *const u8 as *const i8,
+    b"DUP\0" as *const u8 as *const i8,
+    b"ADD\0" as *const u8 as *const i8,
+    b"ADD1\0" as *const u8 as *const i8,
+    b"ACC\0" as *const u8 as *const i8,
+    b"SUB\0" as *const u8 as *const i8,
+    b"MUL\0" as *const u8 as *const i8,
+    b"DIV\0" as *const u8 as *const i8,
+    b"SQR\0" as *const u8 as *const i8,
+    b"SQRT\0" as *const u8 as *const i8,
+    b"LOG\0" as *const u8 as *const i8,
+    b"SUM\0" as *const u8 as *const i8,
+    b"SUM_ROWS\0" as *const u8 as *const i8,
+    b"MEAN\0" as *const u8 as *const i8,
+    b"REPEAT\0" as *const u8 as *const i8,
+    b"ABS\0" as *const u8 as *const i8,
+    b"SGN\0" as *const u8 as *const i8,
+    b"NEG\0" as *const u8 as *const i8,
+    b"STEP\0" as *const u8 as *const i8,
+    b"RELU\0" as *const u8 as *const i8,
+    b"GELU\0" as *const u8 as *const i8,
+    b"SILU\0" as *const u8 as *const i8,
+    b"SILU_BACK\0" as *const u8 as *const i8,
+    b"NORM\0" as *const u8 as *const i8,
+    b"RMS_NORM\0" as *const u8 as *const i8,
+    b"RMS_NORM_BACK\0" as *const u8 as *const i8,
+    b"MUL_MAT\0" as *const u8 as *const i8,
+    b"SCALE\0" as *const u8 as *const i8,
+    b"SET\0" as *const u8 as *const i8,
+    b"CPY\0" as *const u8 as *const i8,
+    b"CONT\0" as *const u8 as *const i8,
+    b"RESHAPE\0" as *const u8 as *const i8,
+    b"VIEW\0" as *const u8 as *const i8,
+    b"PERMUTE\0" as *const u8 as *const i8,
+    b"TRANSPOSE\0" as *const u8 as *const i8,
+    b"GET_ROWS\0" as *const u8 as *const i8,
+    b"GET_ROWS_BACK\0" as *const u8 as *const i8,
+    b"DIAG\0" as *const u8 as *const i8,
+    b"DIAG_MASK_INF\0" as *const u8 as *const i8,
+    b"DIAG_MASK_ZERO\0" as *const u8 as *const i8,
+    b"SOFT_MAX\0" as *const u8 as *const i8,
+    b"ROPE\0" as *const u8 as *const i8,
+    b"ROPE_BACK\0" as *const u8 as *const i8,
+    b"ALIBI\0" as *const u8 as *const i8,
+    b"CLAMP\0" as *const u8 as *const i8,
+    b"CONV_1D_1S\0" as *const u8 as *const i8,
+    b"CONV_1D_2S\0" as *const u8 as *const i8,
+    b"FLASH_ATTN\0" as *const u8 as *const i8,
+    b"FLASH_FF\0" as *const u8 as *const i8,
+    b"MAP_UNARY\0" as *const u8 as *const i8,
+    b"MAP_BINARY\0" as *const u8 as *const i8,
 ];
-static mut GGML_OP_SYMBOL: [*const libc::c_char; 51] = [
-    b"none\0" as *const u8 as *const libc::c_char,
-    b"x\0" as *const u8 as *const libc::c_char,
-    b"x+y\0" as *const u8 as *const libc::c_char,
-    b"x+y\0" as *const u8 as *const libc::c_char,
-    b"view(x,nb,offset)+=y->x\0" as *const u8 as *const libc::c_char,
-    b"x-y\0" as *const u8 as *const libc::c_char,
-    b"x*y\0" as *const u8 as *const libc::c_char,
-    b"x/y\0" as *const u8 as *const libc::c_char,
-    b"x^2\0" as *const u8 as *const libc::c_char,
-    b"\xE2\x88\x9Ax\0" as *const u8 as *const libc::c_char,
-    b"log(x)\0" as *const u8 as *const libc::c_char,
-    b"\xCE\xA3x\0" as *const u8 as *const libc::c_char,
-    b"\xCE\xA3x_k\0" as *const u8 as *const libc::c_char,
-    b"\xCE\xA3x/n\0" as *const u8 as *const libc::c_char,
-    b"repeat(x)\0" as *const u8 as *const libc::c_char,
-    b"abs(x)\0" as *const u8 as *const libc::c_char,
-    b"sgn(x)\0" as *const u8 as *const libc::c_char,
-    b"-x\0" as *const u8 as *const libc::c_char,
-    b"step(x)\0" as *const u8 as *const libc::c_char,
-    b"relu(x)\0" as *const u8 as *const libc::c_char,
-    b"gelu(x)\0" as *const u8 as *const libc::c_char,
-    b"silu(x)\0" as *const u8 as *const libc::c_char,
-    b"silu_back(x)\0" as *const u8 as *const libc::c_char,
-    b"norm(x)\0" as *const u8 as *const libc::c_char,
-    b"rms_norm(x)\0" as *const u8 as *const libc::c_char,
-    b"rms_norm_back(x)\0" as *const u8 as *const libc::c_char,
-    b"X*Y\0" as *const u8 as *const libc::c_char,
-    b"x*v\0" as *const u8 as *const libc::c_char,
-    b"y-\\>view(x)\0" as *const u8 as *const libc::c_char,
-    b"x-\\>y\0" as *const u8 as *const libc::c_char,
-    b"cont(x)\0" as *const u8 as *const libc::c_char,
-    b"reshape(x)\0" as *const u8 as *const libc::c_char,
-    b"view(x)\0" as *const u8 as *const libc::c_char,
-    b"permute(x)\0" as *const u8 as *const libc::c_char,
-    b"transpose(x)\0" as *const u8 as *const libc::c_char,
-    b"get_rows(x)\0" as *const u8 as *const libc::c_char,
-    b"get_rows_back(x)\0" as *const u8 as *const libc::c_char,
-    b"diag(x)\0" as *const u8 as *const libc::c_char,
-    b"diag_mask_inf(x)\0" as *const u8 as *const libc::c_char,
-    b"diag_mask_zero(x)\0" as *const u8 as *const libc::c_char,
-    b"soft_max(x)\0" as *const u8 as *const libc::c_char,
-    b"rope(x)\0" as *const u8 as *const libc::c_char,
-    b"rope_back(x)\0" as *const u8 as *const libc::c_char,
-    b"alibi(x)\0" as *const u8 as *const libc::c_char,
-    b"clamp(x)\0" as *const u8 as *const libc::c_char,
-    b"conv_1d_1s(x)\0" as *const u8 as *const libc::c_char,
-    b"conv_1d_2s(x)\0" as *const u8 as *const libc::c_char,
-    b"flash_attn(x)\0" as *const u8 as *const libc::c_char,
-    b"flash_ff(x)\0" as *const u8 as *const libc::c_char,
-    b"f(x)\0" as *const u8 as *const libc::c_char,
-    b"f(x,y)\0" as *const u8 as *const libc::c_char,
+static mut GGML_OP_SYMBOL: [*const i8; 51] = [
+    b"none\0" as *const u8 as *const i8,
+    b"x\0" as *const u8 as *const i8,
+    b"x+y\0" as *const u8 as *const i8,
+    b"x+y\0" as *const u8 as *const i8,
+    b"view(x,nb,offset)+=y->x\0" as *const u8 as *const i8,
+    b"x-y\0" as *const u8 as *const i8,
+    b"x*y\0" as *const u8 as *const i8,
+    b"x/y\0" as *const u8 as *const i8,
+    b"x^2\0" as *const u8 as *const i8,
+    b"\xE2\x88\x9Ax\0" as *const u8 as *const i8,
+    b"log(x)\0" as *const u8 as *const i8,
+    b"\xCE\xA3x\0" as *const u8 as *const i8,
+    b"\xCE\xA3x_k\0" as *const u8 as *const i8,
+    b"\xCE\xA3x/n\0" as *const u8 as *const i8,
+    b"repeat(x)\0" as *const u8 as *const i8,
+    b"abs(x)\0" as *const u8 as *const i8,
+    b"sgn(x)\0" as *const u8 as *const i8,
+    b"-x\0" as *const u8 as *const i8,
+    b"step(x)\0" as *const u8 as *const i8,
+    b"relu(x)\0" as *const u8 as *const i8,
+    b"gelu(x)\0" as *const u8 as *const i8,
+    b"silu(x)\0" as *const u8 as *const i8,
+    b"silu_back(x)\0" as *const u8 as *const i8,
+    b"norm(x)\0" as *const u8 as *const i8,
+    b"rms_norm(x)\0" as *const u8 as *const i8,
+    b"rms_norm_back(x)\0" as *const u8 as *const i8,
+    b"X*Y\0" as *const u8 as *const i8,
+    b"x*v\0" as *const u8 as *const i8,
+    b"y-\\>view(x)\0" as *const u8 as *const i8,
+    b"x-\\>y\0" as *const u8 as *const i8,
+    b"cont(x)\0" as *const u8 as *const i8,
+    b"reshape(x)\0" as *const u8 as *const i8,
+    b"view(x)\0" as *const u8 as *const i8,
+    b"permute(x)\0" as *const u8 as *const i8,
+    b"transpose(x)\0" as *const u8 as *const i8,
+    b"get_rows(x)\0" as *const u8 as *const i8,
+    b"get_rows_back(x)\0" as *const u8 as *const i8,
+    b"diag(x)\0" as *const u8 as *const i8,
+    b"diag_mask_inf(x)\0" as *const u8 as *const i8,
+    b"diag_mask_zero(x)\0" as *const u8 as *const i8,
+    b"soft_max(x)\0" as *const u8 as *const i8,
+    b"rope(x)\0" as *const u8 as *const i8,
+    b"rope_back(x)\0" as *const u8 as *const i8,
+    b"alibi(x)\0" as *const u8 as *const i8,
+    b"clamp(x)\0" as *const u8 as *const i8,
+    b"conv_1d_1s(x)\0" as *const u8 as *const i8,
+    b"conv_1d_2s(x)\0" as *const u8 as *const i8,
+    b"flash_attn(x)\0" as *const u8 as *const i8,
+    b"flash_ff(x)\0" as *const u8 as *const i8,
+    b"f(x)\0" as *const u8 as *const i8,
+    b"f(x,y)\0" as *const u8 as *const i8,
 ];
 static mut g_state: ggml_state = ggml_state {
     contexts: [ggml_context_container {
@@ -2617,25 +2617,24 @@ static mut g_state: ggml_state = ggml_state {
         },
     }; 64],
 };
-static mut g_state_barrier: i32 = 0 as i32;
+static mut g_state_barrier: i32 = 0_i32;
 #[inline]
 unsafe extern "C" fn ggml_critical_section_start() {
-    let mut processing: i32 = atomic_fetch_add(&mut g_state_barrier, 1 as i32);
-    while processing > 0 as i32 {
-        atomic_fetch_sub(&mut g_state_barrier, 1 as i32);
+    let mut processing: i32 = atomic_fetch_add(&mut g_state_barrier, 1_i32);
+    while processing > 0_i32 {
+        atomic_fetch_sub(&mut g_state_barrier, 1_i32);
         sched_yield();
-        processing = atomic_fetch_add(&mut g_state_barrier, 1 as i32);
+        processing = atomic_fetch_add(&mut g_state_barrier, 1_i32);
     }
 }
 #[inline]
 unsafe extern "C" fn ggml_critical_section_end() {
-    atomic_fetch_sub(&mut g_state_barrier, 1 as i32);
+    atomic_fetch_sub(&mut g_state_barrier, 1_i32);
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_print_object(mut obj: *const ggml_object) {
     printf(
-        b" - ggml_object: offset = %zu, size = %zu, next = %p\n\0" as *const u8
-            as *const libc::c_char,
+        b" - ggml_object: offset = %zu, size = %zu, next = %p\n\0" as *const u8 as *const i8,
         (*obj).offs,
         (*obj).size,
         (*obj).next as *const libc::c_void,
@@ -2645,9 +2644,8 @@ pub unsafe extern "C" fn ggml_print_object(mut obj: *const ggml_object) {
 pub unsafe extern "C" fn ggml_print_objects(mut ctx: *const ggml_context) {
     let mut obj: *mut ggml_object = (*ctx).objects_begin;
     printf(
-        b"%s: objects in context %p:\n\0" as *const u8 as *const libc::c_char,
-        (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"ggml_print_objects\0"))
-            .as_ptr(),
+        b"%s: objects in context %p:\n\0" as *const u8 as *const i8,
+        (*::core::mem::transmute::<&[u8; 19], &[i8; 19]>(b"ggml_print_objects\0")).as_ptr(),
         ctx as *const libc::c_void,
     );
     while !obj.is_null() {
@@ -2655,23 +2653,22 @@ pub unsafe extern "C" fn ggml_print_objects(mut ctx: *const ggml_context) {
         obj = (*obj).next;
     }
     printf(
-        b"%s: --- end ---\n\0" as *const u8 as *const libc::c_char,
-        (*::core::mem::transmute::<&[u8; 19], &[libc::c_char; 19]>(b"ggml_print_objects\0"))
-            .as_ptr(),
+        b"%s: --- end ---\n\0" as *const u8 as *const i8,
+        (*::core::mem::transmute::<&[u8; 19], &[i8; 19]>(b"ggml_print_objects\0")).as_ptr(),
     );
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_nelements(mut tensor: *const ggml_tensor) -> int64_t {
-    (*tensor).ne[0 as i32 as usize]
-        * (*tensor).ne[1 as i32 as usize]
-        * (*tensor).ne[2 as i32 as usize]
-        * (*tensor).ne[3 as i32 as usize]
+    (*tensor).ne[0_i32 as usize]
+        * (*tensor).ne[1_i32 as usize]
+        * (*tensor).ne[2_i32 as usize]
+        * (*tensor).ne[3_i32 as usize]
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_nrows(mut tensor: *const ggml_tensor) -> i32 {
-    ((*tensor).ne[1 as i32 as usize]
-        * (*tensor).ne[2 as i32 as usize]
-        * (*tensor).ne[3 as i32 as usize]) as i32
+    ((*tensor).ne[1_i32 as usize]
+        * (*tensor).ne[2_i32 as usize]
+        * (*tensor).ne[3_i32 as usize]) as i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_nbytes(mut tensor: *const ggml_tensor) -> size_t {
@@ -2692,7 +2689,7 @@ pub unsafe extern "C" fn ggml_type_sizef(mut type_0: ggml_type) -> f32 {
     GGML_TYPE_SIZE[type_0 as usize] as f32 / GGML_BLCK_SIZE[type_0 as usize] as f32
 }
 #[no_mangle]
-pub unsafe extern "C" fn ggml_type_name(mut type_0: ggml_type) -> *const libc::c_char {
+pub unsafe extern "C" fn ggml_type_name(mut type_0: ggml_type) -> *const i8 {
     GGML_TYPE_NAME[type_0 as usize]
 }
 #[no_mangle]
@@ -2701,30 +2698,30 @@ pub unsafe extern "C" fn ggml_element_size(mut tensor: *const ggml_tensor) -> si
 }
 #[inline]
 unsafe extern "C" fn ggml_is_scalar(mut tensor: *const ggml_tensor) -> bool {
-    (*tensor).ne[0 as i32 as usize] == 1 as i32 as i64
-        && (*tensor).ne[1 as i32 as usize] == 1 as i32 as i64
-        && (*tensor).ne[2 as i32 as usize] == 1 as i32 as i64
-        && (*tensor).ne[3 as i32 as usize] == 1 as i32 as i64
+    (*tensor).ne[0_i32 as usize] == 1_i32 as i64
+        && (*tensor).ne[1_i32 as usize] == 1_i32 as i64
+        && (*tensor).ne[2_i32 as usize] == 1_i32 as i64
+        && (*tensor).ne[3_i32 as usize] == 1_i32 as i64
 }
 #[inline]
 unsafe extern "C" fn ggml_is_vector(mut tensor: *const ggml_tensor) -> bool {
-    (*tensor).ne[1 as i32 as usize] == 1 as i32 as i64
-        && (*tensor).ne[2 as i32 as usize] == 1 as i32 as i64
-        && (*tensor).ne[3 as i32 as usize] == 1 as i32 as i64
+    (*tensor).ne[1_i32 as usize] == 1_i32 as i64
+        && (*tensor).ne[2_i32 as usize] == 1_i32 as i64
+        && (*tensor).ne[3_i32 as usize] == 1_i32 as i64
 }
 #[inline]
 unsafe extern "C" fn ggml_is_matrix(mut tensor: *const ggml_tensor) -> bool {
-    (*tensor).ne[2 as i32 as usize] == 1 as i32 as i64
-        && (*tensor).ne[3 as i32 as usize] == 1 as i32 as i64
+    (*tensor).ne[2_i32 as usize] == 1_i32 as i64
+        && (*tensor).ne[3_i32 as usize] == 1_i32 as i64
 }
 #[inline]
 unsafe extern "C" fn ggml_can_mul_mat(
     mut t0: *const ggml_tensor,
     mut t1: *const ggml_tensor,
 ) -> bool {
-    (*t0).ne[0 as i32 as usize] == (*t1).ne[0 as i32 as usize]
-        && (*t0).ne[2 as i32 as usize] == (*t1).ne[2 as i32 as usize]
-        && (*t0).ne[3 as i32 as usize] == (*t1).ne[3 as i32 as usize]
+    (*t0).ne[0_i32 as usize] == (*t1).ne[0_i32 as usize]
+        && (*t0).ne[2_i32 as usize] == (*t1).ne[2_i32 as usize]
+        && (*t0).ne[3_i32 as usize] == (*t1).ne[3_i32 as usize]
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_is_quantized(mut type_0: ggml_type) -> bool {
@@ -2766,10 +2763,10 @@ pub unsafe extern "C" fn ggml_ftype_to_ggml_type(mut ftype: ggml_ftype) -> ggml_
     if wtype as u32 == GGML_TYPE_COUNT as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            3759 as i32,
-            b"wtype != GGML_TYPE_COUNT\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            3759_i32,
+            b"wtype != GGML_TYPE_COUNT\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -2777,88 +2774,88 @@ pub unsafe extern "C" fn ggml_ftype_to_ggml_type(mut ftype: ggml_ftype) -> ggml_
 }
 #[inline]
 unsafe extern "C" fn ggml_is_transposed(mut tensor: *const ggml_tensor) -> bool {
-    (*tensor).nb[0 as i32 as usize] > (*tensor).nb[1 as i32 as usize]
+    (*tensor).nb[0_i32 as usize] > (*tensor).nb[1_i32 as usize]
 }
 #[inline]
 unsafe extern "C" fn ggml_is_contiguous(mut tensor: *const ggml_tensor) -> bool {
-    (*tensor).nb[0 as i32 as usize] == GGML_TYPE_SIZE[(*tensor).type_0 as usize]
-        && (*tensor).nb[1 as i32 as usize]
-            == ((*tensor).nb[0 as i32 as usize])
-                .wrapping_mul((*tensor).ne[0 as i32 as usize] as u64)
+    (*tensor).nb[0_i32 as usize] == GGML_TYPE_SIZE[(*tensor).type_0 as usize]
+        && (*tensor).nb[1_i32 as usize]
+            == ((*tensor).nb[0_i32 as usize])
+                .wrapping_mul((*tensor).ne[0_i32 as usize] as u64)
                 .wrapping_div(GGML_BLCK_SIZE[(*tensor).type_0 as usize] as u64)
-        && (*tensor).nb[2 as i32 as usize]
-            == ((*tensor).nb[1 as i32 as usize])
-                .wrapping_mul((*tensor).ne[1 as i32 as usize] as u64)
-        && (*tensor).nb[3 as i32 as usize]
-            == ((*tensor).nb[2 as i32 as usize])
-                .wrapping_mul((*tensor).ne[2 as i32 as usize] as u64)
+        && (*tensor).nb[2_i32 as usize]
+            == ((*tensor).nb[1_i32 as usize])
+                .wrapping_mul((*tensor).ne[1_i32 as usize] as u64)
+        && (*tensor).nb[3_i32 as usize]
+            == ((*tensor).nb[2_i32 as usize])
+                .wrapping_mul((*tensor).ne[2_i32 as usize] as u64)
 }
 #[inline]
 unsafe extern "C" fn ggml_is_padded_1d(mut tensor: *const ggml_tensor) -> bool {
-    (*tensor).nb[0 as i32 as usize] == GGML_TYPE_SIZE[(*tensor).type_0 as usize]
-        && (*tensor).nb[2 as i32 as usize]
-            == ((*tensor).nb[1 as i32 as usize])
-                .wrapping_mul((*tensor).ne[1 as i32 as usize] as u64)
-        && (*tensor).nb[3 as i32 as usize]
-            == ((*tensor).nb[2 as i32 as usize])
-                .wrapping_mul((*tensor).ne[2 as i32 as usize] as u64)
+    (*tensor).nb[0_i32 as usize] == GGML_TYPE_SIZE[(*tensor).type_0 as usize]
+        && (*tensor).nb[2_i32 as usize]
+            == ((*tensor).nb[1_i32 as usize])
+                .wrapping_mul((*tensor).ne[1_i32 as usize] as u64)
+        && (*tensor).nb[3_i32 as usize]
+            == ((*tensor).nb[2_i32 as usize])
+                .wrapping_mul((*tensor).ne[2_i32 as usize] as u64)
 }
 #[inline]
 unsafe extern "C" fn ggml_are_same_shape(
     mut t0: *const ggml_tensor,
     mut t1: *const ggml_tensor,
 ) -> bool {
-    (*t0).ne[0 as i32 as usize] == (*t1).ne[0 as i32 as usize]
-        && (*t0).ne[1 as i32 as usize] == (*t1).ne[1 as i32 as usize]
-        && (*t0).ne[2 as i32 as usize] == (*t1).ne[2 as i32 as usize]
-        && (*t0).ne[3 as i32 as usize] == (*t1).ne[3 as i32 as usize]
+    (*t0).ne[0_i32 as usize] == (*t1).ne[0_i32 as usize]
+        && (*t0).ne[1_i32 as usize] == (*t1).ne[1_i32 as usize]
+        && (*t0).ne[2_i32 as usize] == (*t1).ne[2_i32 as usize]
+        && (*t0).ne[3_i32 as usize] == (*t1).ne[3_i32 as usize]
 }
 #[inline]
 unsafe extern "C" fn ggml_can_repeat(
     mut t0: *const ggml_tensor,
     mut t1: *const ggml_tensor,
 ) -> bool {
-    (*t1).ne[0 as i32 as usize] % (*t0).ne[0 as i32 as usize] == 0 as i32 as i64
-        && (*t1).ne[1 as i32 as usize] % (*t0).ne[1 as i32 as usize] == 0 as i32 as i64
-        && (*t1).ne[2 as i32 as usize] % (*t0).ne[2 as i32 as usize] == 0 as i32 as i64
-        && (*t1).ne[3 as i32 as usize] % (*t0).ne[3 as i32 as usize] == 0 as i32 as i64
+    (*t1).ne[0_i32 as usize] % (*t0).ne[0_i32 as usize] == 0_i32 as i64
+        && (*t1).ne[1_i32 as usize] % (*t0).ne[1_i32 as usize] == 0_i32 as i64
+        && (*t1).ne[2_i32 as usize] % (*t0).ne[2_i32 as usize] == 0_i32 as i64
+        && (*t1).ne[3_i32 as usize] % (*t0).ne[3_i32 as usize] == 0_i32 as i64
 }
 #[inline]
 unsafe extern "C" fn ggml_can_repeat_rows(
     mut t0: *const ggml_tensor,
     mut t1: *const ggml_tensor,
 ) -> bool {
-    (*t0).ne[0 as i32 as usize] == (*t1).ne[0 as i32 as usize]
+    (*t0).ne[0_i32 as usize] == (*t1).ne[0_i32 as usize]
         && ggml_can_repeat(t0, t1) as i32 != 0
 }
 #[inline]
 unsafe extern "C" fn ggml_up32(mut n: i32) -> i32 {
-    (n + 31 as i32) & !(31 as i32)
+    (n + 31_i32) & !31_i32
 }
 #[inline]
 unsafe extern "C" fn ggml_up(mut n: i32, mut m: i32) -> i32 {
-    if m & (m - 1 as i32) != 0 as i32 {
+    if m & (m - 1_i32) != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            3824 as i32,
-            b"(m & (m - 1)) == 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            3824_i32,
+            b"(m & (m - 1)) == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
-    (n + m - 1 as i32) & !(m - 1 as i32)
+    (n + m - 1_i32) & !(m - 1_i32)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_context {
     ggml_critical_section_start();
-    static mut is_first_call: bool = 1 as i32 != 0;
+    static mut is_first_call: bool = 1_i32 != 0;
     if is_first_call {
         ggml_time_init();
         let _t_start: uint64_t = ggml_time_us() as uint64_t;
         let mut ii: ggml_fp16_t = 0;
-        let mut i: i32 = 0 as i32;
-        while i < (1 as i32) << 16 as i32 {
+        let mut i: i32 = 0_i32;
+        while i < 1_i32 << 16_i32 {
             let mut ui: uint16_t = i as uint16_t;
             memcpy(
                 &mut ii as *mut ggml_fp16_t as *mut libc::c_void,
@@ -2874,12 +2871,12 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         ggml_gelu_f32(f),
-                        0 as i32 as f32,
-                        0 as i32 as f32,
-                        0 as i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
                     ),
-                    0 as i32,
-                ))[0 as i32 as usize] as u16
+                    0_i32,
+                ))[0_i32 as usize] as u16
             };
             table_silu_f16[i as usize] = {
                 ::core::mem::transmute::<
@@ -2888,21 +2885,21 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         ggml_silu_f32(f),
-                        0 as i32 as f32,
-                        0 as i32 as f32,
-                        0 as i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
                     ),
-                    0 as i32,
-                ))[0 as i32 as usize] as u16
+                    0_i32,
+                ))[0_i32 as usize] as u16
             };
             table_exp_f16[i as usize] = {
                 ::core::mem::transmute::<
                     _,
                     [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
-                    _mm_setr_ps(expf(f), 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-                    0 as i32,
-                ))[0 as i32 as usize] as u16
+                    _mm_setr_ps(expf(f), 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+                    0_i32,
+                ))[0_i32 as usize] as u16
             };
             i += 1;
             i;
@@ -2914,7 +2911,7 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
                 contexts: [
                     {
                         ggml_context_container {
-                            used: 0 as i32 != 0,
+                            used: 0_i32 != 0,
                             context: ggml_context {
                                 mem_size: 0,
                                 mem_buffer: std::ptr::null::<libc::c_void>() as *mut libc::c_void,
@@ -4325,20 +4322,20 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
                 ],
             }
         };
-        let mut i_0: i32 = 0 as i32;
-        while i_0 < 64 as i32 {
-            g_state.contexts[i_0 as usize].used = 0 as i32 != 0;
+        let mut i_0: i32 = 0_i32;
+        while i_0 < 64_i32 {
+            g_state.contexts[i_0 as usize].used = 0_i32 != 0;
             i_0 += 1;
             i_0;
         }
         let _t_end_0: uint64_t = ggml_time_us() as uint64_t;
-        is_first_call = 0 as i32 != 0;
+        is_first_call = 0_i32 != 0;
     }
     let mut ctx: *mut ggml_context = std::ptr::null_mut::<ggml_context>();
-    let mut i_1: i32 = 0 as i32;
-    while i_1 < 64 as i32 {
+    let mut i_1: i32 = 0_i32;
+    while i_1 < 64_i32 {
         if !g_state.contexts[i_1 as usize].used {
-            g_state.contexts[i_1 as usize].used = 1 as i32 != 0;
+            g_state.contexts[i_1 as usize].used = 1_i32 != 0;
             ctx = &mut (*(g_state.contexts).as_mut_ptr().offset(i_1 as isize)).context;
             break;
         } else {
@@ -4351,9 +4348,9 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
         return std::ptr::null_mut::<ggml_context>();
     }
     let mem_size: size_t = (params.mem_size)
-        .wrapping_add(16 as i32 as u64)
-        .wrapping_sub(1 as i32 as u64)
-        & !(16 as i32 - 1 as i32) as u64;
+        .wrapping_add(16_i32 as u64)
+        .wrapping_sub(1_i32 as u64)
+        & !(16_i32 - 1_i32) as u64;
     *ctx = {
         ggml_context {
             mem_size,
@@ -4363,25 +4360,25 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
                 ggml_aligned_malloc(mem_size)
             },
             mem_buffer_owned: if !(params.mem_buffer).is_null() {
-                0 as i32
+                0_i32
             } else {
-                1 as i32
+                1_i32
             } != 0,
             no_alloc: params.no_alloc,
-            n_objects: 0 as i32,
+            n_objects: 0_i32,
             objects_begin: std::ptr::null_mut::<ggml_object>(),
             objects_end: std::ptr::null_mut::<ggml_object>(),
             scratch: {
                 ggml_scratch {
-                    offs: 0 as i32 as size_t,
-                    size: 0 as i32 as size_t,
+                    offs: 0_i32 as size_t,
+                    size: 0_i32 as size_t,
                     data: std::ptr::null_mut::<libc::c_void>(),
                 }
             },
             scratch_save: {
                 ggml_scratch {
-                    offs: 0 as i32 as size_t,
-                    size: 0 as i32 as size_t,
+                    offs: 0_i32 as size_t,
+                    size: 0_i32 as size_t,
                     data: std::ptr::null_mut::<libc::c_void>(),
                 }
             },
@@ -4390,21 +4387,20 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
     if ((*ctx).mem_buffer).is_null() {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            3924 as i32,
-            b"ctx->mem_buffer != NULL\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            3924_i32,
+            b"ctx->mem_buffer != NULL\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if ((*ctx).mem_buffer as uintptr_t).wrapping_rem(16 as i32 as u64) != 0 as i32 as u64 {
+    if ((*ctx).mem_buffer as uintptr_t).wrapping_rem(16_i32 as u64) != 0_i32 as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            3926 as i32,
-            b"((uintptr_t) (ctx->mem_buffer))%GGML_MEM_ALIGN == 0\0" as *const u8
-                as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            3926_i32,
+            b"((uintptr_t) (ctx->mem_buffer))%GGML_MEM_ALIGN == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -4414,17 +4410,17 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
 #[no_mangle]
 pub unsafe extern "C" fn ggml_free(mut ctx: *mut ggml_context) {
     ggml_critical_section_start();
-    let mut found: bool = 0 as i32 != 0;
-    let mut i: i32 = 0 as i32;
-    while i < 64 as i32 {
+    let mut found: bool = 0_i32 != 0;
+    let mut i: i32 = 0_i32;
+    while i < 64_i32 {
         if &mut (*(g_state.contexts).as_mut_ptr().offset(i as isize)).context as *mut ggml_context
             == ctx
         {
-            g_state.contexts[i as usize].used = 0 as i32 != 0;
+            g_state.contexts[i as usize].used = 0_i32 != 0;
             if (*ctx).mem_buffer_owned {
                 free((*ctx).mem_buffer);
             }
-            found = 1 as i32 != 0;
+            found = 1_i32 != 0;
             break;
         } else {
             i += 1;
@@ -4437,7 +4433,7 @@ pub unsafe extern "C" fn ggml_free(mut ctx: *mut ggml_context) {
 #[no_mangle]
 pub unsafe extern "C" fn ggml_used_mem(mut ctx: *const ggml_context) -> size_t {
     if ((*ctx).objects_end).is_null() {
-        0 as i32 as u64
+        0_i32 as u64
     } else {
         ((*(*ctx).objects_end).offs).wrapping_add((*(*ctx).objects_end).size)
     }
@@ -4450,7 +4446,7 @@ pub unsafe extern "C" fn ggml_set_scratch(
     let result: size_t = if !((*ctx).scratch.data).is_null() {
         (*ctx).scratch.offs
     } else {
-        0 as i32 as u64
+        0_i32 as u64
     };
     (*ctx).scratch = scratch;
     result
@@ -4474,23 +4470,23 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
 ) -> *mut ggml_tensor {
     let mut obj_cur: *mut ggml_object = (*ctx).objects_end;
     let cur_offs: size_t = if obj_cur.is_null() {
-        0 as i32 as u64
+        0_i32 as u64
     } else {
         (*obj_cur).offs
     };
     let cur_size: size_t = if obj_cur.is_null() {
-        0 as i32 as u64
+        0_i32 as u64
     } else {
         (*obj_cur).size
     };
     let cur_end: size_t = cur_offs.wrapping_add(cur_size);
-    let mut size_needed: size_t = 0 as i32 as size_t;
+    let mut size_needed: size_t = 0_i32 as size_t;
     if data.is_null() && !(*ctx).no_alloc {
         size_needed =
             (size_needed as u64).wrapping_add((GGML_TYPE_SIZE[type_0 as usize]).wrapping_mul(
-                (*ne.offset(0 as i32 as isize) / GGML_BLCK_SIZE[type_0 as usize] as i64) as u64,
+                (*ne.offset(0_i32 as isize) / GGML_BLCK_SIZE[type_0 as usize] as i64) as u64,
             )) as size_t as size_t;
-        let mut i: i32 = 1 as i32;
+        let mut i: i32 = 1_i32;
         while i < n_dims {
             size_needed = (size_needed as u64).wrapping_mul(*ne.offset(i as isize) as u64) as size_t
                 as size_t;
@@ -4498,12 +4494,12 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
             i;
         }
         size_needed = size_needed
-            .wrapping_add(16 as i32 as u64)
-            .wrapping_sub(1 as i32 as u64)
-            .wrapping_div(16 as i32 as u64)
-            .wrapping_mul(16 as i32 as u64);
+            .wrapping_add(16_i32 as u64)
+            .wrapping_sub(1_i32 as u64)
+            .wrapping_div(16_i32 as u64)
+            .wrapping_mul(16_i32 as u64);
     }
-    let mem_buffer: *mut libc::c_char = (*ctx).mem_buffer as *mut libc::c_char;
+    let mem_buffer: *mut i8 = (*ctx).mem_buffer as *mut i8;
     let obj_new: *mut ggml_object = mem_buffer.offset(cur_end as isize) as *mut ggml_object;
     if ((*ctx).scratch.data).is_null() || !data.is_null() {
         size_needed = (size_needed as u64)
@@ -4516,11 +4512,9 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
         {
             printf(
                 b"%s: not enough space in the context's memory pool (needed %zu, available %zu)\n\0"
-                    as *const u8 as *const libc::c_char,
-                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
-                    b"ggml_new_tensor_impl\0",
-                ))
-                .as_ptr(),
+                    as *const u8 as *const i8,
+                (*::core::mem::transmute::<&[u8; 21], &[i8; 21]>(b"ggml_new_tensor_impl\0"))
+                    .as_ptr(),
                 cur_end
                     .wrapping_add(size_needed)
                     .wrapping_add(GGML_OBJECT_SIZE),
@@ -4539,12 +4533,9 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
     } else {
         if ((*ctx).scratch.offs).wrapping_add(size_needed) > (*ctx).scratch.size {
             printf(
-                b"%s: not enough space in the scratch memory\n\0" as *const u8
-                    as *const libc::c_char,
-                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
-                    b"ggml_new_tensor_impl\0",
-                ))
-                .as_ptr(),
+                b"%s: not enough space in the scratch memory\n\0" as *const u8 as *const i8,
+                (*::core::mem::transmute::<&[u8; 21], &[i8; 21]>(b"ggml_new_tensor_impl\0"))
+                    .as_ptr(),
             );
             return std::ptr::null_mut::<ggml_tensor>();
         }
@@ -4555,11 +4546,9 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
         {
             printf(
                 b"%s: not enough space in the context's memory pool (needed %zu, available %zu)\n\0"
-                    as *const u8 as *const libc::c_char,
-                (*::core::mem::transmute::<&[u8; 21], &[libc::c_char; 21]>(
-                    b"ggml_new_tensor_impl\0",
-                ))
-                .as_ptr(),
+                    as *const u8 as *const i8,
+                (*::core::mem::transmute::<&[u8; 21], &[i8; 21]>(b"ggml_new_tensor_impl\0"))
+                    .as_ptr(),
                 cur_end
                     .wrapping_add(::core::mem::size_of::<ggml_tensor>() as u64)
                     .wrapping_add(GGML_OBJECT_SIZE),
@@ -4567,7 +4556,7 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
             );
             return std::ptr::null_mut::<ggml_tensor>();
         }
-        data = ((*ctx).scratch.data as *mut libc::c_char).offset((*ctx).scratch.offs as isize)
+        data = ((*ctx).scratch.data as *mut i8).offset((*ctx).scratch.offs as isize)
             as *mut libc::c_void;
         *obj_new = {
             ggml_object {
@@ -4587,13 +4576,13 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
     }
     (*ctx).objects_end = obj_new;
     let result: *mut ggml_tensor = mem_buffer.offset((*obj_new).offs as isize) as *mut ggml_tensor;
-    if (result as uintptr_t).wrapping_rem(16 as i32 as u64) != 0 as i32 as u64 {
+    if (result as uintptr_t).wrapping_rem(16_i32 as u64) != 0_i32 as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4074 as i32,
-            b"((uintptr_t) (result))%GGML_MEM_ALIGN == 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4074_i32,
+            b"((uintptr_t) (result))%GGML_MEM_ALIGN == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -4603,19 +4592,19 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
             backend: GGML_BACKEND_CPU,
             n_dims,
             ne: [
-                1 as i32 as int64_t,
-                1 as i32 as int64_t,
-                1 as i32 as int64_t,
-                1 as i32 as int64_t,
+                1_i32 as int64_t,
+                1_i32 as int64_t,
+                1_i32 as int64_t,
+                1_i32 as int64_t,
             ],
             nb: [
-                0 as i32 as size_t,
-                0 as i32 as size_t,
-                0 as i32 as size_t,
-                0 as i32 as size_t,
+                0_i32 as size_t,
+                0_i32 as size_t,
+                0_i32 as size_t,
+                0_i32 as size_t,
             ],
             op: GGML_OP_NONE,
-            is_param: 0 as i32 != 0,
+            is_param: 0_i32 != 0,
             grad: std::ptr::null_mut::<ggml_tensor>(),
             src0: std::ptr::null_mut::<ggml_tensor>(),
             src1: std::ptr::null_mut::<ggml_tensor>(),
@@ -4625,17 +4614,17 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
                 std::ptr::null_mut::<ggml_tensor>(),
                 std::ptr::null_mut::<ggml_tensor>(),
             ],
-            n_tasks: 0 as i32,
-            perf_runs: 0 as i32,
-            perf_cycles: 0 as i32 as int64_t,
-            perf_time_us: 0 as i32 as int64_t,
+            n_tasks: 0_i32,
+            perf_runs: 0_i32,
+            perf_cycles: 0_i32 as int64_t,
+            perf_time_us: 0_i32 as int64_t,
             data: if data.is_null() && !(*ctx).no_alloc {
-                result.offset(1 as i32 as isize) as *mut libc::c_void
+                result.offset(1_i32 as isize) as *mut libc::c_void
             } else {
                 data
             },
             name: [
-                0 as i32 as libc::c_char,
+                0_i32 as i8,
                 0,
                 0,
                 0,
@@ -4668,40 +4657,23 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
                 0,
                 0,
             ],
-            padding: [
-                0 as i32 as libc::c_char,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
+            padding: [0_i32 as i8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         }
     };
-    let mut i_0: i32 = 0 as i32;
+    let mut i_0: i32 = 0_i32;
     while i_0 < n_dims {
         (*result).ne[i_0 as usize] = *ne.offset(i_0 as isize);
         i_0 += 1;
         i_0;
     }
-    (*result).nb[0 as i32 as usize] = GGML_TYPE_SIZE[type_0 as usize];
-    (*result).nb[1 as i32 as usize] = ((*result).nb[0 as i32 as usize]).wrapping_mul(
-        ((*result).ne[0 as i32 as usize] / GGML_BLCK_SIZE[type_0 as usize] as i64) as u64,
+    (*result).nb[0_i32 as usize] = GGML_TYPE_SIZE[type_0 as usize];
+    (*result).nb[1_i32 as usize] = ((*result).nb[0_i32 as usize]).wrapping_mul(
+        ((*result).ne[0_i32 as usize] / GGML_BLCK_SIZE[type_0 as usize] as i64) as u64,
     );
-    let mut i_1: i32 = 2 as i32;
-    while i_1 < 4 as i32 {
-        (*result).nb[i_1 as usize] = ((*result).nb[(i_1 - 1 as i32) as usize])
-            .wrapping_mul((*result).ne[(i_1 - 1 as i32) as usize] as u64);
+    let mut i_1: i32 = 2_i32;
+    while i_1 < 4_i32 {
+        (*result).nb[i_1 as usize] = ((*result).nb[(i_1 - 1_i32) as usize])
+            .wrapping_mul((*result).ne[(i_1 - 1_i32) as usize] as u64);
         i_1 += 1;
         i_1;
     }
@@ -4730,7 +4702,7 @@ pub unsafe extern "C" fn ggml_new_tensor_1d(
     mut type_0: ggml_type,
     mut ne0: int64_t,
 ) -> *mut ggml_tensor {
-    ggml_new_tensor(ctx, type_0, 1 as i32, &mut ne0)
+    ggml_new_tensor(ctx, type_0, 1_i32, &mut ne0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_new_tensor_2d(
@@ -4740,7 +4712,7 @@ pub unsafe extern "C" fn ggml_new_tensor_2d(
     mut ne1: int64_t,
 ) -> *mut ggml_tensor {
     let ne: [int64_t; 2] = [ne0, ne1];
-    ggml_new_tensor(ctx, type_0, 2 as i32, ne.as_ptr())
+    ggml_new_tensor(ctx, type_0, 2_i32, ne.as_ptr())
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_new_tensor_3d(
@@ -4751,7 +4723,7 @@ pub unsafe extern "C" fn ggml_new_tensor_3d(
     mut ne2: int64_t,
 ) -> *mut ggml_tensor {
     let ne: [int64_t; 3] = [ne0, ne1, ne2];
-    ggml_new_tensor(ctx, type_0, 3 as i32, ne.as_ptr())
+    ggml_new_tensor(ctx, type_0, 3_i32, ne.as_ptr())
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_new_tensor_4d(
@@ -4763,7 +4735,7 @@ pub unsafe extern "C" fn ggml_new_tensor_4d(
     mut ne3: int64_t,
 ) -> *mut ggml_tensor {
     let ne: [int64_t; 4] = [ne0, ne1, ne2, ne3];
-    ggml_new_tensor(ctx, type_0, 4 as i32, ne.as_ptr())
+    ggml_new_tensor(ctx, type_0, 4_i32, ne.as_ptr())
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_new_i32(
@@ -4771,7 +4743,7 @@ pub unsafe extern "C" fn ggml_new_i32(
     mut value: int32_t,
 ) -> *mut ggml_tensor {
     ggml_scratch_save(ctx);
-    let mut result: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 1 as i32 as int64_t);
+    let mut result: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 1_i32 as int64_t);
     ggml_scratch_load(ctx);
     ggml_set_i32(result, value);
     result
@@ -4782,7 +4754,7 @@ pub unsafe extern "C" fn ggml_new_f32(
     mut value: f32,
 ) -> *mut ggml_tensor {
     ggml_scratch_save(ctx);
-    let mut result: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 1 as i32 as int64_t);
+    let mut result: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 1_i32 as int64_t);
     ggml_scratch_load(ctx);
     ggml_set_f32(result, value);
     result
@@ -4802,7 +4774,7 @@ pub unsafe extern "C" fn ggml_dup_tensor(
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_set_zero(mut tensor: *mut ggml_tensor) -> *mut ggml_tensor {
-    memset((*tensor).data, 0 as i32, ggml_nbytes(tensor));
+    memset((*tensor).data, 0_i32, ggml_nbytes(tensor));
     tensor
 }
 #[no_mangle]
@@ -4811,12 +4783,12 @@ pub unsafe extern "C" fn ggml_set_i32(
     mut value: int32_t,
 ) -> *mut ggml_tensor {
     let n: i32 = ggml_nrows(tensor);
-    let nc: i32 = (*tensor).ne[0 as i32 as usize] as i32;
-    let n1: size_t = (*tensor).nb[1 as i32 as usize];
-    let data: *mut libc::c_char = (*tensor).data as *mut libc::c_char;
+    let nc: i32 = (*tensor).ne[0_i32 as usize] as i32;
+    let n1: size_t = (*tensor).nb[1_i32 as usize];
+    let data: *mut i8 = (*tensor).data as *mut i8;
     match (*tensor).type_0 as u32 {
         10 => {
-            let mut i: i32 = 0 as i32;
+            let mut i: i32 = 0_i32;
             while i < n {
                 ggml_vec_set_i8(
                     nc,
@@ -4828,7 +4800,7 @@ pub unsafe extern "C" fn ggml_set_i32(
             }
         }
         11 => {
-            let mut i_0: i32 = 0 as i32;
+            let mut i_0: i32 = 0_i32;
             while i_0 < n {
                 ggml_vec_set_i16(
                     nc,
@@ -4840,7 +4812,7 @@ pub unsafe extern "C" fn ggml_set_i32(
             }
         }
         12 => {
-            let mut i_1: i32 = 0 as i32;
+            let mut i_1: i32 = 0_i32;
             while i_1 < n {
                 ggml_vec_set_i32(
                     nc,
@@ -4852,7 +4824,7 @@ pub unsafe extern "C" fn ggml_set_i32(
             }
         }
         1 => {
-            let mut i_2: i32 = 0 as i32;
+            let mut i_2: i32 = 0_i32;
             while i_2 < n {
                 ggml_vec_set_f16(
                     nc,
@@ -4864,7 +4836,7 @@ pub unsafe extern "C" fn ggml_set_i32(
             }
         }
         0 => {
-            let mut i_3: i32 = 0 as i32;
+            let mut i_3: i32 = 0_i32;
             while i_3 < n {
                 ggml_vec_set_f32(
                     nc,
@@ -4876,13 +4848,13 @@ pub unsafe extern "C" fn ggml_set_i32(
             }
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4238 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4238_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -4896,12 +4868,12 @@ pub unsafe extern "C" fn ggml_set_f32(
     mut value: f32,
 ) -> *mut ggml_tensor {
     let n: i32 = ggml_nrows(tensor);
-    let nc: i32 = (*tensor).ne[0 as i32 as usize] as i32;
-    let n1: size_t = (*tensor).nb[1 as i32 as usize];
-    let data: *mut libc::c_char = (*tensor).data as *mut libc::c_char;
+    let nc: i32 = (*tensor).ne[0_i32 as usize] as i32;
+    let n1: size_t = (*tensor).nb[1_i32 as usize];
+    let data: *mut i8 = (*tensor).data as *mut i8;
     match (*tensor).type_0 as u32 {
         10 => {
-            let mut i: i32 = 0 as i32;
+            let mut i: i32 = 0_i32;
             while i < n {
                 ggml_vec_set_i8(
                     nc,
@@ -4913,7 +4885,7 @@ pub unsafe extern "C" fn ggml_set_f32(
             }
         }
         11 => {
-            let mut i_0: i32 = 0 as i32;
+            let mut i_0: i32 = 0_i32;
             while i_0 < n {
                 ggml_vec_set_i16(
                     nc,
@@ -4925,7 +4897,7 @@ pub unsafe extern "C" fn ggml_set_f32(
             }
         }
         12 => {
-            let mut i_1: i32 = 0 as i32;
+            let mut i_1: i32 = 0_i32;
             while i_1 < n {
                 ggml_vec_set_i32(
                     nc,
@@ -4937,7 +4909,7 @@ pub unsafe extern "C" fn ggml_set_f32(
             }
         }
         1 => {
-            let mut i_2: i32 = 0 as i32;
+            let mut i_2: i32 = 0_i32;
             while i_2 < n {
                 ggml_vec_set_f16(
                     nc,
@@ -4949,7 +4921,7 @@ pub unsafe extern "C" fn ggml_set_f32(
             }
         }
         0 => {
-            let mut i_3: i32 = 0 as i32;
+            let mut i_3: i32 = 0_i32;
             while i_3 < n {
                 ggml_vec_set_f32(
                     nc,
@@ -4961,13 +4933,13 @@ pub unsafe extern "C" fn ggml_set_f32(
             }
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4290 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4290_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -4979,52 +4951,52 @@ pub unsafe extern "C" fn ggml_set_f32(
 pub unsafe extern "C" fn ggml_get_i32_1d(mut tensor: *const ggml_tensor, mut i: i32) -> int32_t {
     match (*tensor).type_0 as u32 {
         10 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int8_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int8_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4301 as i32,
-                    b"tensor->nb[0] == sizeof(int8_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4301_i32,
+                    b"tensor->nb[0] == sizeof(int8_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             return *((*tensor).data as *mut int8_t).offset(i as isize) as int32_t;
         }
         11 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int16_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int16_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4306 as i32,
-                    b"tensor->nb[0] == sizeof(int16_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4306_i32,
+                    b"tensor->nb[0] == sizeof(int16_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             return *((*tensor).data as *mut int16_t).offset(i as isize) as int32_t;
         }
         12 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int32_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int32_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4311 as i32,
-                    b"tensor->nb[0] == sizeof(int32_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4311_i32,
+                    b"tensor->nb[0] == sizeof(int32_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             return *((*tensor).data as *mut int32_t).offset(i as isize);
         }
         1 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4316 as i32,
-                    b"tensor->nb[0] == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4316_i32,
+                    b"tensor->nb[0] == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -5033,26 +5005,26 @@ pub unsafe extern "C" fn ggml_get_i32_1d(mut tensor: *const ggml_tensor, mut i: 
             ) as int32_t;
         }
         0 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4321 as i32,
-                    b"tensor->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4321_i32,
+                    b"tensor->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             return *((*tensor).data as *mut f32).offset(i as isize) as int32_t;
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4326 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4326_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -5068,52 +5040,52 @@ pub unsafe extern "C" fn ggml_set_i32_1d(
 ) {
     match (*tensor).type_0 as u32 {
         10 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int8_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int8_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4337 as i32,
-                    b"tensor->nb[0] == sizeof(int8_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4337_i32,
+                    b"tensor->nb[0] == sizeof(int8_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             *((*tensor).data as *mut int8_t).offset(i as isize) = value as int8_t;
         }
         11 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int16_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int16_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4342 as i32,
-                    b"tensor->nb[0] == sizeof(int16_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4342_i32,
+                    b"tensor->nb[0] == sizeof(int16_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             *((*tensor).data as *mut int16_t).offset(i as isize) = value as int16_t;
         }
         12 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int32_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int32_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4347 as i32,
-                    b"tensor->nb[0] == sizeof(int32_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4347_i32,
+                    b"tensor->nb[0] == sizeof(int32_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             *((*tensor).data as *mut int32_t).offset(i as isize) = value;
         }
         1 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4352 as i32,
-                    b"tensor->nb[0] == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4352_i32,
+                    b"tensor->nb[0] == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -5124,35 +5096,35 @@ pub unsafe extern "C" fn ggml_set_i32_1d(
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         value as f32,
-                        0 as i32 as f32,
-                        0 as i32 as f32,
-                        0 as i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
                     ),
-                    0 as i32,
-                ))[0 as i32 as usize] as u16
+                    0_i32,
+                ))[0_i32 as usize] as u16
             };
         }
         0 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4357 as i32,
-                    b"tensor->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4357_i32,
+                    b"tensor->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             *((*tensor).data as *mut f32).offset(i as isize) = value as f32;
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4362 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4362_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -5163,52 +5135,52 @@ pub unsafe extern "C" fn ggml_set_i32_1d(
 pub unsafe extern "C" fn ggml_get_f32_1d(mut tensor: *const ggml_tensor, mut i: i32) -> f32 {
     match (*tensor).type_0 as u32 {
         10 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int8_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int8_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4371 as i32,
-                    b"tensor->nb[0] == sizeof(int8_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4371_i32,
+                    b"tensor->nb[0] == sizeof(int8_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             return *((*tensor).data as *mut int8_t).offset(i as isize) as f32;
         }
         11 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int16_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int16_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4376 as i32,
-                    b"tensor->nb[0] == sizeof(int16_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4376_i32,
+                    b"tensor->nb[0] == sizeof(int16_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             return *((*tensor).data as *mut int16_t).offset(i as isize) as f32;
         }
         12 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int32_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int32_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4381 as i32,
-                    b"tensor->nb[0] == sizeof(int32_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4381_i32,
+                    b"tensor->nb[0] == sizeof(int32_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             return *((*tensor).data as *mut int32_t).offset(i as isize) as f32;
         }
         1 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4386 as i32,
-                    b"tensor->nb[0] == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4386_i32,
+                    b"tensor->nb[0] == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -5217,26 +5189,26 @@ pub unsafe extern "C" fn ggml_get_f32_1d(mut tensor: *const ggml_tensor, mut i: 
             );
         }
         0 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4391 as i32,
-                    b"tensor->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4391_i32,
+                    b"tensor->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             return *((*tensor).data as *mut f32).offset(i as isize);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4396 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4396_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -5252,52 +5224,52 @@ pub unsafe extern "C" fn ggml_set_f32_1d(
 ) {
     match (*tensor).type_0 as u32 {
         10 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int8_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int8_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4407 as i32,
-                    b"tensor->nb[0] == sizeof(int8_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4407_i32,
+                    b"tensor->nb[0] == sizeof(int8_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             *((*tensor).data as *mut int8_t).offset(i as isize) = value as int8_t;
         }
         11 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int16_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int16_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4412 as i32,
-                    b"tensor->nb[0] == sizeof(int16_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4412_i32,
+                    b"tensor->nb[0] == sizeof(int16_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             *((*tensor).data as *mut int16_t).offset(i as isize) = value as int16_t;
         }
         12 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<int32_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<int32_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4417 as i32,
-                    b"tensor->nb[0] == sizeof(int32_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4417_i32,
+                    b"tensor->nb[0] == sizeof(int32_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             *((*tensor).data as *mut int32_t).offset(i as isize) = value as int32_t;
         }
         1 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4422 as i32,
-                    b"tensor->nb[0] == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4422_i32,
+                    b"tensor->nb[0] == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -5306,32 +5278,32 @@ pub unsafe extern "C" fn ggml_set_f32_1d(
                     _,
                     [i16; ::core::mem::size_of::<__v8hi>() / ::core::mem::size_of::<i16>()],
                 >(_mm_cvtps_ph(
-                    _mm_setr_ps(value, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
-                    0 as i32,
-                ))[0 as i32 as usize] as u16
+                    _mm_setr_ps(value, 0_i32 as f32, 0_i32 as f32, 0_i32 as f32),
+                    0_i32,
+                ))[0_i32 as usize] as u16
             };
         }
         0 => {
-            if (*tensor).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+            if (*tensor).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4427 as i32,
-                    b"tensor->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4427_i32,
+                    b"tensor->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             *((*tensor).data as *mut f32).offset(i as isize) = value;
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    4432 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    4432_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -5347,21 +5319,19 @@ pub unsafe extern "C" fn ggml_get_data_f32(mut tensor: *const ggml_tensor) -> *m
     (*tensor).data as *mut f32
 }
 #[no_mangle]
-pub unsafe extern "C" fn ggml_get_name(mut tensor: *const ggml_tensor) -> *const libc::c_char {
+pub unsafe extern "C" fn ggml_get_name(mut tensor: *const ggml_tensor) -> *const i8 {
     ((*tensor).name).as_ptr()
 }
 #[no_mangle]
-pub unsafe extern "C" fn ggml_set_name(
-    mut tensor: *mut ggml_tensor,
-    mut name: *const libc::c_char,
-) {
+pub unsafe extern "C" fn ggml_set_name(mut tensor: *mut ggml_tensor, mut name: *const i8) {
     strncpy(
         ((*tensor).name).as_mut_ptr(),
         name,
-        ::core::mem::size_of::<[libc::c_char; 32]>() as u64,
+        ::core::mem::size_of::<[i8; 32]>() as u64,
     );
-    (*tensor).name[(::core::mem::size_of::<[libc::c_char; 32]>() as u64)
-        .wrapping_sub(1 as i32 as u64) as usize] = '\0' as i32 as libc::c_char;
+    (*tensor).name
+        [(::core::mem::size_of::<[i8; 32]>() as u64).wrapping_sub(1_i32 as u64) as usize] =
+        '\0' as i32 as i8;
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_view_tensor(
@@ -5375,10 +5345,10 @@ pub unsafe extern "C" fn ggml_view_tensor(
         ((*src).ne).as_ptr(),
         (*src).data,
     );
-    (*result).nb[0 as i32 as usize] = (*src).nb[0 as i32 as usize];
-    (*result).nb[1 as i32 as usize] = (*src).nb[1 as i32 as usize];
-    (*result).nb[2 as i32 as usize] = (*src).nb[2 as i32 as usize];
-    (*result).nb[3 as i32 as usize] = (*src).nb[3 as i32 as usize];
+    (*result).nb[0_i32 as usize] = (*src).nb[0_i32 as usize];
+    (*result).nb[1_i32 as usize] = (*src).nb[1_i32 as usize];
+    (*result).nb[2_i32 as usize] = (*src).nb[2_i32 as usize];
+    (*result).nb[3_i32 as usize] = (*src).nb[3_i32 as usize];
     result
 }
 #[no_mangle]
@@ -5387,9 +5357,9 @@ pub unsafe extern "C" fn ggml_dup_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -5411,14 +5381,14 @@ pub unsafe extern "C" fn ggml_dup(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_dup_impl(ctx, a, 0 as i32 != 0)
+    ggml_dup_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_dup_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_dup_impl(ctx, a, 1 as i32 != 0)
+    ggml_dup_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_add_impl(
@@ -5430,16 +5400,16 @@ pub unsafe extern "C" fn ggml_add_impl(
     if !ggml_are_same_shape(a, b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4511 as i32,
-            b"ggml_are_same_shape(a, b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4511_i32,
+            b"ggml_are_same_shape(a, b)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && (!((*a).grad).is_null() || !((*b).grad).is_null()) {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -5462,7 +5432,7 @@ pub unsafe extern "C" fn ggml_add(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_add_impl(ctx, a, b, 0 as i32 != 0)
+    ggml_add_impl(ctx, a, b, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_add_inplace(
@@ -5470,7 +5440,7 @@ pub unsafe extern "C" fn ggml_add_inplace(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_add_impl(ctx, a, b, 1 as i32 != 0)
+    ggml_add_impl(ctx, a, b, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_add1_impl(
@@ -5482,26 +5452,26 @@ pub unsafe extern "C" fn ggml_add1_impl(
     if !ggml_is_scalar(b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4550 as i32,
-            b"ggml_is_scalar(b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4550_i32,
+            b"ggml_is_scalar(b)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_padded_1d(a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4551 as i32,
-            b"ggml_is_padded_1d(a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4551_i32,
+            b"ggml_is_padded_1d(a)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && (!((*a).grad).is_null() || !((*b).grad).is_null()) {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -5524,7 +5494,7 @@ pub unsafe extern "C" fn ggml_add1(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_add1_impl(ctx, a, b, 0 as i32 != 0)
+    ggml_add1_impl(ctx, a, b, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_add1_inplace(
@@ -5532,7 +5502,7 @@ pub unsafe extern "C" fn ggml_add1_inplace(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_add1_impl(ctx, a, b, 1 as i32 != 0)
+    ggml_add1_impl(ctx, a, b, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_acc_impl(
@@ -5548,46 +5518,46 @@ pub unsafe extern "C" fn ggml_acc_impl(
     if ggml_nelements(b) > ggml_nelements(a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4594 as i32,
-            b"ggml_nelements(b) <= ggml_nelements(a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4594_i32,
+            b"ggml_nelements(b) <= ggml_nelements(a)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4595 as i32,
-            b"ggml_is_contiguous(a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4595_i32,
+            b"ggml_is_contiguous(a)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*a).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4596 as i32,
-            b"a->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4596_i32,
+            b"a->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*b).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4597 as i32,
-            b"b->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4597_i32,
+            b"b->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && (!((*a).grad).is_null() || !((*b).grad).is_null()) {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -5595,15 +5565,15 @@ pub unsafe extern "C" fn ggml_acc_impl(
         ggml_dup_tensor(ctx, a)
     };
     ggml_scratch_save(ctx);
-    let mut c: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 5 as i32 as int64_t);
-    *((*c).data as *mut int32_t).offset(0 as i32 as isize) = nb1 as int32_t;
-    *((*c).data as *mut int32_t).offset(1 as i32 as isize) = nb2 as int32_t;
-    *((*c).data as *mut int32_t).offset(2 as i32 as isize) = nb3 as int32_t;
-    *((*c).data as *mut int32_t).offset(3 as i32 as isize) = offset as int32_t;
-    *((*c).data as *mut int32_t).offset(4 as i32 as isize) = if inplace as i32 != 0 {
-        1 as i32
+    let mut c: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 5_i32 as int64_t);
+    *((*c).data as *mut int32_t).offset(0_i32 as isize) = nb1 as int32_t;
+    *((*c).data as *mut int32_t).offset(1_i32 as isize) = nb2 as int32_t;
+    *((*c).data as *mut int32_t).offset(2_i32 as isize) = nb3 as int32_t;
+    *((*c).data as *mut int32_t).offset(3_i32 as isize) = offset as int32_t;
+    *((*c).data as *mut int32_t).offset(4_i32 as isize) = if inplace as i32 != 0 {
+        1_i32
     } else {
-        0 as i32
+        0_i32
     };
     ggml_scratch_load(ctx);
     (*result).op = GGML_OP_ACC;
@@ -5614,7 +5584,7 @@ pub unsafe extern "C" fn ggml_acc_impl(
     };
     (*result).src0 = a;
     (*result).src1 = b;
-    (*result).opt[0 as i32 as usize] = c;
+    (*result).opt[0_i32 as usize] = c;
     result
 }
 #[no_mangle]
@@ -5627,7 +5597,7 @@ pub unsafe extern "C" fn ggml_acc(
     mut nb3: size_t,
     mut offset: size_t,
 ) -> *mut ggml_tensor {
-    ggml_acc_impl(ctx, a, b, nb1, nb2, nb3, offset, 0 as i32 != 0)
+    ggml_acc_impl(ctx, a, b, nb1, nb2, nb3, offset, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_acc_inplace(
@@ -5639,7 +5609,7 @@ pub unsafe extern "C" fn ggml_acc_inplace(
     mut nb3: size_t,
     mut offset: size_t,
 ) -> *mut ggml_tensor {
-    ggml_acc_impl(ctx, a, b, nb1, nb2, nb3, offset, 1 as i32 != 0)
+    ggml_acc_impl(ctx, a, b, nb1, nb2, nb3, offset, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_sub_impl(
@@ -5651,16 +5621,16 @@ pub unsafe extern "C" fn ggml_sub_impl(
     if !ggml_are_same_shape(a, b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4657 as i32,
-            b"ggml_are_same_shape(a, b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4657_i32,
+            b"ggml_are_same_shape(a, b)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && (!((*a).grad).is_null() || !((*b).grad).is_null()) {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -5683,7 +5653,7 @@ pub unsafe extern "C" fn ggml_sub(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_sub_impl(ctx, a, b, 0 as i32 != 0)
+    ggml_sub_impl(ctx, a, b, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_sub_inplace(
@@ -5691,7 +5661,7 @@ pub unsafe extern "C" fn ggml_sub_inplace(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_sub_impl(ctx, a, b, 1 as i32 != 0)
+    ggml_sub_impl(ctx, a, b, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_mul_impl(
@@ -5703,34 +5673,34 @@ pub unsafe extern "C" fn ggml_mul_impl(
     if !ggml_can_repeat_rows(b, a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4698 as i32,
-            b"ggml_can_repeat_rows(b, a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4698_i32,
+            b"ggml_can_repeat_rows(b, a)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && (!((*a).grad).is_null() || !((*b).grad).is_null()) {
         if !ggml_are_same_shape(a, b) {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                4704 as i32,
-                b"ggml_are_same_shape(a, b)\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                4704_i32,
+                b"ggml_are_same_shape(a, b)\0" as *const u8 as *const i8,
             );
             abort();
         }
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
-    if inplace && is_node as i32 != 0 as i32 {
+    if inplace && is_node as i32 != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4709 as i32,
-            b"is_node == false\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4709_i32,
+            b"is_node == false\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -5755,7 +5725,7 @@ pub unsafe extern "C" fn ggml_mul(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_mul_impl(ctx, a, b, 0 as i32 != 0)
+    ggml_mul_impl(ctx, a, b, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_mul_inplace(
@@ -5763,7 +5733,7 @@ pub unsafe extern "C" fn ggml_mul_inplace(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_mul_impl(ctx, a, b, 1 as i32 != 0)
+    ggml_mul_impl(ctx, a, b, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_div_impl(
@@ -5775,24 +5745,24 @@ pub unsafe extern "C" fn ggml_div_impl(
     if !ggml_are_same_shape(a, b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4743 as i32,
-            b"ggml_are_same_shape(a, b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4743_i32,
+            b"ggml_are_same_shape(a, b)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && (!((*a).grad).is_null() || !((*b).grad).is_null()) {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
-    if inplace && is_node as i32 != 0 as i32 {
+    if inplace && is_node as i32 != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4752 as i32,
-            b"is_node == false\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4752_i32,
+            b"is_node == false\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -5817,7 +5787,7 @@ pub unsafe extern "C" fn ggml_div(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_div_impl(ctx, a, b, 0 as i32 != 0)
+    ggml_div_impl(ctx, a, b, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_div_inplace(
@@ -5825,7 +5795,7 @@ pub unsafe extern "C" fn ggml_div_inplace(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_div_impl(ctx, a, b, 1 as i32 != 0)
+    ggml_div_impl(ctx, a, b, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_sqr_impl(
@@ -5833,9 +5803,9 @@ pub unsafe extern "C" fn ggml_sqr_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -5857,14 +5827,14 @@ pub unsafe extern "C" fn ggml_sqr(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_sqr_impl(ctx, a, 0 as i32 != 0)
+    ggml_sqr_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_sqr_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_sqr_impl(ctx, a, 1 as i32 != 0)
+    ggml_sqr_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_sqrt_impl(
@@ -5872,9 +5842,9 @@ pub unsafe extern "C" fn ggml_sqrt_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -5896,14 +5866,14 @@ pub unsafe extern "C" fn ggml_sqrt(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_sqrt_impl(ctx, a, 0 as i32 != 0)
+    ggml_sqrt_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_sqrt_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_sqrt_impl(ctx, a, 1 as i32 != 0)
+    ggml_sqrt_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_log_impl(
@@ -5911,9 +5881,9 @@ pub unsafe extern "C" fn ggml_log_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -5935,25 +5905,25 @@ pub unsafe extern "C" fn ggml_log(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_log_impl(ctx, a, 0 as i32 != 0)
+    ggml_log_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_log_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_log_impl(ctx, a, 1 as i32 != 0)
+    ggml_log_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_sum(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
-    let mut result: *mut ggml_tensor = ggml_new_tensor_1d(ctx, (*a).type_0, 1 as i32 as int64_t);
+    let mut result: *mut ggml_tensor = ggml_new_tensor_1d(ctx, (*a).type_0, 1_i32 as int64_t);
     (*result).op = GGML_OP_SUM;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -5969,17 +5939,17 @@ pub unsafe extern "C" fn ggml_sum_rows(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut ne: [int64_t; 4] = [
-        1 as i32 as int64_t,
-        1 as i32 as int64_t,
-        1 as i32 as int64_t,
-        1 as i32 as int64_t,
+        1_i32 as int64_t,
+        1_i32 as int64_t,
+        1_i32 as int64_t,
+        1_i32 as int64_t,
     ];
-    let mut i: i32 = 1 as i32;
+    let mut i: i32 = 1_i32;
     while i < (*a).n_dims {
         ne[i as usize] = (*a).ne[i as usize];
         i += 1;
@@ -6002,25 +5972,25 @@ pub unsafe extern "C" fn ggml_mean(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        if 0 as i32 == 0 {
+        if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                4938 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                4938_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut ne: [int64_t; 4] = [
-        1 as i32 as int64_t,
-        (*a).ne[1 as i32 as usize],
-        (*a).ne[2 as i32 as usize],
-        (*a).ne[3 as i32 as usize],
+        1_i32 as int64_t,
+        (*a).ne[1_i32 as usize],
+        (*a).ne[2_i32 as usize],
+        (*a).ne[3_i32 as usize],
     ];
     let mut result: *mut ggml_tensor =
         ggml_new_tensor(ctx, GGML_TYPE_F32, (*a).n_dims, ne.as_mut_ptr());
@@ -6043,16 +6013,16 @@ pub unsafe extern "C" fn ggml_repeat(
     if !ggml_can_repeat(a, b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            4959 as i32,
-            b"ggml_can_repeat(a, b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            4959_i32,
+            b"ggml_can_repeat(a, b)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     if ggml_are_same_shape(a, b) as i32 != 0 && !is_node {
         return a;
@@ -6075,9 +6045,9 @@ pub unsafe extern "C" fn ggml_abs_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6099,14 +6069,14 @@ pub unsafe extern "C" fn ggml_abs(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_abs_impl(ctx, a, 0 as i32 != 0)
+    ggml_abs_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_abs_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_abs_impl(ctx, a, 1 as i32 != 0)
+    ggml_abs_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_sgn_impl(
@@ -6114,9 +6084,9 @@ pub unsafe extern "C" fn ggml_sgn_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6138,14 +6108,14 @@ pub unsafe extern "C" fn ggml_sgn(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_sgn_impl(ctx, a, 0 as i32 != 0)
+    ggml_sgn_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_sgn_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_sgn_impl(ctx, a, 1 as i32 != 0)
+    ggml_sgn_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_neg_impl(
@@ -6153,9 +6123,9 @@ pub unsafe extern "C" fn ggml_neg_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6177,14 +6147,14 @@ pub unsafe extern "C" fn ggml_neg(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_neg_impl(ctx, a, 0 as i32 != 0)
+    ggml_neg_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_neg_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_neg_impl(ctx, a, 1 as i32 != 0)
+    ggml_neg_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_step_impl(
@@ -6192,9 +6162,9 @@ pub unsafe extern "C" fn ggml_step_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6216,14 +6186,14 @@ pub unsafe extern "C" fn ggml_step(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_step_impl(ctx, a, 0 as i32 != 0)
+    ggml_step_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_step_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_step_impl(ctx, a, 1 as i32 != 0)
+    ggml_step_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_relu_impl(
@@ -6231,9 +6201,9 @@ pub unsafe extern "C" fn ggml_relu_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6255,14 +6225,14 @@ pub unsafe extern "C" fn ggml_relu(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_relu_impl(ctx, a, 0 as i32 != 0)
+    ggml_relu_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_relu_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_relu_impl(ctx, a, 1 as i32 != 0)
+    ggml_relu_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_gelu_impl(
@@ -6270,9 +6240,9 @@ pub unsafe extern "C" fn ggml_gelu_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6294,14 +6264,14 @@ pub unsafe extern "C" fn ggml_gelu(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_gelu_impl(ctx, a, 0 as i32 != 0)
+    ggml_gelu_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_gelu_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_gelu_impl(ctx, a, 1 as i32 != 0)
+    ggml_gelu_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_silu_impl(
@@ -6309,9 +6279,9 @@ pub unsafe extern "C" fn ggml_silu_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6333,14 +6303,14 @@ pub unsafe extern "C" fn ggml_silu(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_silu_impl(ctx, a, 0 as i32 != 0)
+    ggml_silu_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_silu_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_silu_impl(ctx, a, 1 as i32 != 0)
+    ggml_silu_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_silu_back(
@@ -6348,9 +6318,9 @@ pub unsafe extern "C" fn ggml_silu_back(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() || !((*b).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_dup_tensor(ctx, a);
     (*result).op = GGML_OP_SILU_BACK;
@@ -6369,19 +6339,19 @@ pub unsafe extern "C" fn ggml_norm_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        if 0 as i32 == 0 {
+        if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                5252 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                5252_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6403,14 +6373,14 @@ pub unsafe extern "C" fn ggml_norm(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_norm_impl(ctx, a, 0 as i32 != 0)
+    ggml_norm_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_norm_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_norm_impl(ctx, a, 1 as i32 != 0)
+    ggml_norm_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_rms_norm_impl(
@@ -6418,9 +6388,9 @@ pub unsafe extern "C" fn ggml_rms_norm_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6442,14 +6412,14 @@ pub unsafe extern "C" fn ggml_rms_norm(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_rms_norm_impl(ctx, a, 0 as i32 != 0)
+    ggml_rms_norm_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_rms_norm_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_rms_norm_impl(ctx, a, 1 as i32 != 0)
+    ggml_rms_norm_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_rms_norm_back(
@@ -6457,9 +6427,9 @@ pub unsafe extern "C" fn ggml_rms_norm_back(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_dup_tensor(ctx, a);
     (*result).op = GGML_OP_RMS_NORM_BACK;
@@ -6481,32 +6451,32 @@ pub unsafe extern "C" fn ggml_mul_mat(
     if !ggml_can_mul_mat(a, b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5338 as i32,
-            b"ggml_can_mul_mat(a, b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5338_i32,
+            b"ggml_can_mul_mat(a, b)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ggml_is_transposed(a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5339 as i32,
-            b"!ggml_is_transposed(a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5339_i32,
+            b"!ggml_is_transposed(a)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() || !((*b).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let ne: [int64_t; 4] = [
-        (*a).ne[1 as i32 as usize],
-        (*b).ne[1 as i32 as usize],
-        (*a).ne[2 as i32 as usize],
-        (*b).ne[3 as i32 as usize],
+        (*a).ne[1_i32 as usize],
+        (*b).ne[1_i32 as usize],
+        (*a).ne[2_i32 as usize],
+        (*b).ne[3_i32 as usize],
     ];
     let mut result: *mut ggml_tensor = ggml_new_tensor(
         ctx,
@@ -6538,26 +6508,26 @@ pub unsafe extern "C" fn ggml_scale_impl(
     if !ggml_is_scalar(b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5365 as i32,
-            b"ggml_is_scalar(b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5365_i32,
+            b"ggml_is_scalar(b)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_padded_1d(a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5366 as i32,
-            b"ggml_is_padded_1d(a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5366_i32,
+            b"ggml_is_padded_1d(a)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && (!((*a).grad).is_null() || !((*b).grad).is_null()) {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6580,7 +6550,7 @@ pub unsafe extern "C" fn ggml_scale(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_scale_impl(ctx, a, b, 0 as i32 != 0)
+    ggml_scale_impl(ctx, a, b, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_scale_inplace(
@@ -6588,7 +6558,7 @@ pub unsafe extern "C" fn ggml_scale_inplace(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_scale_impl(ctx, a, b, 1 as i32 != 0)
+    ggml_scale_impl(ctx, a, b, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_set_impl(
@@ -6604,16 +6574,16 @@ pub unsafe extern "C" fn ggml_set_impl(
     if ggml_nelements(a) < ggml_nelements(b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5409 as i32,
-            b"ggml_nelements(a) >= ggml_nelements(b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5409_i32,
+            b"ggml_nelements(a) >= ggml_nelements(b)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && (!((*a).grad).is_null() || !((*b).grad).is_null()) {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6621,15 +6591,15 @@ pub unsafe extern "C" fn ggml_set_impl(
         ggml_dup_tensor(ctx, a)
     };
     ggml_scratch_save(ctx);
-    let mut c: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 5 as i32 as int64_t);
-    *((*c).data as *mut int32_t).offset(0 as i32 as isize) = nb1 as int32_t;
-    *((*c).data as *mut int32_t).offset(1 as i32 as isize) = nb2 as int32_t;
-    *((*c).data as *mut int32_t).offset(2 as i32 as isize) = nb3 as int32_t;
-    *((*c).data as *mut int32_t).offset(3 as i32 as isize) = offset as int32_t;
-    *((*c).data as *mut int32_t).offset(4 as i32 as isize) = if inplace as i32 != 0 {
-        1 as i32
+    let mut c: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 5_i32 as int64_t);
+    *((*c).data as *mut int32_t).offset(0_i32 as isize) = nb1 as int32_t;
+    *((*c).data as *mut int32_t).offset(1_i32 as isize) = nb2 as int32_t;
+    *((*c).data as *mut int32_t).offset(2_i32 as isize) = nb3 as int32_t;
+    *((*c).data as *mut int32_t).offset(3_i32 as isize) = offset as int32_t;
+    *((*c).data as *mut int32_t).offset(4_i32 as isize) = if inplace as i32 != 0 {
+        1_i32
     } else {
-        0 as i32
+        0_i32
     };
     ggml_scratch_load(ctx);
     (*result).op = GGML_OP_SET;
@@ -6640,7 +6610,7 @@ pub unsafe extern "C" fn ggml_set_impl(
     };
     (*result).src0 = a;
     (*result).src1 = b;
-    (*result).opt[0 as i32 as usize] = c;
+    (*result).opt[0_i32 as usize] = c;
     result
 }
 #[no_mangle]
@@ -6653,7 +6623,7 @@ pub unsafe extern "C" fn ggml_set(
     mut nb3: size_t,
     mut offset: size_t,
 ) -> *mut ggml_tensor {
-    ggml_set_impl(ctx, a, b, nb1, nb2, nb3, offset, 0 as i32 != 0)
+    ggml_set_impl(ctx, a, b, nb1, nb2, nb3, offset, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_set_inplace(
@@ -6665,7 +6635,7 @@ pub unsafe extern "C" fn ggml_set_inplace(
     mut nb3: size_t,
     mut offset: size_t,
 ) -> *mut ggml_tensor {
-    ggml_set_impl(ctx, a, b, nb1, nb2, nb3, offset, 1 as i32 != 0)
+    ggml_set_impl(ctx, a, b, nb1, nb2, nb3, offset, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_set_1d(
@@ -6678,11 +6648,11 @@ pub unsafe extern "C" fn ggml_set_1d(
         ctx,
         a,
         b,
-        (*a).nb[1 as i32 as usize],
-        (*a).nb[2 as i32 as usize],
-        (*a).nb[3 as i32 as usize],
+        (*a).nb[1_i32 as usize],
+        (*a).nb[2_i32 as usize],
+        (*a).nb[3_i32 as usize],
         offset,
-        0 as i32 != 0,
+        0_i32 != 0,
     )
 }
 #[no_mangle]
@@ -6696,11 +6666,11 @@ pub unsafe extern "C" fn ggml_set_1d_inplace(
         ctx,
         a,
         b,
-        (*a).nb[1 as i32 as usize],
-        (*a).nb[2 as i32 as usize],
-        (*a).nb[3 as i32 as usize],
+        (*a).nb[1_i32 as usize],
+        (*a).nb[2_i32 as usize],
+        (*a).nb[3_i32 as usize],
         offset,
-        1 as i32 != 0,
+        1_i32 != 0,
     )
 }
 #[no_mangle]
@@ -6716,10 +6686,10 @@ pub unsafe extern "C" fn ggml_set_2d(
         a,
         b,
         nb1,
-        (*a).nb[2 as i32 as usize],
-        (*a).nb[3 as i32 as usize],
+        (*a).nb[2_i32 as usize],
+        (*a).nb[3_i32 as usize],
         offset,
-        0 as i32 != 0,
+        0_i32 != 0,
     )
 }
 #[no_mangle]
@@ -6735,10 +6705,10 @@ pub unsafe extern "C" fn ggml_set_2d_inplace(
         a,
         b,
         nb1,
-        (*a).nb[2 as i32 as usize],
-        (*a).nb[3 as i32 as usize],
+        (*a).nb[2_i32 as usize],
+        (*a).nb[3_i32 as usize],
         offset,
-        0 as i32 != 0,
+        0_i32 != 0,
     )
 }
 #[no_mangle]
@@ -6751,16 +6721,16 @@ pub unsafe extern "C" fn ggml_cpy_impl(
     if ggml_nelements(a) != ggml_nelements(b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5505 as i32,
-            b"ggml_nelements(a) == ggml_nelements(b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5505_i32,
+            b"ggml_nelements(a) == ggml_nelements(b)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && (!((*a).grad).is_null() || !((*b).grad).is_null()) {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_view_tensor(ctx, b);
     (*result).op = GGML_OP_CPY;
@@ -6779,7 +6749,7 @@ pub unsafe extern "C" fn ggml_cpy(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_cpy_impl(ctx, a, b, 0 as i32 != 0)
+    ggml_cpy_impl(ctx, a, b, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpy_inplace(
@@ -6787,7 +6757,7 @@ pub unsafe extern "C" fn ggml_cpy_inplace(
     mut a: *mut ggml_tensor,
     mut b: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_cpy_impl(ctx, a, b, 1 as i32 != 0)
+    ggml_cpy_impl(ctx, a, b, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cont_impl(
@@ -6795,9 +6765,9 @@ pub unsafe extern "C" fn ggml_cont_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -6819,14 +6789,14 @@ pub unsafe extern "C" fn ggml_cont(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_cont_impl(ctx, a, 0 as i32 != 0)
+    ggml_cont_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cont_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_cont_impl(ctx, a, 1 as i32 != 0)
+    ggml_cont_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_reshape(
@@ -6837,36 +6807,36 @@ pub unsafe extern "C" fn ggml_reshape(
     if !ggml_is_contiguous(a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5578 as i32,
-            b"ggml_is_contiguous(a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5578_i32,
+            b"ggml_is_contiguous(a)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5579 as i32,
-            b"ggml_is_contiguous(b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5579_i32,
+            b"ggml_is_contiguous(b)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ggml_nelements(a) != ggml_nelements(b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5580 as i32,
-            b"ggml_nelements(a) == ggml_nelements(b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5580_i32,
+            b"ggml_nelements(a) == ggml_nelements(b)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let _ = ((*b).grad).is_null();
     let mut result: *mut ggml_tensor = ggml_new_tensor_impl(
@@ -6895,30 +6865,30 @@ pub unsafe extern "C" fn ggml_reshape_1d(
     if !ggml_is_contiguous(a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5607 as i32,
-            b"ggml_is_contiguous(a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5607_i32,
+            b"ggml_is_contiguous(a)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ggml_nelements(a) != ne0 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5608 as i32,
-            b"ggml_nelements(a) == ne0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5608_i32,
+            b"ggml_nelements(a) == ne0\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let ne: [int64_t; 1] = [ne0];
     let mut result: *mut ggml_tensor =
-        ggml_new_tensor_impl(ctx, (*a).type_0, 1 as i32, ne.as_ptr(), (*a).data);
+        ggml_new_tensor_impl(ctx, (*a).type_0, 1_i32, ne.as_ptr(), (*a).data);
     (*result).op = GGML_OP_RESHAPE;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -6939,30 +6909,30 @@ pub unsafe extern "C" fn ggml_reshape_2d(
     if !ggml_is_contiguous(a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5632 as i32,
-            b"ggml_is_contiguous(a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5632_i32,
+            b"ggml_is_contiguous(a)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ggml_nelements(a) != ne0 * ne1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5633 as i32,
-            b"ggml_nelements(a) == ne0*ne1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5633_i32,
+            b"ggml_nelements(a) == ne0*ne1\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let ne: [int64_t; 2] = [ne0, ne1];
     let mut result: *mut ggml_tensor =
-        ggml_new_tensor_impl(ctx, (*a).type_0, 2 as i32, ne.as_ptr(), (*a).data);
+        ggml_new_tensor_impl(ctx, (*a).type_0, 2_i32, ne.as_ptr(), (*a).data);
     (*result).op = GGML_OP_RESHAPE;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -6984,30 +6954,30 @@ pub unsafe extern "C" fn ggml_reshape_3d(
     if !ggml_is_contiguous(a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5658 as i32,
-            b"ggml_is_contiguous(a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5658_i32,
+            b"ggml_is_contiguous(a)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ggml_nelements(a) != ne0 * ne1 * ne2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5659 as i32,
-            b"ggml_nelements(a) == ne0*ne1*ne2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5659_i32,
+            b"ggml_nelements(a) == ne0*ne1*ne2\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let ne: [int64_t; 3] = [ne0, ne1, ne2];
     let mut result: *mut ggml_tensor =
-        ggml_new_tensor_impl(ctx, (*a).type_0, 3 as i32, ne.as_ptr(), (*a).data);
+        ggml_new_tensor_impl(ctx, (*a).type_0, 3_i32, ne.as_ptr(), (*a).data);
     (*result).op = GGML_OP_RESHAPE;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -7030,30 +7000,30 @@ pub unsafe extern "C" fn ggml_reshape_4d(
     if !ggml_is_contiguous(a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5686 as i32,
-            b"ggml_is_contiguous(a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5686_i32,
+            b"ggml_is_contiguous(a)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ggml_nelements(a) != ne0 * ne1 * ne2 * ne3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5687 as i32,
-            b"ggml_nelements(a) == ne0*ne1*ne2*ne3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5687_i32,
+            b"ggml_nelements(a) == ne0*ne1*ne2*ne3\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let ne: [int64_t; 4] = [ne0, ne1, ne2, ne3];
     let mut result: *mut ggml_tensor =
-        ggml_new_tensor_impl(ctx, (*a).type_0, 4 as i32, ne.as_ptr(), (*a).data);
+        ggml_new_tensor_impl(ctx, (*a).type_0, 4_i32, ne.as_ptr(), (*a).data);
     (*result).op = GGML_OP_RESHAPE;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -7071,16 +7041,16 @@ pub unsafe extern "C" fn ggml_view_1d(
     mut ne0: int64_t,
     mut offset: size_t,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_new_tensor_impl(
         ctx,
         (*a).type_0,
-        1 as i32,
+        1_i32,
         &mut ne0,
-        ((*a).data as *mut libc::c_char).offset(offset as isize) as *mut libc::c_void,
+        ((*a).data as *mut i8).offset(offset as isize) as *mut libc::c_void,
     );
     (*result).op = GGML_OP_VIEW;
     (*result).grad = if is_node as i32 != 0 {
@@ -7108,21 +7078,21 @@ pub unsafe extern "C" fn ggml_view_2d(
     mut nb1: size_t,
     mut offset: size_t,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
-    let ne: [int64_t; 4] = [ne0, ne1, 1 as i32 as int64_t, 1 as i32 as int64_t];
+    let ne: [int64_t; 4] = [ne0, ne1, 1_i32 as int64_t, 1_i32 as int64_t];
     let mut result: *mut ggml_tensor = ggml_new_tensor_impl(
         ctx,
         (*a).type_0,
-        2 as i32,
+        2_i32,
         ne.as_ptr(),
-        ((*a).data as *mut libc::c_char).offset(offset as isize) as *mut libc::c_void,
+        ((*a).data as *mut i8).offset(offset as isize) as *mut libc::c_void,
     );
-    (*result).nb[1 as i32 as usize] = nb1;
-    (*result).nb[2 as i32 as usize] = ((*result).nb[1 as i32 as usize]).wrapping_mul(ne1 as u64);
-    (*result).nb[3 as i32 as usize] = (*result).nb[2 as i32 as usize];
+    (*result).nb[1_i32 as usize] = nb1;
+    (*result).nb[2_i32 as usize] = ((*result).nb[1_i32 as usize]).wrapping_mul(ne1 as u64);
+    (*result).nb[3_i32 as usize] = (*result).nb[2_i32 as usize];
     (*result).op = GGML_OP_VIEW;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -7151,21 +7121,21 @@ pub unsafe extern "C" fn ggml_view_3d(
     mut nb2: size_t,
     mut offset: size_t,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
-    let ne: [int64_t; 4] = [ne0, ne1, ne2, 1 as i32 as int64_t];
+    let ne: [int64_t; 4] = [ne0, ne1, ne2, 1_i32 as int64_t];
     let mut result: *mut ggml_tensor = ggml_new_tensor_impl(
         ctx,
         (*a).type_0,
-        3 as i32,
+        3_i32,
         ne.as_ptr(),
-        ((*a).data as *mut libc::c_char).offset(offset as isize) as *mut libc::c_void,
+        ((*a).data as *mut i8).offset(offset as isize) as *mut libc::c_void,
     );
-    (*result).nb[1 as i32 as usize] = nb1;
-    (*result).nb[2 as i32 as usize] = nb2;
-    (*result).nb[3 as i32 as usize] = ((*result).nb[2 as i32 as usize]).wrapping_mul(ne2 as u64);
+    (*result).nb[1_i32 as usize] = nb1;
+    (*result).nb[2_i32 as usize] = nb2;
+    (*result).nb[3_i32 as usize] = ((*result).nb[2_i32 as usize]).wrapping_mul(ne2 as u64);
     (*result).op = GGML_OP_VIEW;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -7196,21 +7166,21 @@ pub unsafe extern "C" fn ggml_view_4d(
     mut nb3: size_t,
     mut offset: size_t,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let ne: [int64_t; 4] = [ne0, ne1, ne2, ne3];
     let mut result: *mut ggml_tensor = ggml_new_tensor_impl(
         ctx,
         (*a).type_0,
-        4 as i32,
+        4_i32,
         ne.as_ptr(),
-        ((*a).data as *mut libc::c_char).offset(offset as isize) as *mut libc::c_void,
+        ((*a).data as *mut i8).offset(offset as isize) as *mut libc::c_void,
     );
-    (*result).nb[1 as i32 as usize] = nb1;
-    (*result).nb[2 as i32 as usize] = nb2;
-    (*result).nb[3 as i32 as usize] = nb3;
+    (*result).nb[1_i32 as usize] = nb1;
+    (*result).nb[2_i32 as usize] = nb2;
+    (*result).nb[3_i32 as usize] = nb3;
     (*result).op = GGML_OP_VIEW;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -7237,129 +7207,129 @@ pub unsafe extern "C" fn ggml_permute(
     mut axis2: i32,
     mut axis3: i32,
 ) -> *mut ggml_tensor {
-    if !(axis0 >= 0 as i32 && axis0 < 4 as i32) {
+    if !(axis0 >= 0_i32 && axis0 < 4_i32) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5857 as i32,
-            b"axis0 >= 0 && axis0 < GGML_MAX_DIMS\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5857_i32,
+            b"axis0 >= 0 && axis0 < GGML_MAX_DIMS\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if !(axis1 >= 0 as i32 && axis1 < 4 as i32) {
+    if !(axis1 >= 0_i32 && axis1 < 4_i32) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5858 as i32,
-            b"axis1 >= 0 && axis1 < GGML_MAX_DIMS\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5858_i32,
+            b"axis1 >= 0 && axis1 < GGML_MAX_DIMS\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if !(axis2 >= 0 as i32 && axis2 < 4 as i32) {
+    if !(axis2 >= 0_i32 && axis2 < 4_i32) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5859 as i32,
-            b"axis2 >= 0 && axis2 < GGML_MAX_DIMS\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5859_i32,
+            b"axis2 >= 0 && axis2 < GGML_MAX_DIMS\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if !(axis3 >= 0 as i32 && axis3 < 4 as i32) {
+    if !(axis3 >= 0_i32 && axis3 < 4_i32) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5860 as i32,
-            b"axis3 >= 0 && axis3 < GGML_MAX_DIMS\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5860_i32,
+            b"axis3 >= 0 && axis3 < GGML_MAX_DIMS\0" as *const u8 as *const i8,
         );
         abort();
     }
     if axis0 == axis1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5862 as i32,
-            b"axis0 != axis1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5862_i32,
+            b"axis0 != axis1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if axis0 == axis2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5863 as i32,
-            b"axis0 != axis2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5863_i32,
+            b"axis0 != axis2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if axis0 == axis3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5864 as i32,
-            b"axis0 != axis3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5864_i32,
+            b"axis0 != axis3\0" as *const u8 as *const i8,
         );
         abort();
     }
     if axis1 == axis2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5865 as i32,
-            b"axis1 != axis2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5865_i32,
+            b"axis1 != axis2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if axis1 == axis3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5866 as i32,
-            b"axis1 != axis3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5866_i32,
+            b"axis1 != axis3\0" as *const u8 as *const i8,
         );
         abort();
     }
     if axis2 == axis3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5867 as i32,
-            b"axis2 != axis3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5867_i32,
+            b"axis2 != axis3\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_view_tensor(ctx, a);
     let mut ne: [i32; 4] = [0; 4];
     let mut nb: [i32; 4] = [0; 4];
-    ne[axis0 as usize] = (*a).ne[0 as i32 as usize] as i32;
-    ne[axis1 as usize] = (*a).ne[1 as i32 as usize] as i32;
-    ne[axis2 as usize] = (*a).ne[2 as i32 as usize] as i32;
-    ne[axis3 as usize] = (*a).ne[3 as i32 as usize] as i32;
-    nb[axis0 as usize] = (*a).nb[0 as i32 as usize] as i32;
-    nb[axis1 as usize] = (*a).nb[1 as i32 as usize] as i32;
-    nb[axis2 as usize] = (*a).nb[2 as i32 as usize] as i32;
-    nb[axis3 as usize] = (*a).nb[3 as i32 as usize] as i32;
-    (*result).ne[0 as i32 as usize] = ne[0 as i32 as usize] as int64_t;
-    (*result).ne[1 as i32 as usize] = ne[1 as i32 as usize] as int64_t;
-    (*result).ne[2 as i32 as usize] = ne[2 as i32 as usize] as int64_t;
-    (*result).ne[3 as i32 as usize] = ne[3 as i32 as usize] as int64_t;
-    (*result).nb[0 as i32 as usize] = nb[0 as i32 as usize] as size_t;
-    (*result).nb[1 as i32 as usize] = nb[1 as i32 as usize] as size_t;
-    (*result).nb[2 as i32 as usize] = nb[2 as i32 as usize] as size_t;
-    (*result).nb[3 as i32 as usize] = nb[3 as i32 as usize] as size_t;
+    ne[axis0 as usize] = (*a).ne[0_i32 as usize] as i32;
+    ne[axis1 as usize] = (*a).ne[1_i32 as usize] as i32;
+    ne[axis2 as usize] = (*a).ne[2_i32 as usize] as i32;
+    ne[axis3 as usize] = (*a).ne[3_i32 as usize] as i32;
+    nb[axis0 as usize] = (*a).nb[0_i32 as usize] as i32;
+    nb[axis1 as usize] = (*a).nb[1_i32 as usize] as i32;
+    nb[axis2 as usize] = (*a).nb[2_i32 as usize] as i32;
+    nb[axis3 as usize] = (*a).nb[3_i32 as usize] as i32;
+    (*result).ne[0_i32 as usize] = ne[0_i32 as usize] as int64_t;
+    (*result).ne[1_i32 as usize] = ne[1_i32 as usize] as int64_t;
+    (*result).ne[2_i32 as usize] = ne[2_i32 as usize] as int64_t;
+    (*result).ne[3_i32 as usize] = ne[3_i32 as usize] as int64_t;
+    (*result).nb[0_i32 as usize] = nb[0_i32 as usize] as size_t;
+    (*result).nb[1_i32 as usize] = nb[1_i32 as usize] as size_t;
+    (*result).nb[2_i32 as usize] = nb[2_i32 as usize] as size_t;
+    (*result).nb[3_i32 as usize] = nb[3_i32 as usize] as size_t;
     (*result).op = GGML_OP_PERMUTE;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -7369,10 +7339,10 @@ pub unsafe extern "C" fn ggml_permute(
     (*result).src0 = a;
     (*result).src1 = std::ptr::null_mut::<ggml_tensor>();
     if is_node {
-        (*result).padding[0 as i32 as usize] = axis0 as libc::c_char;
-        (*result).padding[1 as i32 as usize] = axis1 as libc::c_char;
-        (*result).padding[2 as i32 as usize] = axis2 as libc::c_char;
-        (*result).padding[3 as i32 as usize] = axis3 as libc::c_char;
+        (*result).padding[0_i32 as usize] = axis0 as i8;
+        (*result).padding[1_i32 as usize] = axis1 as i8;
+        (*result).padding[2_i32 as usize] = axis2 as i8;
+        (*result).padding[3_i32 as usize] = axis3 as i8;
     }
     result
 }
@@ -7381,15 +7351,15 @@ pub unsafe extern "C" fn ggml_transpose(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_view_tensor(ctx, a);
-    (*result).ne[0 as i32 as usize] = (*a).ne[1 as i32 as usize];
-    (*result).ne[1 as i32 as usize] = (*a).ne[0 as i32 as usize];
-    (*result).nb[0 as i32 as usize] = (*a).nb[1 as i32 as usize];
-    (*result).nb[1 as i32 as usize] = (*a).nb[0 as i32 as usize];
+    (*result).ne[0_i32 as usize] = (*a).ne[1_i32 as usize];
+    (*result).ne[1_i32 as usize] = (*a).ne[0_i32 as usize];
+    (*result).nb[0_i32 as usize] = (*a).nb[1_i32 as usize];
+    (*result).nb[1_i32 as usize] = (*a).nb[0_i32 as usize];
     (*result).op = GGML_OP_TRANSPOSE;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -7412,23 +7382,23 @@ pub unsafe extern "C" fn ggml_get_rows(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5948 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5948_i32,
             b"ggml_is_matrix(a) && ggml_is_vector(b) && b->type == GGML_TYPE_I32\0" as *const u8
-                as *const libc::c_char,
+                as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() || !((*b).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_new_tensor_2d(
         ctx,
         GGML_TYPE_F32,
-        (*a).ne[0 as i32 as usize],
-        (*b).ne[0 as i32 as usize],
+        (*a).ne[0_i32 as usize],
+        (*b).ne[0_i32 as usize],
     );
     (*result).op = GGML_OP_GET_ROWS;
     (*result).grad = if is_node as i32 != 0 {
@@ -7453,34 +7423,34 @@ pub unsafe extern "C" fn ggml_get_rows_back(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5975 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5975_i32,
             b"ggml_is_matrix(a) && ggml_is_vector(b) && b->type == GGML_TYPE_I32\0" as *const u8
-                as *const libc::c_char,
+                as *const i8,
         );
         abort();
     }
-    if !(ggml_is_matrix(c) as i32 != 0 && (*a).ne[0 as i32 as usize] == (*c).ne[0 as i32 as usize])
+    if !(ggml_is_matrix(c) as i32 != 0 && (*a).ne[0_i32 as usize] == (*c).ne[0_i32 as usize])
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            5976 as i32,
-            b"ggml_is_matrix(c) && (a->ne[0] == c->ne[0])\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            5976_i32,
+            b"ggml_is_matrix(c) && (a->ne[0] == c->ne[0])\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() || !((*b).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_new_tensor_2d(
         ctx,
         GGML_TYPE_F32,
-        (*c).ne[0 as i32 as usize],
-        (*c).ne[1 as i32 as usize],
+        (*c).ne[0_i32 as usize],
+        (*c).ne[1_i32 as usize],
     );
     (*result).op = GGML_OP_GET_ROWS_BACK;
     (*result).grad = if is_node as i32 != 0 {
@@ -7490,7 +7460,7 @@ pub unsafe extern "C" fn ggml_get_rows_back(
     };
     (*result).src0 = a;
     (*result).src1 = b;
-    (*result).opt[0 as i32 as usize] = c;
+    (*result).opt[0_i32 as usize] = c;
     result
 }
 #[no_mangle]
@@ -7498,33 +7468,33 @@ pub unsafe extern "C" fn ggml_diag(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    if (*a).ne[1 as i32 as usize] != 1 as i32 as i64 {
+    if (*a).ne[1_i32 as usize] != 1_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6002 as i32,
-            b"a->ne[1] == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6002_i32,
+            b"a->ne[1] == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let ne: [int64_t; 4] = [
-        (*a).ne[0 as i32 as usize],
-        (*a).ne[0 as i32 as usize],
-        (*a).ne[2 as i32 as usize],
-        (*a).ne[3 as i32 as usize],
+        (*a).ne[0_i32 as usize],
+        (*a).ne[0_i32 as usize],
+        (*a).ne[2_i32 as usize],
+        (*a).ne[3_i32 as usize],
     ];
     let mut result: *mut ggml_tensor = ggml_new_tensor(
         ctx,
         (*a).type_0,
-        if (*a).n_dims > 2 as i32 {
+        if (*a).n_dims > 2_i32 {
             (*a).n_dims
         } else {
-            2 as i32
+            2_i32
         },
         ne.as_ptr(),
     );
@@ -7545,9 +7515,9 @@ pub unsafe extern "C" fn ggml_diag_mask_inf_impl(
     mut n_past: i32,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -7555,12 +7525,12 @@ pub unsafe extern "C" fn ggml_diag_mask_inf_impl(
         ggml_dup_tensor(ctx, a)
     };
     ggml_scratch_save(ctx);
-    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 2 as i32 as int64_t);
-    *((*b).data as *mut int32_t).offset(0 as i32 as isize) = n_past;
-    *((*b).data as *mut int32_t).offset(1 as i32 as isize) = if inplace as i32 != 0 {
-        1 as i32
+    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 2_i32 as int64_t);
+    *((*b).data as *mut int32_t).offset(0_i32 as isize) = n_past;
+    *((*b).data as *mut int32_t).offset(1_i32 as isize) = if inplace as i32 != 0 {
+        1_i32
     } else {
-        0 as i32
+        0_i32
     };
     ggml_scratch_load(ctx);
     (*result).op = GGML_OP_DIAG_MASK_INF;
@@ -7579,7 +7549,7 @@ pub unsafe extern "C" fn ggml_diag_mask_inf(
     mut a: *mut ggml_tensor,
     mut n_past: i32,
 ) -> *mut ggml_tensor {
-    ggml_diag_mask_inf_impl(ctx, a, n_past, 0 as i32 != 0)
+    ggml_diag_mask_inf_impl(ctx, a, n_past, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_diag_mask_inf_inplace(
@@ -7587,7 +7557,7 @@ pub unsafe extern "C" fn ggml_diag_mask_inf_inplace(
     mut a: *mut ggml_tensor,
     mut n_past: i32,
 ) -> *mut ggml_tensor {
-    ggml_diag_mask_inf_impl(ctx, a, n_past, 1 as i32 != 0)
+    ggml_diag_mask_inf_impl(ctx, a, n_past, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_diag_mask_zero_impl(
@@ -7596,9 +7566,9 @@ pub unsafe extern "C" fn ggml_diag_mask_zero_impl(
     mut n_past: i32,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -7606,13 +7576,13 @@ pub unsafe extern "C" fn ggml_diag_mask_zero_impl(
         ggml_dup_tensor(ctx, a)
     };
     ggml_scratch_save(ctx);
-    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 2 as i32 as int64_t);
-    ggml_set_name(b, b"n_past, inplace\0" as *const u8 as *const libc::c_char);
-    *((*b).data as *mut int32_t).offset(0 as i32 as isize) = n_past;
-    *((*b).data as *mut int32_t).offset(1 as i32 as isize) = if inplace as i32 != 0 {
-        1 as i32
+    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 2_i32 as int64_t);
+    ggml_set_name(b, b"n_past, inplace\0" as *const u8 as *const i8);
+    *((*b).data as *mut int32_t).offset(0_i32 as isize) = n_past;
+    *((*b).data as *mut int32_t).offset(1_i32 as isize) = if inplace as i32 != 0 {
+        1_i32
     } else {
-        0 as i32
+        0_i32
     };
     ggml_scratch_load(ctx);
     (*result).op = GGML_OP_DIAG_MASK_ZERO;
@@ -7631,7 +7601,7 @@ pub unsafe extern "C" fn ggml_diag_mask_zero(
     mut a: *mut ggml_tensor,
     mut n_past: i32,
 ) -> *mut ggml_tensor {
-    ggml_diag_mask_zero_impl(ctx, a, n_past, 0 as i32 != 0)
+    ggml_diag_mask_zero_impl(ctx, a, n_past, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_diag_mask_zero_inplace(
@@ -7639,7 +7609,7 @@ pub unsafe extern "C" fn ggml_diag_mask_zero_inplace(
     mut a: *mut ggml_tensor,
     mut n_past: i32,
 ) -> *mut ggml_tensor {
-    ggml_diag_mask_zero_impl(ctx, a, n_past, 1 as i32 != 0)
+    ggml_diag_mask_zero_impl(ctx, a, n_past, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_soft_max_impl(
@@ -7647,9 +7617,9 @@ pub unsafe extern "C" fn ggml_soft_max_impl(
     mut a: *mut ggml_tensor,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -7671,14 +7641,14 @@ pub unsafe extern "C" fn ggml_soft_max(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_soft_max_impl(ctx, a, 0 as i32 != 0)
+    ggml_soft_max_impl(ctx, a, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_soft_max_inplace(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    ggml_soft_max_impl(ctx, a, 1 as i32 != 0)
+    ggml_soft_max_impl(ctx, a, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_rope_impl(
@@ -7689,19 +7659,19 @@ pub unsafe extern "C" fn ggml_rope_impl(
     mut mode: i32,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    if n_past < 0 as i32 {
+    if n_past < 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6158 as i32,
-            b"n_past >= 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6158_i32,
+            b"n_past >= 0\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = if inplace as i32 != 0 {
         ggml_view_tensor(ctx, a)
@@ -7709,10 +7679,10 @@ pub unsafe extern "C" fn ggml_rope_impl(
         ggml_dup_tensor(ctx, a)
     };
     ggml_scratch_save(ctx);
-    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 3 as i32 as int64_t);
-    *((*b).data as *mut int32_t).offset(0 as i32 as isize) = n_past;
-    *((*b).data as *mut int32_t).offset(1 as i32 as isize) = n_dims;
-    *((*b).data as *mut int32_t).offset(2 as i32 as isize) = mode;
+    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 3_i32 as int64_t);
+    *((*b).data as *mut int32_t).offset(0_i32 as isize) = n_past;
+    *((*b).data as *mut int32_t).offset(1_i32 as isize) = n_dims;
+    *((*b).data as *mut int32_t).offset(2_i32 as isize) = mode;
     ggml_scratch_load(ctx);
     (*result).op = GGML_OP_ROPE;
     (*result).grad = if is_node as i32 != 0 {
@@ -7732,7 +7702,7 @@ pub unsafe extern "C" fn ggml_rope(
     mut n_dims: i32,
     mut mode: i32,
 ) -> *mut ggml_tensor {
-    ggml_rope_impl(ctx, a, n_past, n_dims, mode, 0 as i32 != 0)
+    ggml_rope_impl(ctx, a, n_past, n_dims, mode, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_rope_inplace(
@@ -7742,7 +7712,7 @@ pub unsafe extern "C" fn ggml_rope_inplace(
     mut n_dims: i32,
     mut mode: i32,
 ) -> *mut ggml_tensor {
-    ggml_rope_impl(ctx, a, n_past, n_dims, mode, 1 as i32 != 0)
+    ggml_rope_impl(ctx, a, n_past, n_dims, mode, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_rope_back(
@@ -7752,40 +7722,37 @@ pub unsafe extern "C" fn ggml_rope_back(
     mut n_dims: i32,
     mut mode: i32,
 ) -> *mut ggml_tensor {
-    if n_past < 0 as i32 {
+    if n_past < 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6211 as i32,
-            b"n_past >= 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6211_i32,
+            b"n_past >= 0\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        if 0 as i32 == 0 {
+        if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                6215 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                6215_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_dup_tensor(ctx, a);
     ggml_scratch_save(ctx);
-    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 3 as i32 as int64_t);
-    ggml_set_name(
-        b,
-        b"n_past, n_dims, mode\0" as *const u8 as *const libc::c_char,
-    );
-    *((*b).data as *mut int32_t).offset(0 as i32 as isize) = n_past;
-    *((*b).data as *mut int32_t).offset(1 as i32 as isize) = n_dims;
-    *((*b).data as *mut int32_t).offset(2 as i32 as isize) = mode;
+    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 3_i32 as int64_t);
+    ggml_set_name(b, b"n_past, n_dims, mode\0" as *const u8 as *const i8);
+    *((*b).data as *mut int32_t).offset(0_i32 as isize) = n_past;
+    *((*b).data as *mut int32_t).offset(1_i32 as isize) = n_dims;
+    *((*b).data as *mut int32_t).offset(2_i32 as isize) = mode;
     ggml_scratch_load(ctx);
     (*result).op = GGML_OP_ROPE_BACK;
     (*result).grad = if is_node as i32 != 0 {
@@ -7805,46 +7772,46 @@ pub unsafe extern "C" fn ggml_alibi(
     mut n_head: i32,
     mut bias_max: f32,
 ) -> *mut ggml_tensor {
-    if n_past < 0 as i32 {
+    if n_past < 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6248 as i32,
-            b"n_past >= 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6248_i32,
+            b"n_past >= 0\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        if 0 as i32 == 0 {
+        if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                6252 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                6252_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_view_tensor(ctx, a);
     ggml_scratch_save(ctx);
-    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 2 as i32 as int64_t);
-    *((*b).data as *mut int32_t).offset(0 as i32 as isize) = n_past;
-    *((*b).data as *mut int32_t).offset(1 as i32 as isize) = n_head;
+    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 2_i32 as int64_t);
+    *((*b).data as *mut int32_t).offset(0_i32 as isize) = n_past;
+    *((*b).data as *mut int32_t).offset(1_i32 as isize) = n_head;
     if ::core::mem::size_of::<f32>() as u64 != ::core::mem::size_of::<int32_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6266 as i32,
-            b"sizeof(float) == sizeof(int32_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6266_i32,
+            b"sizeof(float) == sizeof(int32_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    *((*b).data as *mut f32).offset(2 as i32 as isize) = bias_max;
+    *((*b).data as *mut f32).offset(2_i32 as isize) = bias_max;
     ggml_scratch_load(ctx);
     (*result).op = GGML_OP_ALIBI;
     (*result).grad = if is_node as i32 != 0 {
@@ -7863,25 +7830,25 @@ pub unsafe extern "C" fn ggml_clamp(
     mut min: f32,
     mut max: f32,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() {
-        if 0 as i32 == 0 {
+        if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                6289 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                6289_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor = ggml_view_tensor(ctx, a);
     ggml_scratch_save(ctx);
-    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 3 as i32 as int64_t);
-    *((*b).data as *mut f32).offset(0 as i32 as isize) = min;
-    *((*b).data as *mut f32).offset(1 as i32 as isize) = max;
+    let mut b: *mut ggml_tensor = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 3_i32 as int64_t);
+    *((*b).data as *mut f32).offset(0_i32 as isize) = min;
+    *((*b).data as *mut f32).offset(1_i32 as isize) = max;
     ggml_scratch_load(ctx);
     (*result).op = GGML_OP_CLAMP;
     (*result).grad = if is_node as i32 != 0 {
@@ -7902,54 +7869,54 @@ pub unsafe extern "C" fn ggml_conv_1d_1s(
     if !ggml_is_matrix(b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6319 as i32,
-            b"ggml_is_matrix(b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6319_i32,
+            b"ggml_is_matrix(b)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if (*a).ne[1 as i32 as usize] != (*b).ne[1 as i32 as usize] {
+    if (*a).ne[1_i32 as usize] != (*b).ne[1_i32 as usize] {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6320 as i32,
-            b"a->ne[1] == b->ne[1]\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6320_i32,
+            b"a->ne[1] == b->ne[1]\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if (*a).ne[3 as i32 as usize] != 1 as i32 as i64 {
+    if (*a).ne[3_i32 as usize] != 1_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6321 as i32,
-            b"a->ne[3] == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6321_i32,
+            b"a->ne[3] == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() || !((*b).grad).is_null() {
-        if 0 as i32 == 0 {
+        if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                6325 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                6325_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let ne: [int64_t; 4] = [
-        (*b).ne[0 as i32 as usize],
-        (*a).ne[2 as i32 as usize],
-        1 as i32 as int64_t,
-        1 as i32 as int64_t,
+        (*b).ne[0_i32 as usize],
+        (*a).ne[2_i32 as usize],
+        1_i32 as int64_t,
+        1_i32 as int64_t,
     ];
-    let mut result: *mut ggml_tensor = ggml_new_tensor(ctx, GGML_TYPE_F32, 2 as i32, ne.as_ptr());
+    let mut result: *mut ggml_tensor = ggml_new_tensor(ctx, GGML_TYPE_F32, 2_i32, ne.as_ptr());
     (*result).op = GGML_OP_CONV_1D_1S;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -7969,54 +7936,54 @@ pub unsafe extern "C" fn ggml_conv_1d_2s(
     if !ggml_is_matrix(b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6346 as i32,
-            b"ggml_is_matrix(b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6346_i32,
+            b"ggml_is_matrix(b)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if (*a).ne[1 as i32 as usize] != (*b).ne[1 as i32 as usize] {
+    if (*a).ne[1_i32 as usize] != (*b).ne[1_i32 as usize] {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6347 as i32,
-            b"a->ne[1] == b->ne[1]\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6347_i32,
+            b"a->ne[1] == b->ne[1]\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if (*a).ne[3 as i32 as usize] != 1 as i32 as i64 {
+    if (*a).ne[3_i32 as usize] != 1_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6348 as i32,
-            b"a->ne[3] == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6348_i32,
+            b"a->ne[3] == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null() || !((*b).grad).is_null() {
-        if 0 as i32 == 0 {
+        if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                6352 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                6352_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let ne: [int64_t; 4] = [
-        (*b).ne[0 as i32 as usize] / 2 as i32 as i64,
-        (*a).ne[2 as i32 as usize],
-        1 as i32 as int64_t,
-        1 as i32 as int64_t,
+        (*b).ne[0_i32 as usize] / 2_i32 as i64,
+        (*a).ne[2_i32 as usize],
+        1_i32 as int64_t,
+        1_i32 as int64_t,
     ];
-    let mut result: *mut ggml_tensor = ggml_new_tensor(ctx, GGML_TYPE_F32, 2 as i32, ne.as_ptr());
+    let mut result: *mut ggml_tensor = ggml_new_tensor(ctx, GGML_TYPE_F32, 2_i32, ne.as_ptr());
     (*result).op = GGML_OP_CONV_1D_2S;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -8038,29 +8005,29 @@ pub unsafe extern "C" fn ggml_flash_attn(
     if !ggml_can_mul_mat(k, q) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6375 as i32,
-            b"ggml_can_mul_mat(k, q)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6375_i32,
+            b"ggml_can_mul_mat(k, q)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*q).grad).is_null() || !((*k).grad).is_null() || !((*v).grad).is_null() {
-        if 0 as i32 == 0 {
+        if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                6381 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                6381_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor =
-        ggml_new_tensor(ctx, GGML_TYPE_F32, 4 as i32, ((*q).ne).as_mut_ptr());
+        ggml_new_tensor(ctx, GGML_TYPE_F32, 4_i32, ((*q).ne).as_mut_ptr());
     (*result).op = GGML_OP_FLASH_ATTN;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -8069,13 +8036,13 @@ pub unsafe extern "C" fn ggml_flash_attn(
     };
     (*result).src0 = q;
     (*result).src1 = k;
-    (*result).opt[0 as i32 as usize] = v;
-    (*result).opt[1 as i32 as usize] = ggml_new_i32(
+    (*result).opt[0_i32 as usize] = v;
+    (*result).opt[1_i32 as usize] = ggml_new_i32(
         ctx,
         if masked as i32 != 0 {
-            1 as i32
+            1_i32
         } else {
-            0 as i32
+            0_i32
         },
     );
     result
@@ -8092,34 +8059,34 @@ pub unsafe extern "C" fn ggml_flash_ff(
     if !ggml_can_mul_mat(b0, a) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6407 as i32,
-            b"ggml_can_mul_mat(b0, a)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6407_i32,
+            b"ggml_can_mul_mat(b0, a)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !((*a).grad).is_null()
         || !((*b0).grad).is_null()
         || !((*b1).grad).is_null()
         || !((*c0).grad).is_null()
         || !((*c1).grad).is_null()
     {
-        if 0 as i32 == 0 {
+        if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                6413 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                6413_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut result: *mut ggml_tensor =
-        ggml_new_tensor(ctx, GGML_TYPE_F32, 4 as i32, ((*a).ne).as_mut_ptr());
+        ggml_new_tensor(ctx, GGML_TYPE_F32, 4_i32, ((*a).ne).as_mut_ptr());
     (*result).op = GGML_OP_FLASH_FF;
     (*result).grad = if is_node as i32 != 0 {
         ggml_dup_tensor(ctx, result)
@@ -8128,9 +8095,9 @@ pub unsafe extern "C" fn ggml_flash_ff(
     };
     (*result).src0 = a;
     (*result).src1 = b0;
-    (*result).opt[0 as i32 as usize] = b1;
-    (*result).opt[1 as i32 as usize] = c0;
-    (*result).opt[2 as i32 as usize] = c1;
+    (*result).opt[0_i32 as usize] = b1;
+    (*result).opt[1_i32 as usize] = c0;
+    (*result).opt[2_i32 as usize] = c1;
     result
 }
 #[no_mangle]
@@ -8140,9 +8107,9 @@ pub unsafe extern "C" fn ggml_map_unary_impl_f32(
     fun: ggml_unary_op_f32_t,
     mut inplace: bool,
 ) -> *mut ggml_tensor {
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && !((*a).grad).is_null() {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut addr_tensor: *mut ggml_tensor = ggml_new_tensor_1d(
         ctx,
@@ -8165,7 +8132,7 @@ pub unsafe extern "C" fn ggml_map_unary_impl_f32(
         std::ptr::null_mut::<ggml_tensor>()
     };
     (*result).src0 = a;
-    (*result).opt[0 as i32 as usize] = addr_tensor;
+    (*result).opt[0_i32 as usize] = addr_tensor;
     result
 }
 #[no_mangle]
@@ -8174,7 +8141,7 @@ pub unsafe extern "C" fn ggml_map_unary_f32(
     mut a: *mut ggml_tensor,
     fun: ggml_unary_op_f32_t,
 ) -> *mut ggml_tensor {
-    ggml_map_unary_impl_f32(ctx, a, fun, 0 as i32 != 0)
+    ggml_map_unary_impl_f32(ctx, a, fun, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_map_unary_inplace_f32(
@@ -8182,7 +8149,7 @@ pub unsafe extern "C" fn ggml_map_unary_inplace_f32(
     mut a: *mut ggml_tensor,
     fun: ggml_unary_op_f32_t,
 ) -> *mut ggml_tensor {
-    ggml_map_unary_impl_f32(ctx, a, fun, 1 as i32 != 0)
+    ggml_map_unary_impl_f32(ctx, a, fun, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_map_binary_impl_f32(
@@ -8195,16 +8162,16 @@ pub unsafe extern "C" fn ggml_map_binary_impl_f32(
     if !ggml_are_same_shape(a, b) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6478 as i32,
-            b"ggml_are_same_shape(a, b)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6478_i32,
+            b"ggml_are_same_shape(a, b)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut is_node: bool = 0 as i32 != 0;
+    let mut is_node: bool = 0_i32 != 0;
     if !inplace && (!((*a).grad).is_null() || !((*b).grad).is_null()) {
-        is_node = 1 as i32 != 0;
+        is_node = 1_i32 != 0;
     }
     let mut addr_tensor: *mut ggml_tensor = ggml_new_tensor_1d(
         ctx,
@@ -8228,7 +8195,7 @@ pub unsafe extern "C" fn ggml_map_binary_impl_f32(
     };
     (*result).src0 = a;
     (*result).src1 = b;
-    (*result).opt[0 as i32 as usize] = addr_tensor;
+    (*result).opt[0_i32 as usize] = addr_tensor;
     result
 }
 #[no_mangle]
@@ -8238,7 +8205,7 @@ pub unsafe extern "C" fn ggml_map_binary_f32(
     mut b: *mut ggml_tensor,
     fun: ggml_binary_op_f32_t,
 ) -> *mut ggml_tensor {
-    ggml_map_binary_impl_f32(ctx, a, b, fun, 0 as i32 != 0)
+    ggml_map_binary_impl_f32(ctx, a, b, fun, 0_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_map_binary_inplace_f32(
@@ -8247,18 +8214,18 @@ pub unsafe extern "C" fn ggml_map_binary_inplace_f32(
     mut b: *mut ggml_tensor,
     fun: ggml_binary_op_f32_t,
 ) -> *mut ggml_tensor {
-    ggml_map_binary_impl_f32(ctx, a, b, fun, 1 as i32 != 0)
+    ggml_map_binary_impl_f32(ctx, a, b, fun, 1_i32 != 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_set_param(mut ctx: *mut ggml_context, mut tensor: *mut ggml_tensor) {
-    (*tensor).is_param = 1 as i32 != 0;
+    (*tensor).is_param = 1_i32 != 0;
     if !((*tensor).grad).is_null() {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6522 as i32,
-            b"tensor->grad == NULL\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6522_i32,
+            b"tensor->grad == NULL\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -8272,31 +8239,30 @@ unsafe extern "C" fn ggml_compute_forward_dup_same_cont(
     if ggml_nelements(dst) != ggml_nelements(src0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6532 as i32,
-            b"ggml_nelements(dst) == ggml_nelements(src0)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6532_i32,
+            b"ggml_nelements(dst) == ggml_nelements(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !(ggml_is_contiguous(dst) as i32 != 0 && ggml_is_contiguous(src0) as i32 != 0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6533 as i32,
-            b"ggml_is_contiguous(dst) && ggml_is_contiguous(src0)\0" as *const u8
-                as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6533_i32,
+            b"ggml_is_contiguous(dst) && ggml_is_contiguous(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src0).type_0 as u32 != (*dst).type_0 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6534 as i32,
-            b"src0->type == dst->type\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6534_i32,
+            b"src0->type == dst->type\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -8305,19 +8271,19 @@ unsafe extern "C" fn ggml_compute_forward_dup_same_cont(
     {
         return;
     }
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let ne: i32 = ggml_nelements(dst) as i32;
-    let dr: i32 = (ne + nth - 1 as i32) / nth;
+    let dr: i32 = (ne + nth - 1_i32) / nth;
     let ie0: i32 = dr * ith;
     let ie1: i32 = if ie0 + dr < ne { ie0 + dr } else { ne };
     if ie0 < ie1 {
         memcpy(
-            ((*dst).data as *mut libc::c_char).offset((ie0 as u64).wrapping_mul(nb0) as isize)
+            ((*dst).data as *mut i8).offset((ie0 as u64).wrapping_mul(nb0) as isize)
                 as *mut libc::c_void,
-            ((*src0).data as *mut libc::c_char).offset((ie0 as u64).wrapping_mul(nb00) as isize)
+            ((*src0).data as *mut i8).offset((ie0 as u64).wrapping_mul(nb00) as isize)
                 as *const libc::c_void,
             ((ie1 - ie0) as u64).wrapping_mul(GGML_TYPE_SIZE[(*src0).type_0 as usize]),
         );
@@ -8331,10 +8297,10 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
     if ggml_nelements(dst) != ggml_nelements(src0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6564 as i32,
-            b"ggml_nelements(dst) == ggml_nelements(src0)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6564_i32,
+            b"ggml_nelements(dst) == ggml_nelements(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -8343,22 +8309,22 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
     {
         return;
     }
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let ne3: int64_t = (*dst).ne[3_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     if ggml_is_contiguous(src0) as i32 != 0
@@ -8369,7 +8335,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
         return;
     }
     let nr: i32 = ne01 as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     if (*src0).type_0 as u32 == (*dst).type_0 as u32
@@ -8378,19 +8344,19 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
         && nb0 == GGML_TYPE_SIZE[(*dst).type_0 as usize]
     {
         let rs: size_t = (ne00 as u64).wrapping_mul(nb00);
-        let mut i03: int64_t = 0 as i32 as int64_t;
+        let mut i03: int64_t = 0_i32 as int64_t;
         while i03 < ne03 {
-            let mut i02: int64_t = 0 as i32 as int64_t;
+            let mut i02: int64_t = 0_i32 as int64_t;
             while i02 < ne02 {
                 let mut i01: int64_t = ir0 as int64_t;
                 while i01 < ir1 as i64 {
                     memcpy(
-                        ((*dst).data as *mut libc::c_char)
+                        ((*dst).data as *mut i8)
                             .offset((i01 as u64).wrapping_mul(nb1) as isize)
                             .offset((i02 as u64).wrapping_mul(nb2) as isize)
                             .offset((i03 as u64).wrapping_mul(nb3) as isize)
                             as *mut libc::c_void,
-                        ((*src0).data as *mut libc::c_char)
+                        ((*src0).data as *mut i8)
                             .offset((i01 as u64).wrapping_mul(nb01) as isize)
                             .offset((i02 as u64).wrapping_mul(nb02) as isize)
                             .offset((i03 as u64).wrapping_mul(nb03) as isize)
@@ -8411,19 +8377,18 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
     if ggml_is_contiguous(dst) {
         if nb00 == ::core::mem::size_of::<ggml_fp16_t>() as u64 {
             if (*dst).type_0 as u32 == GGML_TYPE_F16 as i32 as u32 {
-                let mut id: size_t = 0 as i32 as size_t;
+                let mut id: size_t = 0_i32 as size_t;
                 let rs_0: size_t = (ne00 as u64).wrapping_mul(nb00);
-                let mut dst_ptr: *mut libc::c_char = (*dst).data as *mut libc::c_char;
-                let mut i03_0: i32 = 0 as i32;
+                let mut dst_ptr: *mut i8 = (*dst).data as *mut i8;
+                let mut i03_0: i32 = 0_i32;
                 while (i03_0 as i64) < ne03 {
-                    let mut i02_0: i32 = 0 as i32;
+                    let mut i02_0: i32 = 0_i32;
                     while (i02_0 as i64) < ne02 {
                         id = (id as u64).wrapping_add(rs_0.wrapping_mul(ir0 as u64)) as size_t
                             as size_t;
                         let mut i01_0: i32 = ir0;
                         while i01_0 < ir1 {
-                            let mut src0_ptr: *const libc::c_char = ((*src0).data
-                                as *mut libc::c_char)
+                            let mut src0_ptr: *const i8 = ((*src0).data as *mut i8)
                                 .offset((i01_0 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i02_0 as u64).wrapping_mul(nb02) as isize)
                                 .offset((i03_0 as u64).wrapping_mul(nb03) as isize);
@@ -8445,23 +8410,22 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                     i03_0;
                 }
             } else if (*dst).type_0 as u32 == GGML_TYPE_F32 as i32 as u32 {
-                let mut id_0: size_t = 0 as i32 as size_t;
+                let mut id_0: size_t = 0_i32 as size_t;
                 let mut dst_ptr_0: *mut f32 = (*dst).data as *mut f32;
-                let mut i03_1: i32 = 0 as i32;
+                let mut i03_1: i32 = 0_i32;
                 while (i03_1 as i64) < ne03 {
-                    let mut i02_1: i32 = 0 as i32;
+                    let mut i02_1: i32 = 0_i32;
                     while (i02_1 as i64) < ne02 {
                         id_0 = (id_0 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t
                             as size_t;
                         let mut i01_1: i32 = ir0;
                         while i01_1 < ir1 {
-                            let mut src0_ptr_0: *const ggml_fp16_t = ((*src0).data
-                                as *mut libc::c_char)
+                            let mut src0_ptr_0: *const ggml_fp16_t = ((*src0).data as *mut i8)
                                 .offset((i01_1 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i02_1 as u64).wrapping_mul(nb02) as isize)
                                 .offset((i03_1 as u64).wrapping_mul(nb03) as isize)
                                 as *mut ggml_fp16_t;
-                            let mut i00: i32 = 0 as i32;
+                            let mut i00: i32 = 0_i32;
                             while (i00 as i64) < ne00 {
                                 *dst_ptr_0.offset(id_0 as isize) =
                                     ggml_lookup_fp16_to_fp32(*src0_ptr_0.offset(i00 as isize));
@@ -8489,25 +8453,24 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                         .wrapping_add(CACHE_LINE_SIZE_F32)
                         .wrapping_mul(ith as u64) as isize,
                 );
-                let mut id_1: size_t = 0 as i32 as size_t;
+                let mut id_1: size_t = 0_i32 as size_t;
                 let mut rs_1: size_t =
                     nb0.wrapping_mul((ne00 / GGML_BLCK_SIZE[(*dst).type_0 as usize] as i64) as u64);
-                let mut dst_ptr_1: *mut libc::c_char = (*dst).data as *mut libc::c_char;
-                let mut i03_2: i32 = 0 as i32;
+                let mut dst_ptr_1: *mut i8 = (*dst).data as *mut i8;
+                let mut i03_2: i32 = 0_i32;
                 while (i03_2 as i64) < ne03 {
-                    let mut i02_2: i32 = 0 as i32;
+                    let mut i02_2: i32 = 0_i32;
                     while (i02_2 as i64) < ne02 {
                         id_1 = (id_1 as u64).wrapping_add(rs_1.wrapping_mul(ir0 as u64)) as size_t
                             as size_t;
                         let mut i01_2: i32 = ir0;
                         while i01_2 < ir1 {
-                            let mut src0_ptr_1: *const ggml_fp16_t = ((*src0).data
-                                as *mut libc::c_char)
+                            let mut src0_ptr_1: *const ggml_fp16_t = ((*src0).data as *mut i8)
                                 .offset((i01_2 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i02_2 as u64).wrapping_mul(nb02) as isize)
                                 .offset((i03_2 as u64).wrapping_mul(nb03) as isize)
                                 as *mut ggml_fp16_t;
-                            let mut i00_0: i32 = 0 as i32;
+                            let mut i00_0: i32 = 0_i32;
                             while (i00_0 as i64) < ne00 {
                                 *src0_f32.offset(i00_0 as isize) =
                                     ggml_lookup_fp16_to_fp32(*src0_ptr_1.offset(i00_0 as isize));
@@ -8532,31 +8495,30 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                     i03_2 += 1;
                     i03_2;
                 }
-            } else if 0 as i32 == 0 {
+            } else if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    6686 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    6686_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         } else if (*dst).type_0 as u32 == GGML_TYPE_F32 as i32 as u32 {
-            let mut id_2: size_t = 0 as i32 as size_t;
+            let mut id_2: size_t = 0_i32 as size_t;
             let mut dst_ptr_2: *mut f32 = (*dst).data as *mut f32;
-            let mut i03_3: i32 = 0 as i32;
+            let mut i03_3: i32 = 0_i32;
             while (i03_3 as i64) < ne03 {
-                let mut i02_3: i32 = 0 as i32;
+                let mut i02_3: i32 = 0_i32;
                 while (i02_3 as i64) < ne02 {
                     id_2 =
                         (id_2 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t as size_t;
                     let mut i01_3: i32 = ir0;
                     while i01_3 < ir1 {
-                        let mut i00_1: i32 = 0 as i32;
+                        let mut i00_1: i32 = 0_i32;
                         while (i00_1 as i64) < ne00 {
-                            let mut src0_ptr_2: *const ggml_fp16_t = ((*src0).data
-                                as *mut libc::c_char)
+                            let mut src0_ptr_2: *const ggml_fp16_t = ((*src0).data as *mut i8)
                                 .offset((i00_1 as u64).wrapping_mul(nb00) as isize)
                                 .offset((i01_3 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i02_3 as u64).wrapping_mul(nb02) as isize)
@@ -8581,20 +8543,19 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                 i03_3;
             }
         } else if (*dst).type_0 as u32 == GGML_TYPE_F16 as i32 as u32 {
-            let mut id_3: size_t = 0 as i32 as size_t;
+            let mut id_3: size_t = 0_i32 as size_t;
             let mut dst_ptr_3: *mut ggml_fp16_t = (*dst).data as *mut ggml_fp16_t;
-            let mut i03_4: i32 = 0 as i32;
+            let mut i03_4: i32 = 0_i32;
             while (i03_4 as i64) < ne03 {
-                let mut i02_4: i32 = 0 as i32;
+                let mut i02_4: i32 = 0_i32;
                 while (i02_4 as i64) < ne02 {
                     id_3 =
                         (id_3 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t as size_t;
                     let mut i01_4: i32 = ir0;
                     while i01_4 < ir1 {
-                        let mut i00_2: i32 = 0 as i32;
+                        let mut i00_2: i32 = 0_i32;
                         while (i00_2 as i64) < ne00 {
-                            let mut src0_ptr_3: *const ggml_fp16_t = ((*src0).data
-                                as *mut libc::c_char)
+                            let mut src0_ptr_3: *const ggml_fp16_t = ((*src0).data as *mut i8)
                                 .offset((i00_2 as u64).wrapping_mul(nb00) as isize)
                                 .offset((i01_4 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i02_4 as u64).wrapping_mul(nb02) as isize)
@@ -8617,54 +8578,53 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                 i03_4 += 1;
                 i03_4;
             }
-        } else if 0 as i32 == 0 {
+        } else if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                6728 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                6728_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
         return;
     }
-    let mut i10: int64_t = 0 as i32 as int64_t;
-    let mut i11: int64_t = 0 as i32 as int64_t;
-    let mut i12: int64_t = 0 as i32 as int64_t;
-    let mut i13: int64_t = 0 as i32 as int64_t;
+    let mut i10: int64_t = 0_i32 as int64_t;
+    let mut i11: int64_t = 0_i32 as int64_t;
+    let mut i12: int64_t = 0_i32 as int64_t;
+    let mut i13: int64_t = 0_i32 as int64_t;
     if (*dst).type_0 as u32 == GGML_TYPE_F16 as i32 as u32 {
-        let mut i03_5: int64_t = 0 as i32 as int64_t;
+        let mut i03_5: int64_t = 0_i32 as int64_t;
         while i03_5 < ne03 {
-            let mut i02_5: int64_t = 0 as i32 as int64_t;
+            let mut i02_5: int64_t = 0_i32 as int64_t;
             while i02_5 < ne02 {
                 i10 += ne00 * ir0 as i64;
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
                     if i11 == ne1 {
-                        i11 = 0 as i32 as int64_t;
+                        i11 = 0_i32 as int64_t;
                         i12 += 1;
                         if i12 == ne2 {
-                            i12 = 0 as i32 as int64_t;
+                            i12 = 0_i32 as int64_t;
                             i13 += 1;
                             if i13 == ne3 {
-                                i13 = 0 as i32 as int64_t;
+                                i13 = 0_i32 as int64_t;
                             }
                         }
                     }
                 }
                 let mut i01_5: int64_t = ir0 as int64_t;
                 while i01_5 < ir1 as i64 {
-                    let mut i00_3: int64_t = 0 as i32 as int64_t;
+                    let mut i00_3: int64_t = 0_i32 as int64_t;
                     while i00_3 < ne00 {
-                        let mut src0_ptr_4: *const libc::c_char = ((*src0).data
-                            as *mut libc::c_char)
+                        let mut src0_ptr_4: *const i8 = ((*src0).data as *mut i8)
                             .offset((i00_3 as u64).wrapping_mul(nb00) as isize)
                             .offset((i01_5 as u64).wrapping_mul(nb01) as isize)
                             .offset((i02_5 as u64).wrapping_mul(nb02) as isize)
                             .offset((i03_5 as u64).wrapping_mul(nb03) as isize);
-                        let mut dst_ptr_4: *mut libc::c_char = ((*dst).data as *mut libc::c_char)
+                        let mut dst_ptr_4: *mut i8 = ((*dst).data as *mut i8)
                             .offset((i10 as u64).wrapping_mul(nb0) as isize)
                             .offset((i11 as u64).wrapping_mul(nb1) as isize)
                             .offset((i12 as u64).wrapping_mul(nb2) as isize)
@@ -8676,16 +8636,16 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                         );
                         i10 += 1;
                         if i10 == ne00 {
-                            i10 = 0 as i32 as int64_t;
+                            i10 = 0_i32 as int64_t;
                             i11 += 1;
                             if i11 == ne01 {
-                                i11 = 0 as i32 as int64_t;
+                                i11 = 0_i32 as int64_t;
                                 i12 += 1;
                                 if i12 == ne02 {
-                                    i12 = 0 as i32 as int64_t;
+                                    i12 = 0_i32 as int64_t;
                                     i13 += 1;
                                     if i13 == ne03 {
-                                        i13 = 0 as i32 as int64_t;
+                                        i13 = 0_i32 as int64_t;
                                     }
                                 }
                             }
@@ -8701,13 +8661,13 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                     i10 -= ne0;
                     i11 += 1;
                     if i11 == ne1 {
-                        i11 = 0 as i32 as int64_t;
+                        i11 = 0_i32 as int64_t;
                         i12 += 1;
                         if i12 == ne2 {
-                            i12 = 0 as i32 as int64_t;
+                            i12 = 0_i32 as int64_t;
                             i13 += 1;
                             if i13 == ne3 {
-                                i13 = 0 as i32 as int64_t;
+                                i13 = 0_i32 as int64_t;
                             }
                         }
                     }
@@ -8719,37 +8679,36 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
             i03_5;
         }
     } else if (*dst).type_0 as u32 == GGML_TYPE_F32 as i32 as u32 {
-        let mut i03_6: int64_t = 0 as i32 as int64_t;
+        let mut i03_6: int64_t = 0_i32 as int64_t;
         while i03_6 < ne03 {
-            let mut i02_6: int64_t = 0 as i32 as int64_t;
+            let mut i02_6: int64_t = 0_i32 as int64_t;
             while i02_6 < ne02 {
                 i10 += ne00 * ir0 as i64;
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
                     if i11 == ne1 {
-                        i11 = 0 as i32 as int64_t;
+                        i11 = 0_i32 as int64_t;
                         i12 += 1;
                         if i12 == ne2 {
-                            i12 = 0 as i32 as int64_t;
+                            i12 = 0_i32 as int64_t;
                             i13 += 1;
                             if i13 == ne3 {
-                                i13 = 0 as i32 as int64_t;
+                                i13 = 0_i32 as int64_t;
                             }
                         }
                     }
                 }
                 let mut i01_6: int64_t = ir0 as int64_t;
                 while i01_6 < ir1 as i64 {
-                    let mut i00_4: int64_t = 0 as i32 as int64_t;
+                    let mut i00_4: int64_t = 0_i32 as int64_t;
                     while i00_4 < ne00 {
-                        let mut src0_ptr_5: *const libc::c_char = ((*src0).data
-                            as *mut libc::c_char)
+                        let mut src0_ptr_5: *const i8 = ((*src0).data as *mut i8)
                             .offset((i00_4 as u64).wrapping_mul(nb00) as isize)
                             .offset((i01_6 as u64).wrapping_mul(nb01) as isize)
                             .offset((i02_6 as u64).wrapping_mul(nb02) as isize)
                             .offset((i03_6 as u64).wrapping_mul(nb03) as isize);
-                        let mut dst_ptr_5: *mut libc::c_char = ((*dst).data as *mut libc::c_char)
+                        let mut dst_ptr_5: *mut i8 = ((*dst).data as *mut i8)
                             .offset((i10 as u64).wrapping_mul(nb0) as isize)
                             .offset((i11 as u64).wrapping_mul(nb1) as isize)
                             .offset((i12 as u64).wrapping_mul(nb2) as isize)
@@ -8758,16 +8717,16 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                             ggml_lookup_fp16_to_fp32(*(src0_ptr_5 as *const ggml_fp16_t));
                         i10 += 1;
                         if i10 == ne0 {
-                            i10 = 0 as i32 as int64_t;
+                            i10 = 0_i32 as int64_t;
                             i11 += 1;
                             if i11 == ne1 {
-                                i11 = 0 as i32 as int64_t;
+                                i11 = 0_i32 as int64_t;
                                 i12 += 1;
                                 if i12 == ne2 {
-                                    i12 = 0 as i32 as int64_t;
+                                    i12 = 0_i32 as int64_t;
                                     i13 += 1;
                                     if i13 == ne3 {
-                                        i13 = 0 as i32 as int64_t;
+                                        i13 = 0_i32 as int64_t;
                                     }
                                 }
                             }
@@ -8783,13 +8742,13 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                     i10 -= ne0;
                     i11 += 1;
                     if i11 == ne1 {
-                        i11 = 0 as i32 as int64_t;
+                        i11 = 0_i32 as int64_t;
                         i12 += 1;
                         if i12 == ne2 {
-                            i12 = 0 as i32 as int64_t;
+                            i12 = 0_i32 as int64_t;
                             i13 += 1;
                             if i13 == ne3 {
-                                i13 = 0 as i32 as int64_t;
+                                i13 = 0_i32 as int64_t;
                             }
                         }
                     }
@@ -8800,13 +8759,13 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
             i03_6 += 1;
             i03_6;
         }
-    } else if 0 as i32 == 0 {
+    } else if 0_i32 == 0 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6845 as i32,
-            b"false\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6845_i32,
+            b"false\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -8819,10 +8778,10 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
     if ggml_nelements(dst) != ggml_nelements(src0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            6853 as i32,
-            b"ggml_nelements(dst) == ggml_nelements(src0)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            6853_i32,
+            b"ggml_nelements(dst) == ggml_nelements(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -8831,22 +8790,22 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
     {
         return;
     }
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let ne3: int64_t = (*dst).ne[3_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     if ggml_is_contiguous(src0) as i32 != 0
@@ -8857,7 +8816,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
         return;
     }
     let nr: i32 = ne01 as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     if (*src0).type_0 as u32 == (*dst).type_0 as u32
@@ -8866,19 +8825,19 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
         && nb0 == GGML_TYPE_SIZE[(*dst).type_0 as usize]
     {
         let rs: size_t = (ne00 as u64).wrapping_mul(nb00);
-        let mut i03: int64_t = 0 as i32 as int64_t;
+        let mut i03: int64_t = 0_i32 as int64_t;
         while i03 < ne03 {
-            let mut i02: int64_t = 0 as i32 as int64_t;
+            let mut i02: int64_t = 0_i32 as int64_t;
             while i02 < ne02 {
                 let mut i01: int64_t = ir0 as int64_t;
                 while i01 < ir1 as i64 {
                     memcpy(
-                        ((*dst).data as *mut libc::c_char)
+                        ((*dst).data as *mut i8)
                             .offset((i01 as u64).wrapping_mul(nb1) as isize)
                             .offset((i02 as u64).wrapping_mul(nb2) as isize)
                             .offset((i03 as u64).wrapping_mul(nb3) as isize)
                             as *mut libc::c_void,
-                        ((*src0).data as *mut libc::c_char)
+                        ((*src0).data as *mut i8)
                             .offset((i01 as u64).wrapping_mul(nb01) as isize)
                             .offset((i02 as u64).wrapping_mul(nb02) as isize)
                             .offset((i03 as u64).wrapping_mul(nb03) as isize)
@@ -8899,19 +8858,18 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
     if ggml_is_contiguous(dst) {
         if nb00 == ::core::mem::size_of::<f32>() as u64 {
             if (*dst).type_0 as u32 == GGML_TYPE_F32 as i32 as u32 {
-                let mut id: size_t = 0 as i32 as size_t;
+                let mut id: size_t = 0_i32 as size_t;
                 let rs_0: size_t = (ne00 as u64).wrapping_mul(nb00);
-                let mut dst_ptr: *mut libc::c_char = (*dst).data as *mut libc::c_char;
-                let mut i03_0: i32 = 0 as i32;
+                let mut dst_ptr: *mut i8 = (*dst).data as *mut i8;
+                let mut i03_0: i32 = 0_i32;
                 while (i03_0 as i64) < ne03 {
-                    let mut i02_0: i32 = 0 as i32;
+                    let mut i02_0: i32 = 0_i32;
                     while (i02_0 as i64) < ne02 {
                         id = (id as u64).wrapping_add(rs_0.wrapping_mul(ir0 as u64)) as size_t
                             as size_t;
                         let mut i01_0: i32 = ir0;
                         while i01_0 < ir1 {
-                            let mut src0_ptr: *const libc::c_char = ((*src0).data
-                                as *mut libc::c_char)
+                            let mut src0_ptr: *const i8 = ((*src0).data as *mut i8)
                                 .offset((i01_0 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i02_0 as u64).wrapping_mul(nb02) as isize)
                                 .offset((i03_0 as u64).wrapping_mul(nb03) as isize);
@@ -8933,19 +8891,19 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                     i03_0;
                 }
             } else if (*dst).type_0 as u32 == GGML_TYPE_F16 as i32 as u32 {
-                let mut id_0: size_t = 0 as i32 as size_t;
+                let mut id_0: size_t = 0_i32 as size_t;
                 let mut dst_ptr_0: *mut ggml_fp16_t = (*dst).data as *mut ggml_fp16_t;
-                let mut i03_1: i32 = 0 as i32;
+                let mut i03_1: i32 = 0_i32;
                 while (i03_1 as i64) < ne03 {
-                    let mut i02_1: i32 = 0 as i32;
+                    let mut i02_1: i32 = 0_i32;
                     while (i02_1 as i64) < ne02 {
                         id_0 = (id_0 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t
                             as size_t;
                         let mut i01_1: i32 = ir0;
                         while i01_1 < ir1 {
-                            let mut i00: i32 = 0 as i32;
+                            let mut i00: i32 = 0_i32;
                             while (i00 as i64) < ne00 {
-                                let mut src0_ptr_0: *const f32 = ((*src0).data as *mut libc::c_char)
+                                let mut src0_ptr_0: *const f32 = ((*src0).data as *mut i8)
                                     .offset((i00 as u64).wrapping_mul(nb00) as isize)
                                     .offset((i01_1 as u64).wrapping_mul(nb01) as isize)
                                     .offset((i02_1 as u64).wrapping_mul(nb02) as isize)
@@ -8959,12 +8917,12 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                                     >(_mm_cvtps_ph(
                                         _mm_setr_ps(
                                             *src0_ptr_0,
-                                            0 as i32 as f32,
-                                            0 as i32 as f32,
-                                            0 as i32 as f32,
+                                            0_i32 as f32,
+                                            0_i32 as f32,
+                                            0_i32 as f32,
                                         ),
-                                        0 as i32,
-                                    ))[0 as i32 as usize] as u16
+                                        0_i32,
+                                    ))[0_i32 as usize] as u16
                                 };
                                 id_0 = id_0.wrapping_add(1);
                                 id_0;
@@ -8985,19 +8943,19 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
             } else if ggml_is_quantized((*dst).type_0) {
                 let quantize_row_q: quantize_row_q_t =
                     quantize_fns[(*dst).type_0 as usize].quantize_row_q;
-                let mut id_1: size_t = 0 as i32 as size_t;
+                let mut id_1: size_t = 0_i32 as size_t;
                 let mut rs_1: size_t =
                     nb0.wrapping_mul((ne00 / GGML_BLCK_SIZE[(*dst).type_0 as usize] as i64) as u64);
-                let mut dst_ptr_1: *mut libc::c_char = (*dst).data as *mut libc::c_char;
-                let mut i03_2: i32 = 0 as i32;
+                let mut dst_ptr_1: *mut i8 = (*dst).data as *mut i8;
+                let mut i03_2: i32 = 0_i32;
                 while (i03_2 as i64) < ne03 {
-                    let mut i02_2: i32 = 0 as i32;
+                    let mut i02_2: i32 = 0_i32;
                     while (i02_2 as i64) < ne02 {
                         id_1 = (id_1 as u64).wrapping_add(rs_1.wrapping_mul(ir0 as u64)) as size_t
                             as size_t;
                         let mut i01_2: i32 = ir0;
                         while i01_2 < ir1 {
-                            let mut src0_ptr_1: *const f32 = ((*src0).data as *mut libc::c_char)
+                            let mut src0_ptr_1: *const f32 = ((*src0).data as *mut i8)
                                 .offset((i01_2 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i02_2 as u64).wrapping_mul(nb02) as isize)
                                 .offset((i03_2 as u64).wrapping_mul(nb03) as isize)
@@ -9020,30 +8978,30 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                     i03_2 += 1;
                     i03_2;
                 }
-            } else if 0 as i32 == 0 {
+            } else if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    6969 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    6969_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         } else if (*dst).type_0 as u32 == GGML_TYPE_F32 as i32 as u32 {
-            let mut id_2: size_t = 0 as i32 as size_t;
+            let mut id_2: size_t = 0_i32 as size_t;
             let mut dst_ptr_2: *mut f32 = (*dst).data as *mut f32;
-            let mut i03_3: i32 = 0 as i32;
+            let mut i03_3: i32 = 0_i32;
             while (i03_3 as i64) < ne03 {
-                let mut i02_3: i32 = 0 as i32;
+                let mut i02_3: i32 = 0_i32;
                 while (i02_3 as i64) < ne02 {
                     id_2 =
                         (id_2 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t as size_t;
                     let mut i01_3: i32 = ir0;
                     while i01_3 < ir1 {
-                        let mut i00_0: i32 = 0 as i32;
+                        let mut i00_0: i32 = 0_i32;
                         while (i00_0 as i64) < ne00 {
-                            let mut src0_ptr_2: *const f32 = ((*src0).data as *mut libc::c_char)
+                            let mut src0_ptr_2: *const f32 = ((*src0).data as *mut i8)
                                 .offset((i00_0 as u64).wrapping_mul(nb00) as isize)
                                 .offset((i01_3 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i02_3 as u64).wrapping_mul(nb02) as isize)
@@ -9067,19 +9025,19 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                 i03_3;
             }
         } else if (*dst).type_0 as u32 == GGML_TYPE_F16 as i32 as u32 {
-            let mut id_3: size_t = 0 as i32 as size_t;
+            let mut id_3: size_t = 0_i32 as size_t;
             let mut dst_ptr_3: *mut ggml_fp16_t = (*dst).data as *mut ggml_fp16_t;
-            let mut i03_4: i32 = 0 as i32;
+            let mut i03_4: i32 = 0_i32;
             while (i03_4 as i64) < ne03 {
-                let mut i02_4: i32 = 0 as i32;
+                let mut i02_4: i32 = 0_i32;
                 while (i02_4 as i64) < ne02 {
                     id_3 =
                         (id_3 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t as size_t;
                     let mut i01_4: i32 = ir0;
                     while i01_4 < ir1 {
-                        let mut i00_1: i32 = 0 as i32;
+                        let mut i00_1: i32 = 0_i32;
                         while (i00_1 as i64) < ne00 {
-                            let mut src0_ptr_3: *const f32 = ((*src0).data as *mut libc::c_char)
+                            let mut src0_ptr_3: *const f32 = ((*src0).data as *mut i8)
                                 .offset((i00_1 as u64).wrapping_mul(nb00) as isize)
                                 .offset((i01_4 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i02_4 as u64).wrapping_mul(nb02) as isize)
@@ -9093,12 +9051,12 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                                 >(_mm_cvtps_ph(
                                     _mm_setr_ps(
                                         *src0_ptr_3,
-                                        0 as i32 as f32,
-                                        0 as i32 as f32,
-                                        0 as i32 as f32,
+                                        0_i32 as f32,
+                                        0_i32 as f32,
+                                        0_i32 as f32,
                                     ),
-                                    0 as i32,
-                                ))[0 as i32 as usize] as u16
+                                    0_i32,
+                                ))[0_i32 as usize] as u16
                             };
                             id_3 = id_3.wrapping_add(1);
                             id_3;
@@ -9116,54 +9074,53 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                 i03_4 += 1;
                 i03_4;
             }
-        } else if 0 as i32 == 0 {
+        } else if 0_i32 == 0 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                7011 as i32,
-                b"false\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                7011_i32,
+                b"false\0" as *const u8 as *const i8,
             );
             abort();
         }
         return;
     }
-    let mut i10: int64_t = 0 as i32 as int64_t;
-    let mut i11: int64_t = 0 as i32 as int64_t;
-    let mut i12: int64_t = 0 as i32 as int64_t;
-    let mut i13: int64_t = 0 as i32 as int64_t;
+    let mut i10: int64_t = 0_i32 as int64_t;
+    let mut i11: int64_t = 0_i32 as int64_t;
+    let mut i12: int64_t = 0_i32 as int64_t;
+    let mut i13: int64_t = 0_i32 as int64_t;
     if (*dst).type_0 as u32 == GGML_TYPE_F32 as i32 as u32 {
-        let mut i03_5: int64_t = 0 as i32 as int64_t;
+        let mut i03_5: int64_t = 0_i32 as int64_t;
         while i03_5 < ne03 {
-            let mut i02_5: int64_t = 0 as i32 as int64_t;
+            let mut i02_5: int64_t = 0_i32 as int64_t;
             while i02_5 < ne02 {
                 i10 += ne00 * ir0 as i64;
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
                     if i11 == ne1 {
-                        i11 = 0 as i32 as int64_t;
+                        i11 = 0_i32 as int64_t;
                         i12 += 1;
                         if i12 == ne2 {
-                            i12 = 0 as i32 as int64_t;
+                            i12 = 0_i32 as int64_t;
                             i13 += 1;
                             if i13 == ne3 {
-                                i13 = 0 as i32 as int64_t;
+                                i13 = 0_i32 as int64_t;
                             }
                         }
                     }
                 }
                 let mut i01_5: int64_t = ir0 as int64_t;
                 while i01_5 < ir1 as i64 {
-                    let mut i00_2: int64_t = 0 as i32 as int64_t;
+                    let mut i00_2: int64_t = 0_i32 as int64_t;
                     while i00_2 < ne00 {
-                        let mut src0_ptr_4: *const libc::c_char = ((*src0).data
-                            as *mut libc::c_char)
+                        let mut src0_ptr_4: *const i8 = ((*src0).data as *mut i8)
                             .offset((i00_2 as u64).wrapping_mul(nb00) as isize)
                             .offset((i01_5 as u64).wrapping_mul(nb01) as isize)
                             .offset((i02_5 as u64).wrapping_mul(nb02) as isize)
                             .offset((i03_5 as u64).wrapping_mul(nb03) as isize);
-                        let mut dst_ptr_4: *mut libc::c_char = ((*dst).data as *mut libc::c_char)
+                        let mut dst_ptr_4: *mut i8 = ((*dst).data as *mut i8)
                             .offset((i10 as u64).wrapping_mul(nb0) as isize)
                             .offset((i11 as u64).wrapping_mul(nb1) as isize)
                             .offset((i12 as u64).wrapping_mul(nb2) as isize)
@@ -9175,16 +9132,16 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                         );
                         i10 += 1;
                         if i10 == ne0 {
-                            i10 = 0 as i32 as int64_t;
+                            i10 = 0_i32 as int64_t;
                             i11 += 1;
                             if i11 == ne1 {
-                                i11 = 0 as i32 as int64_t;
+                                i11 = 0_i32 as int64_t;
                                 i12 += 1;
                                 if i12 == ne2 {
-                                    i12 = 0 as i32 as int64_t;
+                                    i12 = 0_i32 as int64_t;
                                     i13 += 1;
                                     if i13 == ne3 {
-                                        i13 = 0 as i32 as int64_t;
+                                        i13 = 0_i32 as int64_t;
                                     }
                                 }
                             }
@@ -9200,13 +9157,13 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                     i10 -= ne0;
                     i11 += 1;
                     if i11 == ne1 {
-                        i11 = 0 as i32 as int64_t;
+                        i11 = 0_i32 as int64_t;
                         i12 += 1;
                         if i12 == ne2 {
-                            i12 = 0 as i32 as int64_t;
+                            i12 = 0_i32 as int64_t;
                             i13 += 1;
                             if i13 == ne3 {
-                                i13 = 0 as i32 as int64_t;
+                                i13 = 0_i32 as int64_t;
                             }
                         }
                     }
@@ -9218,37 +9175,36 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
             i03_5;
         }
     } else if (*dst).type_0 as u32 == GGML_TYPE_F16 as i32 as u32 {
-        let mut i03_6: int64_t = 0 as i32 as int64_t;
+        let mut i03_6: int64_t = 0_i32 as int64_t;
         while i03_6 < ne03 {
-            let mut i02_6: int64_t = 0 as i32 as int64_t;
+            let mut i02_6: int64_t = 0_i32 as int64_t;
             while i02_6 < ne02 {
                 i10 += ne00 * ir0 as i64;
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
                     if i11 == ne1 {
-                        i11 = 0 as i32 as int64_t;
+                        i11 = 0_i32 as int64_t;
                         i12 += 1;
                         if i12 == ne2 {
-                            i12 = 0 as i32 as int64_t;
+                            i12 = 0_i32 as int64_t;
                             i13 += 1;
                             if i13 == ne3 {
-                                i13 = 0 as i32 as int64_t;
+                                i13 = 0_i32 as int64_t;
                             }
                         }
                     }
                 }
                 let mut i01_6: int64_t = ir0 as int64_t;
                 while i01_6 < ir1 as i64 {
-                    let mut i00_3: int64_t = 0 as i32 as int64_t;
+                    let mut i00_3: int64_t = 0_i32 as int64_t;
                     while i00_3 < ne00 {
-                        let mut src0_ptr_5: *const libc::c_char = ((*src0).data
-                            as *mut libc::c_char)
+                        let mut src0_ptr_5: *const i8 = ((*src0).data as *mut i8)
                             .offset((i00_3 as u64).wrapping_mul(nb00) as isize)
                             .offset((i01_6 as u64).wrapping_mul(nb01) as isize)
                             .offset((i02_6 as u64).wrapping_mul(nb02) as isize)
                             .offset((i03_6 as u64).wrapping_mul(nb03) as isize);
-                        let mut dst_ptr_5: *mut libc::c_char = ((*dst).data as *mut libc::c_char)
+                        let mut dst_ptr_5: *mut i8 = ((*dst).data as *mut i8)
                             .offset((i10 as u64).wrapping_mul(nb0) as isize)
                             .offset((i11 as u64).wrapping_mul(nb1) as isize)
                             .offset((i12 as u64).wrapping_mul(nb2) as isize)
@@ -9261,25 +9217,25 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                             >(_mm_cvtps_ph(
                                 _mm_setr_ps(
                                     *(src0_ptr_5 as *const f32),
-                                    0 as i32 as f32,
-                                    0 as i32 as f32,
-                                    0 as i32 as f32,
+                                    0_i32 as f32,
+                                    0_i32 as f32,
+                                    0_i32 as f32,
                                 ),
-                                0 as i32,
-                            ))[0 as i32 as usize] as u16
+                                0_i32,
+                            ))[0_i32 as usize] as u16
                         };
                         i10 += 1;
                         if i10 == ne0 {
-                            i10 = 0 as i32 as int64_t;
+                            i10 = 0_i32 as int64_t;
                             i11 += 1;
                             if i11 == ne1 {
-                                i11 = 0 as i32 as int64_t;
+                                i11 = 0_i32 as int64_t;
                                 i12 += 1;
                                 if i12 == ne2 {
-                                    i12 = 0 as i32 as int64_t;
+                                    i12 = 0_i32 as int64_t;
                                     i13 += 1;
                                     if i13 == ne3 {
-                                        i13 = 0 as i32 as int64_t;
+                                        i13 = 0_i32 as int64_t;
                                     }
                                 }
                             }
@@ -9295,13 +9251,13 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                     i10 -= ne0;
                     i11 += 1;
                     if i11 == ne1 {
-                        i11 = 0 as i32 as int64_t;
+                        i11 = 0_i32 as int64_t;
                         i12 += 1;
                         if i12 == ne2 {
-                            i12 = 0 as i32 as int64_t;
+                            i12 = 0_i32 as int64_t;
                             i13 += 1;
                             if i13 == ne3 {
-                                i13 = 0 as i32 as int64_t;
+                                i13 = 0_i32 as int64_t;
                             }
                         }
                     }
@@ -9312,13 +9268,13 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
             i03_6 += 1;
             i03_6;
         }
-    } else if 0 as i32 == 0 {
+    } else if 0_i32 == 0 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7130 as i32,
-            b"false\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7130_i32,
+            b"false\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -9343,13 +9299,13 @@ unsafe extern "C" fn ggml_compute_forward_dup(
             ggml_compute_forward_dup_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    7153 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    7153_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -9366,11 +9322,11 @@ unsafe extern "C" fn ggml_compute_forward_add_f32(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7165 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7165_i32,
             b"ggml_are_same_shape(src0, src1) && ggml_are_same_shape(src0, dst)\0" as *const u8
-                as *const libc::c_char,
+                as *const i8,
         );
         abort();
     }
@@ -9382,42 +9338,42 @@ unsafe extern "C" fn ggml_compute_forward_add_f32(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(src0);
-    let ne0: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne1: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne2: int64_t = (*src0).ne[2 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb10: size_t = (*src1).nb[0 as i32 as usize];
-    let nb11: size_t = (*src1).nb[1 as i32 as usize];
-    let nb12: size_t = (*src1).nb[2 as i32 as usize];
-    let nb13: size_t = (*src1).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne0: int64_t = (*src0).ne[0_i32 as usize];
+    let ne1: int64_t = (*src0).ne[1_i32 as usize];
+    let ne2: int64_t = (*src0).ne[2_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb10: size_t = (*src1).nb[0_i32 as usize];
+    let nb11: size_t = (*src1).nb[1_i32 as usize];
+    let nb12: size_t = (*src1).nb[2_i32 as usize];
+    let nb13: size_t = (*src1).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if nb0 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7194 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7194_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7195 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7195_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     if nb10 == ::core::mem::size_of::<f32>() as u64 {
@@ -9428,15 +9384,15 @@ unsafe extern "C" fn ggml_compute_forward_add_f32(
             let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
             ggml_vec_add_f32(
                 ne0 as i32,
-                ((*dst).data as *mut libc::c_char)
+                ((*dst).data as *mut i8)
                     .offset((i3 as u64).wrapping_mul(nb3) as isize)
                     .offset((i2 as u64).wrapping_mul(nb2) as isize)
                     .offset((i1 as u64).wrapping_mul(nb1) as isize) as *mut f32,
-                ((*src0).data as *mut libc::c_char)
+                ((*src0).data as *mut i8)
                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
                     .offset((i1 as u64).wrapping_mul(nb01) as isize) as *mut f32,
-                ((*src1).data as *mut libc::c_char)
+                ((*src1).data as *mut i8)
                     .offset((i3 as u64).wrapping_mul(nb13) as isize)
                     .offset((i2 as u64).wrapping_mul(nb12) as isize)
                     .offset((i1 as u64).wrapping_mul(nb11) as isize) as *mut f32,
@@ -9450,19 +9406,19 @@ unsafe extern "C" fn ggml_compute_forward_add_f32(
             let i3_0: i32 = (ir_0 as i64 / (ne2 * ne1)) as i32;
             let i2_0: i32 = ((ir_0 as i64 - i3_0 as i64 * ne2 * ne1) / ne1) as i32;
             let i1_0: i32 = (ir_0 as i64 - i3_0 as i64 * ne2 * ne1 - i2_0 as i64 * ne1) as i32;
-            let mut dst_ptr: *mut f32 = ((*dst).data as *mut libc::c_char)
+            let mut dst_ptr: *mut f32 = ((*dst).data as *mut i8)
                 .offset((i3_0 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2_0 as u64).wrapping_mul(nb2) as isize)
                 .offset((i1_0 as u64).wrapping_mul(nb1) as isize)
                 as *mut f32;
-            let mut src0_ptr: *mut f32 = ((*src0).data as *mut libc::c_char)
+            let mut src0_ptr: *mut f32 = ((*src0).data as *mut i8)
                 .offset((i3_0 as u64).wrapping_mul(nb03) as isize)
                 .offset((i2_0 as u64).wrapping_mul(nb02) as isize)
                 .offset((i1_0 as u64).wrapping_mul(nb01) as isize)
                 as *mut f32;
-            let mut i0: i32 = 0 as i32;
+            let mut i0: i32 = 0_i32;
             while (i0 as i64) < ne0 {
-                let mut src1_ptr: *mut f32 = ((*src1).data as *mut libc::c_char)
+                let mut src1_ptr: *mut f32 = ((*src1).data as *mut i8)
                     .offset((i3_0 as u64).wrapping_mul(nb13) as isize)
                     .offset((i2_0 as u64).wrapping_mul(nb12) as isize)
                     .offset((i1_0 as u64).wrapping_mul(nb11) as isize)
@@ -9487,11 +9443,11 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f32(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7251 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7251_i32,
             b"ggml_are_same_shape(src0, src1) && ggml_are_same_shape(src0, dst)\0" as *const u8
-                as *const libc::c_char,
+                as *const i8,
         );
         abort();
     }
@@ -9503,72 +9459,72 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f32(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(src0);
-    let ne0: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne1: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne2: int64_t = (*src0).ne[2 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb10: size_t = (*src1).nb[0 as i32 as usize];
-    let nb11: size_t = (*src1).nb[1 as i32 as usize];
-    let nb12: size_t = (*src1).nb[2 as i32 as usize];
-    let nb13: size_t = (*src1).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne0: int64_t = (*src0).ne[0_i32 as usize];
+    let ne1: int64_t = (*src0).ne[1_i32 as usize];
+    let ne2: int64_t = (*src0).ne[2_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb10: size_t = (*src1).nb[0_i32 as usize];
+    let nb11: size_t = (*src1).nb[1_i32 as usize];
+    let nb12: size_t = (*src1).nb[2_i32 as usize];
+    let nb13: size_t = (*src1).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if (*src0).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7280 as i32,
-            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7280_i32,
+            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src1).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7281 as i32,
-            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7281_i32,
+            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*dst).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7282 as i32,
-            b"dst->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7282_i32,
+            b"dst->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7284 as i32,
-            b"nb0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7284_i32,
+            b"nb0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7285 as i32,
-            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7285_i32,
+            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     if nb10 == ::core::mem::size_of::<f32>() as u64 {
@@ -9577,22 +9533,22 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f32(
             let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
             let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
             let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
-            let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
+            let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
                 .offset((i1 as u64).wrapping_mul(nb1) as isize)
                 as *mut ggml_fp16_t;
-            let mut src0_ptr: *mut ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+            let mut src0_ptr: *mut ggml_fp16_t = ((*src0).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb03) as isize)
                 .offset((i2 as u64).wrapping_mul(nb02) as isize)
                 .offset((i1 as u64).wrapping_mul(nb01) as isize)
                 as *mut ggml_fp16_t;
-            let mut src1_ptr: *mut f32 = ((*src1).data as *mut libc::c_char)
+            let mut src1_ptr: *mut f32 = ((*src1).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb13) as isize)
                 .offset((i2 as u64).wrapping_mul(nb12) as isize)
                 .offset((i1 as u64).wrapping_mul(nb11) as isize)
                 as *mut f32;
-            let mut i: i32 = 0 as i32;
+            let mut i: i32 = 0_i32;
             while (i as i64) < ne0 {
                 *dst_ptr.offset(i as isize) = {
                     ::core::mem::transmute::<
@@ -9602,12 +9558,12 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f32(
                         _mm_setr_ps(
                             ggml_lookup_fp16_to_fp32(*src0_ptr.offset(i as isize))
                                 + *src1_ptr.offset(i as isize),
-                            0 as i32 as f32,
-                            0 as i32 as f32,
-                            0 as i32 as f32,
+                            0_i32 as f32,
+                            0_i32 as f32,
+                            0_i32 as f32,
                         ),
-                        0 as i32,
-                    ))[0 as i32 as usize] as u16
+                        0_i32,
+                    ))[0_i32 as usize] as u16
                 };
                 i += 1;
                 i;
@@ -9615,13 +9571,13 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f32(
             ir += 1;
             ir;
         }
-    } else if 0 as i32 == 0 {
+    } else if 0_i32 == 0 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7312 as i32,
-            b"false\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7312_i32,
+            b"false\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -9636,11 +9592,11 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f16(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7321 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7321_i32,
             b"ggml_are_same_shape(src0, src1) && ggml_are_same_shape(src0, dst)\0" as *const u8
-                as *const libc::c_char,
+                as *const i8,
         );
         abort();
     }
@@ -9652,72 +9608,72 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f16(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(src0);
-    let ne0: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne1: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne2: int64_t = (*src0).ne[2 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb10: size_t = (*src1).nb[0 as i32 as usize];
-    let nb11: size_t = (*src1).nb[1 as i32 as usize];
-    let nb12: size_t = (*src1).nb[2 as i32 as usize];
-    let nb13: size_t = (*src1).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne0: int64_t = (*src0).ne[0_i32 as usize];
+    let ne1: int64_t = (*src0).ne[1_i32 as usize];
+    let ne2: int64_t = (*src0).ne[2_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb10: size_t = (*src1).nb[0_i32 as usize];
+    let nb11: size_t = (*src1).nb[1_i32 as usize];
+    let nb12: size_t = (*src1).nb[2_i32 as usize];
+    let nb13: size_t = (*src1).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if (*src0).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7350 as i32,
-            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7350_i32,
+            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src1).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7351 as i32,
-            b"src1->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7351_i32,
+            b"src1->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*dst).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7352 as i32,
-            b"dst->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7352_i32,
+            b"dst->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7354 as i32,
-            b"nb0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7354_i32,
+            b"nb0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7355 as i32,
-            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7355_i32,
+            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     if nb10 == ::core::mem::size_of::<ggml_fp16_t>() as u64 {
@@ -9726,22 +9682,22 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f16(
             let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
             let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
             let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
-            let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
+            let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
                 .offset((i1 as u64).wrapping_mul(nb1) as isize)
                 as *mut ggml_fp16_t;
-            let mut src0_ptr: *mut ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+            let mut src0_ptr: *mut ggml_fp16_t = ((*src0).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb03) as isize)
                 .offset((i2 as u64).wrapping_mul(nb02) as isize)
                 .offset((i1 as u64).wrapping_mul(nb01) as isize)
                 as *mut ggml_fp16_t;
-            let mut src1_ptr: *mut ggml_fp16_t = ((*src1).data as *mut libc::c_char)
+            let mut src1_ptr: *mut ggml_fp16_t = ((*src1).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb13) as isize)
                 .offset((i2 as u64).wrapping_mul(nb12) as isize)
                 .offset((i1 as u64).wrapping_mul(nb11) as isize)
                 as *mut ggml_fp16_t;
-            let mut i: i32 = 0 as i32;
+            let mut i: i32 = 0_i32;
             while (i as i64) < ne0 {
                 *dst_ptr.offset(i as isize) = {
                     ::core::mem::transmute::<
@@ -9751,12 +9707,12 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f16(
                         _mm_setr_ps(
                             ggml_lookup_fp16_to_fp32(*src0_ptr.offset(i as isize))
                                 + ggml_lookup_fp16_to_fp32(*src1_ptr.offset(i as isize)),
-                            0 as i32 as f32,
-                            0 as i32 as f32,
-                            0 as i32 as f32,
+                            0_i32 as f32,
+                            0_i32 as f32,
+                            0_i32 as f32,
                         ),
-                        0 as i32,
-                    ))[0 as i32 as usize] as u16
+                        0_i32,
+                    ))[0_i32 as usize] as u16
                 };
                 i += 1;
                 i;
@@ -9764,13 +9720,13 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f16(
             ir += 1;
             ir;
         }
-    } else if 0 as i32 == 0 {
+    } else if 0_i32 == 0 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7382 as i32,
-            b"false\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7382_i32,
+            b"false\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -9785,11 +9741,11 @@ unsafe extern "C" fn ggml_compute_forward_add_q_f32(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7391 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7391_i32,
             b"ggml_are_same_shape(src0, src1) && ggml_are_same_shape(src0, dst)\0" as *const u8
-                as *const libc::c_char,
+                as *const i8,
         );
         abort();
     }
@@ -9799,21 +9755,21 @@ unsafe extern "C" fn ggml_compute_forward_add_q_f32(
         return;
     }
     let nr: i32 = ggml_nrows(src0);
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb10: size_t = (*src1).nb[0 as i32 as usize];
-    let nb11: size_t = (*src1).nb[1 as i32 as usize];
-    let nb12: size_t = (*src1).nb[2 as i32 as usize];
-    let nb13: size_t = (*src1).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb10: size_t = (*src1).nb[0_i32 as usize];
+    let nb11: size_t = (*src1).nb[1_i32 as usize];
+    let nb12: size_t = (*src1).nb[2_i32 as usize];
+    let nb13: size_t = (*src1).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let type_0: ggml_type = (*src0).type_0;
@@ -9822,84 +9778,84 @@ unsafe extern "C" fn ggml_compute_forward_add_q_f32(
     if nb00 != GGML_TYPE_SIZE[type_0 as usize] {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7426 as i32,
-            b"nb00 == GGML_TYPE_SIZE[type]\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7426_i32,
+            b"nb00 == GGML_TYPE_SIZE[type]\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb10 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7427 as i32,
-            b"nb10 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7427_i32,
+            b"nb10 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 > nb1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7430 as i32,
-            b"nb0 <= nb1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7430_i32,
+            b"nb0 <= nb1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb1 > nb2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7431 as i32,
-            b"nb1 <= nb2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7431_i32,
+            b"nb1 <= nb2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb2 > nb3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7432 as i32,
-            b"nb2 <= nb3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7432_i32,
+            b"nb2 <= nb3\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_quantized((*src0).type_0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7434 as i32,
-            b"ggml_is_quantized(src0->type)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7434_i32,
+            b"ggml_is_quantized(src0->type)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*dst).type_0 as u32 != (*src0).type_0 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7435 as i32,
-            b"dst->type == src0->type\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7435_i32,
+            b"dst->type == src0->type\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src1).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7436 as i32,
-            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7436_i32,
+            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut wdata: *mut f32 = ((*params).wdata as *mut f32).offset(
@@ -9918,19 +9874,19 @@ unsafe extern "C" fn ggml_compute_forward_add_q_f32(
         let i3: i32 = i03;
         let i2: i32 = i02;
         let i1: i32 = i01;
-        let mut src0_row: *mut libc::c_void = ((*src0).data as *mut libc::c_char).offset(
+        let mut src0_row: *mut libc::c_void = ((*src0).data as *mut i8).offset(
             (i01 as u64)
                 .wrapping_mul(nb01)
                 .wrapping_add((i02 as u64).wrapping_mul(nb02))
                 .wrapping_add((i03 as u64).wrapping_mul(nb03)) as isize,
         ) as *mut libc::c_void;
-        let mut src1_row: *mut f32 = ((*src1).data as *mut libc::c_char).offset(
+        let mut src1_row: *mut f32 = ((*src1).data as *mut i8).offset(
             (i11 as u64)
                 .wrapping_mul(nb11)
                 .wrapping_add((i12 as u64).wrapping_mul(nb12))
                 .wrapping_add((i13 as u64).wrapping_mul(nb13)) as isize,
         ) as *mut f32;
-        let mut dst_row: *mut libc::c_void = ((*dst).data as *mut libc::c_char).offset(
+        let mut dst_row: *mut libc::c_void = ((*dst).data as *mut i8).offset(
             (i1 as u64)
                 .wrapping_mul(nb1)
                 .wrapping_add((i2 as u64).wrapping_mul(nb2))
@@ -9958,13 +9914,13 @@ unsafe extern "C" fn ggml_compute_forward_add(
                 ggml_compute_forward_add_f16_f16(params, src0, src1, dst);
             } else if (*src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32 {
                 ggml_compute_forward_add_f16_f32(params, src0, src1, dst);
-            } else if 0 as i32 == 0 {
+            } else if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    7496 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    7496_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -9973,13 +9929,13 @@ unsafe extern "C" fn ggml_compute_forward_add(
             ggml_compute_forward_add_q_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    7509 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    7509_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -9995,20 +9951,20 @@ unsafe extern "C" fn ggml_compute_forward_add1_f32(
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7521 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7521_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_scalar(src1) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7522 as i32,
-            b"ggml_is_scalar(src1)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7522_i32,
+            b"ggml_is_scalar(src1)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -10020,38 +9976,38 @@ unsafe extern "C" fn ggml_compute_forward_add1_f32(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(src0);
-    let ne0: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne1: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne2: int64_t = (*src0).ne[2 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne0: int64_t = (*src0).ne[0_i32 as usize];
+    let ne1: int64_t = (*src0).ne[1_i32 as usize];
+    let ne2: int64_t = (*src0).ne[2_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if nb0 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7546 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7546_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7547 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7547_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
@@ -10061,11 +10017,11 @@ unsafe extern "C" fn ggml_compute_forward_add1_f32(
         let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
         ggml_vec_add1_f32(
             ne0 as i32,
-            ((*dst).data as *mut libc::c_char)
+            ((*dst).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
                 .offset((i1 as u64).wrapping_mul(nb1) as isize) as *mut f32,
-            ((*src0).data as *mut libc::c_char)
+            ((*src0).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb03) as isize)
                 .offset((i2 as u64).wrapping_mul(nb02) as isize)
                 .offset((i1 as u64).wrapping_mul(nb01) as isize) as *mut f32,
@@ -10084,20 +10040,20 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f32(
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7584 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7584_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_scalar(src1) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7585 as i32,
-            b"ggml_is_scalar(src1)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7585_i32,
+            b"ggml_is_scalar(src1)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -10110,68 +10066,68 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f32(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(src0);
-    let ne0: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne1: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne2: int64_t = (*src0).ne[2 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne0: int64_t = (*src0).ne[0_i32 as usize];
+    let ne1: int64_t = (*src0).ne[1_i32 as usize];
+    let ne2: int64_t = (*src0).ne[2_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if (*src0).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7612 as i32,
-            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7612_i32,
+            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src1).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7613 as i32,
-            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7613_i32,
+            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*dst).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7614 as i32,
-            b"dst->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7614_i32,
+            b"dst->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7616 as i32,
-            b"nb0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7616_i32,
+            b"nb0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7617 as i32,
-            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7617_i32,
+            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
@@ -10179,17 +10135,17 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f32(
         let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
         let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
         let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
-        let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
+        let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut i8)
             .offset((i3 as u64).wrapping_mul(nb3) as isize)
             .offset((i2 as u64).wrapping_mul(nb2) as isize)
             .offset((i1 as u64).wrapping_mul(nb1) as isize)
             as *mut ggml_fp16_t;
-        let mut src0_ptr: *mut ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+        let mut src0_ptr: *mut ggml_fp16_t = ((*src0).data as *mut i8)
             .offset((i3 as u64).wrapping_mul(nb03) as isize)
             .offset((i2 as u64).wrapping_mul(nb02) as isize)
             .offset((i1 as u64).wrapping_mul(nb01) as isize)
             as *mut ggml_fp16_t;
-        let mut i: i32 = 0 as i32;
+        let mut i: i32 = 0_i32;
         while (i as i64) < ne0 {
             *dst_ptr.offset(i as isize) = {
                 ::core::mem::transmute::<
@@ -10198,12 +10154,12 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f32(
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         ggml_lookup_fp16_to_fp32(*src0_ptr.offset(i as isize)) + v,
-                        0 as i32 as f32,
-                        0 as i32 as f32,
-                        0 as i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
                     ),
-                    0 as i32,
-                ))[0 as i32 as usize] as u16
+                    0_i32,
+                ))[0_i32 as usize] as u16
             };
             i += 1;
             i;
@@ -10221,20 +10177,20 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f16(
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7645 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7645_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_scalar(src1) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7646 as i32,
-            b"ggml_is_scalar(src1)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7646_i32,
+            b"ggml_is_scalar(src1)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -10247,68 +10203,68 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f16(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(src0);
-    let ne0: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne1: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne2: int64_t = (*src0).ne[2 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne0: int64_t = (*src0).ne[0_i32 as usize];
+    let ne1: int64_t = (*src0).ne[1_i32 as usize];
+    let ne2: int64_t = (*src0).ne[2_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if (*src0).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7673 as i32,
-            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7673_i32,
+            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src1).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7674 as i32,
-            b"src1->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7674_i32,
+            b"src1->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*dst).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7675 as i32,
-            b"dst->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7675_i32,
+            b"dst->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7677 as i32,
-            b"nb0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7677_i32,
+            b"nb0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7678 as i32,
-            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7678_i32,
+            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
@@ -10316,17 +10272,17 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f16(
         let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
         let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
         let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
-        let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
+        let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut i8)
             .offset((i3 as u64).wrapping_mul(nb3) as isize)
             .offset((i2 as u64).wrapping_mul(nb2) as isize)
             .offset((i1 as u64).wrapping_mul(nb1) as isize)
             as *mut ggml_fp16_t;
-        let mut src0_ptr: *mut ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+        let mut src0_ptr: *mut ggml_fp16_t = ((*src0).data as *mut i8)
             .offset((i3 as u64).wrapping_mul(nb03) as isize)
             .offset((i2 as u64).wrapping_mul(nb02) as isize)
             .offset((i1 as u64).wrapping_mul(nb01) as isize)
             as *mut ggml_fp16_t;
-        let mut i: i32 = 0 as i32;
+        let mut i: i32 = 0_i32;
         while (i as i64) < ne0 {
             *dst_ptr.offset(i as isize) = {
                 ::core::mem::transmute::<
@@ -10335,12 +10291,12 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f16(
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         ggml_lookup_fp16_to_fp32(*src0_ptr.offset(i as isize)) + v,
-                        0 as i32 as f32,
-                        0 as i32 as f32,
-                        0 as i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
                     ),
-                    0 as i32,
-                ))[0 as i32 as usize] as u16
+                    0_i32,
+                ))[0_i32 as usize] as u16
             };
             i += 1;
             i;
@@ -10358,20 +10314,20 @@ unsafe extern "C" fn ggml_compute_forward_add1_q_f32(
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7706 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7706_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_scalar(src1) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7707 as i32,
-            b"ggml_is_scalar(src1)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7707_i32,
+            b"ggml_is_scalar(src1)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -10384,91 +10340,91 @@ unsafe extern "C" fn ggml_compute_forward_add1_q_f32(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(src0);
-    let ne0: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne1: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne2: int64_t = (*src0).ne[2 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne0: int64_t = (*src0).ne[0_i32 as usize];
+    let ne1: int64_t = (*src0).ne[1_i32 as usize];
+    let ne2: int64_t = (*src0).ne[2_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     let type_0: ggml_type = (*src0).type_0;
     let dequantize_row_q: dequantize_row_q_t = quantize_fns[type_0 as usize].dequantize_row_q;
     let quantize_row_q: quantize_row_q_t = quantize_fns[type_0 as usize].quantize_row_q;
     if nb00 != GGML_TYPE_SIZE[type_0 as usize] {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7739 as i32,
-            b"nb00 == GGML_TYPE_SIZE[type]\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7739_i32,
+            b"nb00 == GGML_TYPE_SIZE[type]\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 > nb1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7742 as i32,
-            b"nb0 <= nb1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7742_i32,
+            b"nb0 <= nb1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb1 > nb2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7743 as i32,
-            b"nb1 <= nb2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7743_i32,
+            b"nb1 <= nb2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb2 > nb3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7744 as i32,
-            b"nb2 <= nb3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7744_i32,
+            b"nb2 <= nb3\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_quantized((*src0).type_0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7746 as i32,
-            b"ggml_is_quantized(src0->type)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7746_i32,
+            b"ggml_is_quantized(src0->type)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*dst).type_0 as u32 != (*src0).type_0 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7747 as i32,
-            b"dst->type == src0->type\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7747_i32,
+            b"dst->type == src0->type\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src1).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7748 as i32,
-            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7748_i32,
+            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut wdata: *mut f32 = ((*params).wdata as *mut f32).offset(
@@ -10481,13 +10437,13 @@ unsafe extern "C" fn ggml_compute_forward_add1_q_f32(
         let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
         let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
         let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
-        let mut src0_row: *mut libc::c_void = ((*src0).data as *mut libc::c_char).offset(
+        let mut src0_row: *mut libc::c_void = ((*src0).data as *mut i8).offset(
             (i1 as u64)
                 .wrapping_mul(nb01)
                 .wrapping_add((i2 as u64).wrapping_mul(nb02))
                 .wrapping_add((i3 as u64).wrapping_mul(nb03)) as isize,
         ) as *mut libc::c_void;
-        let mut dst_row: *mut libc::c_void = ((*dst).data as *mut libc::c_char).offset(
+        let mut dst_row: *mut libc::c_void = ((*dst).data as *mut i8).offset(
             (i1 as u64)
                 .wrapping_mul(nb1)
                 .wrapping_add((i2 as u64).wrapping_mul(nb2))
@@ -10515,13 +10471,13 @@ unsafe extern "C" fn ggml_compute_forward_add1(
                 ggml_compute_forward_add1_f16_f16(params, src0, src1, dst);
             } else if (*src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32 {
                 ggml_compute_forward_add1_f16_f32(params, src0, src1, dst);
-            } else if 0 as i32 == 0 {
+            } else if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    7798 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    7798_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -10530,13 +10486,13 @@ unsafe extern "C" fn ggml_compute_forward_add1(
             ggml_compute_forward_add1_q_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    7812 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    7812_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -10553,53 +10509,52 @@ unsafe extern "C" fn ggml_compute_forward_acc_f32(
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7826 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7826_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !(ggml_is_contiguous(dst) as i32 != 0 && ggml_is_contiguous(src0) as i32 != 0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7827 as i32,
-            b"ggml_is_contiguous(dst) && ggml_is_contiguous(src0)\0" as *const u8
-                as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7827_i32,
+            b"ggml_is_contiguous(dst) && ggml_is_contiguous(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*opt0).type_0 as u32 != GGML_TYPE_I32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7829 as i32,
-            b"opt0->type == GGML_TYPE_I32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7829_i32,
+            b"opt0->type == GGML_TYPE_I32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if ggml_nelements(opt0) != 5 as i32 as i64 {
+    if ggml_nelements(opt0) != 5_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7830 as i32,
-            b"ggml_nelements(opt0) == 5\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7830_i32,
+            b"ggml_nelements(opt0) == 5\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut nb1: size_t = *((*opt0).data as *mut int32_t).offset(0 as i32 as isize) as size_t;
-    let mut nb2: size_t = *((*opt0).data as *mut int32_t).offset(1 as i32 as isize) as size_t;
-    let mut nb3: size_t = *((*opt0).data as *mut int32_t).offset(2 as i32 as isize) as size_t;
-    let mut offset: size_t = *((*opt0).data as *mut int32_t).offset(3 as i32 as isize) as size_t;
-    let mut inplace: bool = *((*opt0).data as *mut int32_t).offset(4 as i32 as isize) != 0;
+    let mut nb1: size_t = *((*opt0).data as *mut int32_t).offset(0_i32 as isize) as size_t;
+    let mut nb2: size_t = *((*opt0).data as *mut int32_t).offset(1_i32 as isize) as size_t;
+    let mut nb3: size_t = *((*opt0).data as *mut int32_t).offset(2_i32 as isize) as size_t;
+    let mut offset: size_t = *((*opt0).data as *mut int32_t).offset(3_i32 as isize) as size_t;
+    let mut inplace: bool = *((*opt0).data as *mut int32_t).offset(4_i32 as isize) != 0;
     if !inplace && (*params).type_0 as u32 == GGML_TASK_INIT as i32 as u32 {
         memcpy(
-            (*dst).data as *mut libc::c_char as *mut libc::c_void,
-            (*src0).data as *mut libc::c_char as *const libc::c_void,
+            (*dst).data as *mut i8 as *mut libc::c_void,
+            (*src0).data as *mut i8 as *const libc::c_void,
             ggml_nbytes(dst),
         );
     }
@@ -10611,15 +10566,15 @@ unsafe extern "C" fn ggml_compute_forward_acc_f32(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(src1);
-    let nc: i32 = (*src1).ne[0 as i32 as usize] as i32;
-    let ne10: int64_t = (*src1).ne[0 as i32 as usize];
-    let ne11: int64_t = (*src1).ne[1 as i32 as usize];
-    let ne12: int64_t = (*src1).ne[2 as i32 as usize];
-    let ne13: int64_t = (*src1).ne[3 as i32 as usize];
-    let nb10: size_t = (*src1).nb[0 as i32 as usize];
-    let nb11: size_t = (*src1).nb[1 as i32 as usize];
-    let nb12: size_t = (*src1).nb[2 as i32 as usize];
-    let nb13: size_t = (*src1).nb[3 as i32 as usize];
+    let nc: i32 = (*src1).ne[0_i32 as usize] as i32;
+    let ne10: int64_t = (*src1).ne[0_i32 as usize];
+    let ne11: int64_t = (*src1).ne[1_i32 as usize];
+    let ne12: int64_t = (*src1).ne[2_i32 as usize];
+    let ne13: int64_t = (*src1).ne[3_i32 as usize];
+    let nb10: size_t = (*src1).nb[0_i32 as usize];
+    let nb11: size_t = (*src1).nb[1_i32 as usize];
+    let nb12: size_t = (*src1).nb[2_i32 as usize];
+    let nb13: size_t = (*src1).nb[3_i32 as usize];
     let nb0: size_t = ggml_element_size(src0);
     let nb00: size_t = nb0;
     let nb01: size_t = nb1;
@@ -10627,34 +10582,34 @@ unsafe extern "C" fn ggml_compute_forward_acc_f32(
     let nb03: size_t = nb3;
     if offset
         .wrapping_add(
-            ((if ne10 == 0 as i32 as i64 {
-                0 as i32 as i64
+            ((if ne10 == 0_i32 as i64 {
+                0_i32 as i64
             } else {
-                ne10 - 1 as i32 as i64
+                ne10 - 1_i32 as i64
             }) as u64)
                 .wrapping_mul(nb0),
         )
         .wrapping_add(
-            ((if ne11 == 0 as i32 as i64 {
-                0 as i32 as i64
+            ((if ne11 == 0_i32 as i64 {
+                0_i32 as i64
             } else {
-                ne11 - 1 as i32 as i64
+                ne11 - 1_i32 as i64
             }) as u64)
                 .wrapping_mul(nb1),
         )
         .wrapping_add(
-            ((if ne12 == 0 as i32 as i64 {
-                0 as i32 as i64
+            ((if ne12 == 0_i32 as i64 {
+                0_i32 as i64
             } else {
-                ne12 - 1 as i32 as i64
+                ne12 - 1_i32 as i64
             }) as u64)
                 .wrapping_mul(nb2),
         )
         .wrapping_add(
-            ((if ne13 == 0 as i32 as i64 {
-                0 as i32 as i64
+            ((if ne13 == 0_i32 as i64 {
+                0_i32 as i64
             } else {
-                ne13 - 1 as i32 as i64
+                ne13 - 1_i32 as i64
             }) as u64)
                 .wrapping_mul(nb3),
         )
@@ -10662,44 +10617,44 @@ unsafe extern "C" fn ggml_compute_forward_acc_f32(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7877 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7877_i32,
             b"offset + (ne10 == 0 ? 0 : ne10-1)*nb0 + (ne11 == 0 ? 0 : ne11-1)*nb1 + (ne12 == 0 ? 0 : ne12-1)*nb2 + (ne13 == 0 ? 0 : ne13-1)*nb3 < ggml_nbytes(dst)\0"
-                as *const u8 as *const libc::c_char,
+                as *const u8 as *const i8,
         );
         abort();
     }
     if offset
         .wrapping_add(
-            ((if ne10 == 0 as i32 as i64 {
-                0 as i32 as i64
+            ((if ne10 == 0_i32 as i64 {
+                0_i32 as i64
             } else {
-                ne10 - 1 as i32 as i64
+                ne10 - 1_i32 as i64
             }) as u64)
                 .wrapping_mul(nb00),
         )
         .wrapping_add(
-            ((if ne11 == 0 as i32 as i64 {
-                0 as i32 as i64
+            ((if ne11 == 0_i32 as i64 {
+                0_i32 as i64
             } else {
-                ne11 - 1 as i32 as i64
+                ne11 - 1_i32 as i64
             }) as u64)
                 .wrapping_mul(nb01),
         )
         .wrapping_add(
-            ((if ne12 == 0 as i32 as i64 {
-                0 as i32 as i64
+            ((if ne12 == 0_i32 as i64 {
+                0_i32 as i64
             } else {
-                ne12 - 1 as i32 as i64
+                ne12 - 1_i32 as i64
             }) as u64)
                 .wrapping_mul(nb02),
         )
         .wrapping_add(
-            ((if ne13 == 0 as i32 as i64 {
-                0 as i32 as i64
+            ((if ne13 == 0_i32 as i64 {
+                0_i32 as i64
             } else {
-                ne13 - 1 as i32 as i64
+                ne13 - 1_i32 as i64
             }) as u64)
                 .wrapping_mul(nb03),
         )
@@ -10707,25 +10662,25 @@ unsafe extern "C" fn ggml_compute_forward_acc_f32(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7878 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7878_i32,
             b"offset + (ne10 == 0 ? 0 : ne10-1)*nb00 + (ne11 == 0 ? 0 : ne11-1)*nb01 + (ne12 == 0 ? 0 : ne12-1)*nb02 + (ne13 == 0 ? 0 : ne13-1)*nb03 < ggml_nbytes(src0)\0"
-                as *const u8 as *const libc::c_char,
+                as *const u8 as *const i8,
         );
         abort();
     }
     if nb10 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7880 as i32,
-            b"nb10 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7880_i32,
+            b"nb10 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
@@ -10735,17 +10690,17 @@ unsafe extern "C" fn ggml_compute_forward_acc_f32(
         let i1: i32 = (ir as i64 - i3 as i64 * ne12 * ne11 - i2 as i64 * ne11) as i32;
         ggml_vec_add_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
+            ((*dst).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
                 .offset((i1 as u64).wrapping_mul(nb1) as isize)
                 .offset(offset as isize) as *mut f32,
-            ((*src0).data as *mut libc::c_char)
+            ((*src0).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb03) as isize)
                 .offset((i2 as u64).wrapping_mul(nb02) as isize)
                 .offset((i1 as u64).wrapping_mul(nb01) as isize)
                 .offset(offset as isize) as *mut f32,
-            ((*src1).data as *mut libc::c_char)
+            ((*src1).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb13) as isize)
                 .offset((i2 as u64).wrapping_mul(nb12) as isize)
                 .offset((i1 as u64).wrapping_mul(nb11) as isize) as *mut f32,
@@ -10766,13 +10721,13 @@ unsafe extern "C" fn ggml_compute_forward_acc(
             ggml_compute_forward_acc_f32(params, src0, src1, opt0, dst);
         }
         1 | 2 | 3 | 6 | 7 | 8 | 9 | _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    7931 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    7931_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -10791,58 +10746,58 @@ unsafe extern "C" fn ggml_compute_forward_sub_f32(
         return;
     }
     let nr: i32 = ggml_nrows(src0);
-    let ne0: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne1: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne2: int64_t = (*src0).ne[2 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb10: size_t = (*src1).nb[0 as i32 as usize];
-    let nb11: size_t = (*src1).nb[1 as i32 as usize];
-    let nb12: size_t = (*src1).nb[2 as i32 as usize];
-    let nb13: size_t = (*src1).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne0: int64_t = (*src0).ne[0_i32 as usize];
+    let ne1: int64_t = (*src0).ne[1_i32 as usize];
+    let ne2: int64_t = (*src0).ne[2_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb10: size_t = (*src1).nb[0_i32 as usize];
+    let nb11: size_t = (*src1).nb[1_i32 as usize];
+    let nb12: size_t = (*src1).nb[2_i32 as usize];
+    let nb13: size_t = (*src1).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if nb0 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7970 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7970_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            7971 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            7971_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb10 == ::core::mem::size_of::<f32>() as u64 {
-        let mut ir: i32 = 0 as i32;
+        let mut ir: i32 = 0_i32;
         while ir < nr {
             let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
             let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
             let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
             ggml_vec_sub_f32(
                 ne0 as i32,
-                ((*dst).data as *mut libc::c_char)
+                ((*dst).data as *mut i8)
                     .offset((i3 as u64).wrapping_mul(nb3) as isize)
                     .offset((i2 as u64).wrapping_mul(nb2) as isize)
                     .offset((i1 as u64).wrapping_mul(nb1) as isize) as *mut f32,
-                ((*src0).data as *mut libc::c_char)
+                ((*src0).data as *mut i8)
                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
                     .offset((i1 as u64).wrapping_mul(nb01) as isize) as *mut f32,
-                ((*src1).data as *mut libc::c_char)
+                ((*src1).data as *mut i8)
                     .offset((i3 as u64).wrapping_mul(nb13) as isize)
                     .offset((i2 as u64).wrapping_mul(nb12) as isize)
                     .offset((i1 as u64).wrapping_mul(nb11) as isize) as *mut f32,
@@ -10851,24 +10806,24 @@ unsafe extern "C" fn ggml_compute_forward_sub_f32(
             ir;
         }
     } else {
-        let mut ir_0: i32 = 0 as i32;
+        let mut ir_0: i32 = 0_i32;
         while ir_0 < nr {
             let i3_0: i32 = (ir_0 as i64 / (ne2 * ne1)) as i32;
             let i2_0: i32 = ((ir_0 as i64 - i3_0 as i64 * ne2 * ne1) / ne1) as i32;
             let i1_0: i32 = (ir_0 as i64 - i3_0 as i64 * ne2 * ne1 - i2_0 as i64 * ne1) as i32;
-            let mut dst_ptr: *mut f32 = ((*dst).data as *mut libc::c_char)
+            let mut dst_ptr: *mut f32 = ((*dst).data as *mut i8)
                 .offset((i3_0 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2_0 as u64).wrapping_mul(nb2) as isize)
                 .offset((i1_0 as u64).wrapping_mul(nb1) as isize)
                 as *mut f32;
-            let mut src0_ptr: *mut f32 = ((*src0).data as *mut libc::c_char)
+            let mut src0_ptr: *mut f32 = ((*src0).data as *mut i8)
                 .offset((i3_0 as u64).wrapping_mul(nb03) as isize)
                 .offset((i2_0 as u64).wrapping_mul(nb02) as isize)
                 .offset((i1_0 as u64).wrapping_mul(nb01) as isize)
                 as *mut f32;
-            let mut i0: i32 = 0 as i32;
+            let mut i0: i32 = 0_i32;
             while (i0 as i64) < ne0 {
-                let mut src1_ptr: *mut f32 = ((*src1).data as *mut libc::c_char)
+                let mut src1_ptr: *mut f32 = ((*src1).data as *mut i8)
                     .offset((i3_0 as u64).wrapping_mul(nb13) as isize)
                     .offset((i2_0 as u64).wrapping_mul(nb12) as isize)
                     .offset((i1_0 as u64).wrapping_mul(nb11) as isize)
@@ -10894,13 +10849,13 @@ unsafe extern "C" fn ggml_compute_forward_sub(
             ggml_compute_forward_sub_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8027 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8027_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -10917,11 +10872,11 @@ unsafe extern "C" fn ggml_compute_forward_mul_f32(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8039 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8039_i32,
             b"ggml_can_repeat_rows(src1, src0) && ggml_are_same_shape(src0, dst)\0" as *const u8
-                as *const libc::c_char,
+                as *const i8,
         );
         abort();
     }
@@ -10933,52 +10888,52 @@ unsafe extern "C" fn ggml_compute_forward_mul_f32(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: int64_t = ggml_nrows(src0) as int64_t;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne10: int64_t = (*src1).ne[0 as i32 as usize];
-    let ne11: int64_t = (*src1).ne[1 as i32 as usize];
-    let ne12: int64_t = (*src1).ne[2 as i32 as usize];
-    let ne13: int64_t = (*src1).ne[3 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb10: size_t = (*src1).nb[0 as i32 as usize];
-    let nb11: size_t = (*src1).nb[1 as i32 as usize];
-    let nb12: size_t = (*src1).nb[2 as i32 as usize];
-    let nb13: size_t = (*src1).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne10: int64_t = (*src1).ne[0_i32 as usize];
+    let ne11: int64_t = (*src1).ne[1_i32 as usize];
+    let ne12: int64_t = (*src1).ne[2_i32 as usize];
+    let ne13: int64_t = (*src1).ne[3_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb10: size_t = (*src1).nb[0_i32 as usize];
+    let nb11: size_t = (*src1).nb[1_i32 as usize];
+    let nb12: size_t = (*src1).nb[2_i32 as usize];
+    let nb13: size_t = (*src1).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if nb0 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8082 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8082_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8083 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8083_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne00 != ne10 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8084 as i32,
-            b"ne00 == ne10\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8084_i32,
+            b"ne00 == ne10\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -10991,17 +10946,17 @@ unsafe extern "C" fn ggml_compute_forward_mul_f32(
             let i13: int64_t = i03 % ne13;
             let i12: int64_t = i02 % ne12;
             let i11: int64_t = i01 % ne11;
-            let mut dst_ptr: *mut f32 = ((*dst).data as *mut libc::c_char)
+            let mut dst_ptr: *mut f32 = ((*dst).data as *mut i8)
                 .offset((i03 as u64).wrapping_mul(nb3) as isize)
                 .offset((i02 as u64).wrapping_mul(nb2) as isize)
                 .offset((i01 as u64).wrapping_mul(nb1) as isize)
                 as *mut f32;
-            let mut src0_ptr: *mut f32 = ((*src0).data as *mut libc::c_char)
+            let mut src0_ptr: *mut f32 = ((*src0).data as *mut i8)
                 .offset((i03 as u64).wrapping_mul(nb03) as isize)
                 .offset((i02 as u64).wrapping_mul(nb02) as isize)
                 .offset((i01 as u64).wrapping_mul(nb01) as isize)
                 as *mut f32;
-            let mut src1_ptr: *mut f32 = ((*src1).data as *mut libc::c_char)
+            let mut src1_ptr: *mut f32 = ((*src1).data as *mut i8)
                 .offset((i13 as u64).wrapping_mul(nb13) as isize)
                 .offset((i12 as u64).wrapping_mul(nb12) as isize)
                 .offset((i11 as u64).wrapping_mul(nb11) as isize)
@@ -11018,19 +10973,19 @@ unsafe extern "C" fn ggml_compute_forward_mul_f32(
             let i13_0: int64_t = i03_0 % ne13;
             let i12_0: int64_t = i02_0 % ne12;
             let i11_0: int64_t = i01_0 % ne11;
-            let mut dst_ptr_0: *mut f32 = ((*dst).data as *mut libc::c_char)
+            let mut dst_ptr_0: *mut f32 = ((*dst).data as *mut i8)
                 .offset((i03_0 as u64).wrapping_mul(nb3) as isize)
                 .offset((i02_0 as u64).wrapping_mul(nb2) as isize)
                 .offset((i01_0 as u64).wrapping_mul(nb1) as isize)
                 as *mut f32;
-            let mut src0_ptr_0: *mut f32 = ((*src0).data as *mut libc::c_char)
+            let mut src0_ptr_0: *mut f32 = ((*src0).data as *mut i8)
                 .offset((i03_0 as u64).wrapping_mul(nb03) as isize)
                 .offset((i02_0 as u64).wrapping_mul(nb02) as isize)
                 .offset((i01_0 as u64).wrapping_mul(nb01) as isize)
                 as *mut f32;
-            let mut i0: int64_t = 0 as i32 as int64_t;
+            let mut i0: int64_t = 0_i32 as int64_t;
             while i0 < ne00 {
-                let mut src1_ptr_0: *mut f32 = ((*src1).data as *mut libc::c_char)
+                let mut src1_ptr_0: *mut f32 = ((*src1).data as *mut i8)
                     .offset((i13_0 as u64).wrapping_mul(nb13) as isize)
                     .offset((i12_0 as u64).wrapping_mul(nb12) as isize)
                     .offset((i11_0 as u64).wrapping_mul(nb11) as isize)
@@ -11055,13 +11010,13 @@ unsafe extern "C" fn ggml_compute_forward_mul(
             ggml_compute_forward_mul_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8148 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8148_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11080,58 +11035,58 @@ unsafe extern "C" fn ggml_compute_forward_div_f32(
         return;
     }
     let nr: i32 = ggml_nrows(src0);
-    let ne0: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne1: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne2: int64_t = (*src0).ne[2 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb10: size_t = (*src1).nb[0 as i32 as usize];
-    let nb11: size_t = (*src1).nb[1 as i32 as usize];
-    let nb12: size_t = (*src1).nb[2 as i32 as usize];
-    let nb13: size_t = (*src1).nb[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne0: int64_t = (*src0).ne[0_i32 as usize];
+    let ne1: int64_t = (*src0).ne[1_i32 as usize];
+    let ne2: int64_t = (*src0).ne[2_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb10: size_t = (*src1).nb[0_i32 as usize];
+    let nb11: size_t = (*src1).nb[1_i32 as usize];
+    let nb12: size_t = (*src1).nb[2_i32 as usize];
+    let nb13: size_t = (*src1).nb[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if nb0 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8187 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8187_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8188 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8188_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb10 == ::core::mem::size_of::<f32>() as u64 {
-        let mut ir: i32 = 0 as i32;
+        let mut ir: i32 = 0_i32;
         while ir < nr {
             let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
             let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
             let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
             ggml_vec_div_f32(
                 ne0 as i32,
-                ((*dst).data as *mut libc::c_char)
+                ((*dst).data as *mut i8)
                     .offset((i3 as u64).wrapping_mul(nb3) as isize)
                     .offset((i2 as u64).wrapping_mul(nb2) as isize)
                     .offset((i1 as u64).wrapping_mul(nb1) as isize) as *mut f32,
-                ((*src0).data as *mut libc::c_char)
+                ((*src0).data as *mut i8)
                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
                     .offset((i1 as u64).wrapping_mul(nb01) as isize) as *mut f32,
-                ((*src1).data as *mut libc::c_char)
+                ((*src1).data as *mut i8)
                     .offset((i3 as u64).wrapping_mul(nb13) as isize)
                     .offset((i2 as u64).wrapping_mul(nb12) as isize)
                     .offset((i1 as u64).wrapping_mul(nb11) as isize) as *mut f32,
@@ -11140,24 +11095,24 @@ unsafe extern "C" fn ggml_compute_forward_div_f32(
             ir;
         }
     } else {
-        let mut ir_0: i32 = 0 as i32;
+        let mut ir_0: i32 = 0_i32;
         while ir_0 < nr {
             let i3_0: i32 = (ir_0 as i64 / (ne2 * ne1)) as i32;
             let i2_0: i32 = ((ir_0 as i64 - i3_0 as i64 * ne2 * ne1) / ne1) as i32;
             let i1_0: i32 = (ir_0 as i64 - i3_0 as i64 * ne2 * ne1 - i2_0 as i64 * ne1) as i32;
-            let mut dst_ptr: *mut f32 = ((*dst).data as *mut libc::c_char)
+            let mut dst_ptr: *mut f32 = ((*dst).data as *mut i8)
                 .offset((i3_0 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2_0 as u64).wrapping_mul(nb2) as isize)
                 .offset((i1_0 as u64).wrapping_mul(nb1) as isize)
                 as *mut f32;
-            let mut src0_ptr: *mut f32 = ((*src0).data as *mut libc::c_char)
+            let mut src0_ptr: *mut f32 = ((*src0).data as *mut i8)
                 .offset((i3_0 as u64).wrapping_mul(nb03) as isize)
                 .offset((i2_0 as u64).wrapping_mul(nb02) as isize)
                 .offset((i1_0 as u64).wrapping_mul(nb01) as isize)
                 as *mut f32;
-            let mut i0: i32 = 0 as i32;
+            let mut i0: i32 = 0_i32;
             while (i0 as i64) < ne0 {
-                let mut src1_ptr: *mut f32 = ((*src1).data as *mut libc::c_char)
+                let mut src1_ptr: *mut f32 = ((*src1).data as *mut i8)
                     .offset((i3_0 as u64).wrapping_mul(nb13) as isize)
                     .offset((i2_0 as u64).wrapping_mul(nb12) as isize)
                     .offset((i1_0 as u64).wrapping_mul(nb11) as isize)
@@ -11183,13 +11138,13 @@ unsafe extern "C" fn ggml_compute_forward_div(
             ggml_compute_forward_div_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8244 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8244_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11207,16 +11162,16 @@ unsafe extern "C" fn ggml_compute_forward_sqr_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let mut i: i32 = 0 as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         ggml_vec_sqr_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -11233,13 +11188,13 @@ unsafe extern "C" fn ggml_compute_forward_sqr(
             ggml_compute_forward_sqr_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8286 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8286_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11257,16 +11212,16 @@ unsafe extern "C" fn ggml_compute_forward_sqrt_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let mut i: i32 = 0 as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         ggml_vec_sqrt_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -11283,13 +11238,13 @@ unsafe extern "C" fn ggml_compute_forward_sqrt(
             ggml_compute_forward_sqrt_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8328 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8328_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11301,23 +11256,23 @@ unsafe extern "C" fn ggml_compute_forward_log_f32(
     mut src0: *const ggml_tensor,
     mut dst: *mut ggml_tensor,
 ) {
-    if (*params).ith != 0 as i32 {
+    if (*params).ith != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8340 as i32,
-            b"params->ith == 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8340_i32,
+            b"params->ith == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8341 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8341_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -11327,36 +11282,36 @@ unsafe extern "C" fn ggml_compute_forward_log_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    if (*dst).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    if (*dst).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8350 as i32,
-            b"dst->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8350_i32,
+            b"dst->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if (*src0).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+    if (*src0).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8351 as i32,
-            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8351_i32,
+            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         ggml_vec_log_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -11373,13 +11328,13 @@ unsafe extern "C" fn ggml_compute_forward_log(
             ggml_compute_forward_log_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8371 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8371_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11396,25 +11351,25 @@ unsafe extern "C" fn ggml_compute_forward_sum_f32(
     {
         return;
     }
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let mut sum: ggml_float = 0 as i32 as ggml_float;
-    let mut row_sum: ggml_float = 0 as i32 as ggml_float;
-    let mut i03: int64_t = 0 as i32 as int64_t;
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let mut sum: ggml_float = 0_i32 as ggml_float;
+    let mut row_sum: ggml_float = 0_i32 as ggml_float;
+    let mut i03: int64_t = 0_i32 as int64_t;
     while i03 < ne03 {
-        let mut i02: int64_t = 0 as i32 as int64_t;
+        let mut i02: int64_t = 0_i32 as int64_t;
         while i02 < ne02 {
-            let mut i01: int64_t = 0 as i32 as int64_t;
+            let mut i01: int64_t = 0_i32 as int64_t;
             while i01 < ne01 {
                 ggml_vec_sum_ggf(
                     ne00 as i32,
                     &mut row_sum,
-                    ((*src0).data as *mut libc::c_char)
+                    ((*src0).data as *mut i8)
                         .offset((i01 as u64).wrapping_mul(nb01) as isize)
                         .offset((i02 as u64).wrapping_mul(nb02) as isize)
                         .offset((i03 as u64).wrapping_mul(nb03) as isize)
@@ -11430,7 +11385,7 @@ unsafe extern "C" fn ggml_compute_forward_sum_f32(
         i03 += 1;
         i03;
     }
-    *((*dst).data as *mut f32).offset(0 as i32 as isize) = sum as f32;
+    *((*dst).data as *mut f32).offset(0_i32 as isize) = sum as f32;
 }
 unsafe extern "C" fn ggml_compute_forward_sum(
     mut params: *const ggml_compute_params,
@@ -11442,13 +11397,13 @@ unsafe extern "C" fn ggml_compute_forward_sum(
             ggml_compute_forward_sum_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8428 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8428_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11460,13 +11415,13 @@ unsafe extern "C" fn ggml_compute_forward_sum_rows_f32(
     mut src0: *const ggml_tensor,
     mut dst: *mut ggml_tensor,
 ) {
-    if (*params).ith != 0 as i32 {
+    if (*params).ith != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8439 as i32,
-            b"params->ith == 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8439_i32,
+            b"params->ith == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -11475,99 +11430,99 @@ unsafe extern "C" fn ggml_compute_forward_sum_rows_f32(
     {
         return;
     }
-    if (*src0).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+    if (*src0).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8445 as i32,
-            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8445_i32,
+            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if (*dst).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+    if (*dst).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8446 as i32,
-            b"dst->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8446_i32,
+            b"dst->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    if ne0 != 1 as i32 as i64 {
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let ne3: int64_t = (*dst).ne[3_i32 as usize];
+    if ne0 != 1_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8458 as i32,
-            b"ne0 == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8458_i32,
+            b"ne0 == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne1 != ne01 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8459 as i32,
-            b"ne1 == ne01\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8459_i32,
+            b"ne1 == ne01\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne2 != ne02 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8460 as i32,
-            b"ne2 == ne02\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8460_i32,
+            b"ne2 == ne02\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne3 != ne03 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8461 as i32,
-            b"ne3 == ne03\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8461_i32,
+            b"ne3 == ne03\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
-    let mut i3: int64_t = 0 as i32 as int64_t;
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
+    let mut i3: int64_t = 0_i32 as int64_t;
     while i3 < ne03 {
-        let mut i2: int64_t = 0 as i32 as int64_t;
+        let mut i2: int64_t = 0_i32 as int64_t;
         while i2 < ne02 {
-            let mut i1: int64_t = 0 as i32 as int64_t;
+            let mut i1: int64_t = 0_i32 as int64_t;
             while i1 < ne01 {
-                let mut src_row: *mut f32 = ((*src0).data as *mut libc::c_char)
+                let mut src_row: *mut f32 = ((*src0).data as *mut i8)
                     .offset((i1 as u64).wrapping_mul(nb01) as isize)
                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                     as *mut f32;
-                let mut dst_row: *mut f32 = ((*dst).data as *mut libc::c_char)
+                let mut dst_row: *mut f32 = ((*dst).data as *mut i8)
                     .offset((i1 as u64).wrapping_mul(nb1) as isize)
                     .offset((i2 as u64).wrapping_mul(nb2) as isize)
                     .offset((i3 as u64).wrapping_mul(nb3) as isize)
                     as *mut f32;
-                let mut row_sum: f32 = 0 as i32 as f32;
+                let mut row_sum: f32 = 0_i32 as f32;
                 ggml_vec_sum_f32(ne00 as i32, &mut row_sum, src_row);
-                *dst_row.offset(0 as i32 as isize) = row_sum;
+                *dst_row.offset(0_i32 as isize) = row_sum;
                 i1 += 1;
                 i1;
             }
@@ -11588,13 +11543,13 @@ unsafe extern "C" fn ggml_compute_forward_sum_rows(
             ggml_compute_forward_sum_rows_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8495 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8495_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11611,40 +11566,40 @@ unsafe extern "C" fn ggml_compute_forward_mean_f32(
     {
         return;
     }
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let _ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let _ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let _ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let _ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
-    let mut i03: int64_t = 0 as i32 as int64_t;
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let _ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let _ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let _ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let _ne3: int64_t = (*dst).ne[3_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
+    let mut i03: int64_t = 0_i32 as int64_t;
     while i03 < ne03 {
-        let mut i02: int64_t = 0 as i32 as int64_t;
+        let mut i02: int64_t = 0_i32 as int64_t;
         while i02 < ne02 {
-            let mut i01: int64_t = 0 as i32 as int64_t;
+            let mut i01: int64_t = 0_i32 as int64_t;
             while i01 < ne01 {
                 ggml_vec_sum_f32(
                     ne00 as i32,
-                    ((*dst).data as *mut libc::c_char)
+                    ((*dst).data as *mut i8)
                         .offset((i01 as u64).wrapping_mul(nb1) as isize)
                         .offset((i02 as u64).wrapping_mul(nb2) as isize)
                         .offset((i03 as u64).wrapping_mul(nb3) as isize)
                         as *mut f32,
-                    ((*src0).data as *mut libc::c_char)
+                    ((*src0).data as *mut i8)
                         .offset((i01 as u64).wrapping_mul(nb01) as isize)
                         .offset((i02 as u64).wrapping_mul(nb02) as isize)
                         .offset((i03 as u64).wrapping_mul(nb03) as isize)
                         as *mut f32,
                 );
-                *(((*dst).data as *mut libc::c_char)
+                *(((*dst).data as *mut i8)
                     .offset((i01 as u64).wrapping_mul(nb1) as isize)
                     .offset((i02 as u64).wrapping_mul(nb2) as isize)
                     .offset((i03 as u64).wrapping_mul(nb3) as isize)
@@ -11669,13 +11624,13 @@ unsafe extern "C" fn ggml_compute_forward_mean(
             ggml_compute_forward_mean_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8566 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8566_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11687,23 +11642,23 @@ unsafe extern "C" fn ggml_compute_forward_repeat_f32(
     mut src0: *const ggml_tensor,
     mut dst: *mut ggml_tensor,
 ) {
-    if (*params).ith != 0 as i32 {
+    if (*params).ith != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8577 as i32,
-            b"params->ith == 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8577_i32,
+            b"params->ith == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_can_repeat(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8578 as i32,
-            b"ggml_can_repeat(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8578_i32,
+            b"ggml_can_repeat(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -11712,22 +11667,22 @@ unsafe extern "C" fn ggml_compute_forward_repeat_f32(
     {
         return;
     }
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let ne3: int64_t = (*dst).ne[3_i32 as usize];
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
     let nr0: i32 = (ne0 / ne00) as i32;
     let nr1: i32 = (ne1 / ne01) as i32;
     let nr2: i32 = (ne2 / ne02) as i32;
@@ -11735,40 +11690,40 @@ unsafe extern "C" fn ggml_compute_forward_repeat_f32(
     if nb0 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8611 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8611_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8612 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8612_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut i3: i32 = 0 as i32;
+    let mut i3: i32 = 0_i32;
     while i3 < nr3 {
-        let mut k3: i32 = 0 as i32;
+        let mut k3: i32 = 0_i32;
         while (k3 as i64) < ne03 {
-            let mut i2: i32 = 0 as i32;
+            let mut i2: i32 = 0_i32;
             while i2 < nr2 {
-                let mut k2: i32 = 0 as i32;
+                let mut k2: i32 = 0_i32;
                 while (k2 as i64) < ne02 {
-                    let mut i1: i32 = 0 as i32;
+                    let mut i1: i32 = 0_i32;
                     while i1 < nr1 {
-                        let mut k1: i32 = 0 as i32;
+                        let mut k1: i32 = 0_i32;
                         while (k1 as i64) < ne01 {
-                            let mut i0: i32 = 0 as i32;
+                            let mut i0: i32 = 0_i32;
                             while i0 < nr0 {
                                 ggml_vec_cpy_f32(
                                     ne00 as i32,
-                                    ((*dst).data as *mut libc::c_char)
+                                    ((*dst).data as *mut i8)
                                         .offset(
                                             ((i3 as i64 * ne03 + k3 as i64) as u64)
                                                 .wrapping_mul(nb3)
@@ -11787,7 +11742,7 @@ unsafe extern "C" fn ggml_compute_forward_repeat_f32(
                                         .offset(
                                             ((i0 as i64 * ne00) as u64).wrapping_mul(nb0) as isize
                                         ) as *mut f32,
-                                    ((*src0).data as *mut libc::c_char)
+                                    ((*src0).data as *mut i8)
                                         .offset((k3 as u64).wrapping_mul(nb03) as isize)
                                         .offset((k2 as u64).wrapping_mul(nb02) as isize)
                                         .offset((k1 as u64).wrapping_mul(nb01) as isize)
@@ -11825,13 +11780,13 @@ unsafe extern "C" fn ggml_compute_forward_repeat(
             ggml_compute_forward_repeat_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8645 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8645_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11849,16 +11804,16 @@ unsafe extern "C" fn ggml_compute_forward_abs_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let mut i: i32 = 0 as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         ggml_vec_abs_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -11875,13 +11830,13 @@ unsafe extern "C" fn ggml_compute_forward_abs(
             ggml_compute_forward_abs_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8687 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8687_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11899,16 +11854,16 @@ unsafe extern "C" fn ggml_compute_forward_sgn_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let mut i: i32 = 0 as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         ggml_vec_sgn_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -11925,13 +11880,13 @@ unsafe extern "C" fn ggml_compute_forward_sgn(
             ggml_compute_forward_sgn_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8729 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8729_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11949,16 +11904,16 @@ unsafe extern "C" fn ggml_compute_forward_neg_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let mut i: i32 = 0 as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         ggml_vec_neg_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -11975,13 +11930,13 @@ unsafe extern "C" fn ggml_compute_forward_neg(
             ggml_compute_forward_neg_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8771 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8771_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -11999,16 +11954,16 @@ unsafe extern "C" fn ggml_compute_forward_step_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let mut i: i32 = 0 as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         ggml_vec_step_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -12025,13 +11980,13 @@ unsafe extern "C" fn ggml_compute_forward_step(
             ggml_compute_forward_step_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8813 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8813_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -12049,16 +12004,16 @@ unsafe extern "C" fn ggml_compute_forward_relu_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let mut i: i32 = 0 as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         ggml_vec_relu_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -12075,13 +12030,13 @@ unsafe extern "C" fn ggml_compute_forward_relu(
             ggml_compute_forward_relu_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8855 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8855_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -12096,30 +12051,30 @@ unsafe extern "C" fn ggml_compute_forward_gelu_f32(
     if !ggml_is_contiguous(src0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8866 as i32,
-            b"ggml_is_contiguous(src0)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8866_i32,
+            b"ggml_is_contiguous(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8867 as i32,
-            b"ggml_is_contiguous(dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8867_i32,
+            b"ggml_is_contiguous(dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8868 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8868_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -12130,20 +12085,20 @@ unsafe extern "C" fn ggml_compute_forward_gelu_f32(
     }
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
     let nr: i32 = ggml_nrows(src0);
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut i1: i32 = ir0;
     while i1 < ir1 {
         ggml_vec_gelu_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i1 as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i1 as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i1 as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i1 as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i1 += 1;
@@ -12160,13 +12115,13 @@ unsafe extern "C" fn ggml_compute_forward_gelu(
             ggml_compute_forward_gelu_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8914 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8914_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -12181,30 +12136,30 @@ unsafe extern "C" fn ggml_compute_forward_silu_f32(
     if !ggml_is_contiguous(src0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8927 as i32,
-            b"ggml_is_contiguous(src0)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8927_i32,
+            b"ggml_is_contiguous(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8928 as i32,
-            b"ggml_is_contiguous(dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8928_i32,
+            b"ggml_is_contiguous(dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8929 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8929_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -12215,20 +12170,20 @@ unsafe extern "C" fn ggml_compute_forward_silu_f32(
     }
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
     let nr: i32 = ggml_nrows(src0);
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut i1: i32 = ir0;
     while i1 < ir1 {
         ggml_vec_silu_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i1 as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i1 as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i1 as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i1 as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i1 += 1;
@@ -12245,13 +12200,13 @@ unsafe extern "C" fn ggml_compute_forward_silu(
             ggml_compute_forward_silu_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    8975 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    8975_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -12267,50 +12222,50 @@ unsafe extern "C" fn ggml_compute_forward_silu_back_f32(
     if !ggml_is_contiguous(grad) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8988 as i32,
-            b"ggml_is_contiguous(grad)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8988_i32,
+            b"ggml_is_contiguous(grad)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(src0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8989 as i32,
-            b"ggml_is_contiguous(src0)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8989_i32,
+            b"ggml_is_contiguous(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8990 as i32,
-            b"ggml_is_contiguous(dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8990_i32,
+            b"ggml_is_contiguous(dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8991 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8991_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_are_same_shape(src0, grad) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            8992 as i32,
-            b"ggml_are_same_shape(src0, grad)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            8992_i32,
+            b"ggml_are_same_shape(src0, grad)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -12321,23 +12276,23 @@ unsafe extern "C" fn ggml_compute_forward_silu_back_f32(
     }
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
     let nr: i32 = ggml_nrows(src0);
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut i1: i32 = ir0;
     while i1 < ir1 {
         ggml_vec_silu_backward_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i1 as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i1 as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i1 as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i1 as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*grad).data as *mut libc::c_char)
-                .offset((i1 as u64).wrapping_mul((*grad).nb[1 as i32 as usize]) as isize)
+            ((*grad).data as *mut i8)
+                .offset((i1 as u64).wrapping_mul((*grad).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i1 += 1;
@@ -12355,13 +12310,13 @@ unsafe extern "C" fn ggml_compute_forward_silu_back(
             ggml_compute_forward_silu_back_f32(params, src0, grad, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    9040 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    9040_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -12376,10 +12331,10 @@ unsafe extern "C" fn ggml_compute_forward_norm_f32(
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9051 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9051_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -12388,55 +12343,55 @@ unsafe extern "C" fn ggml_compute_forward_norm_f32(
     {
         return;
     }
-    if (*src0).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+    if (*src0).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9057 as i32,
-            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9057_i32,
+            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     let eps: f32 = 1e-5f32;
-    let mut i03: int64_t = 0 as i32 as int64_t;
+    let mut i03: int64_t = 0_i32 as int64_t;
     while i03 < ne03 {
-        let mut i02: int64_t = 0 as i32 as int64_t;
+        let mut i02: int64_t = 0_i32 as int64_t;
         while i02 < ne02 {
             let mut i01: int64_t = ith as int64_t;
             while i01 < ne01 {
-                let mut x: *const f32 = ((*src0).data as *mut libc::c_char)
+                let mut x: *const f32 = ((*src0).data as *mut i8)
                     .offset((i01 as u64).wrapping_mul(nb01) as isize)
                     .offset((i02 as u64).wrapping_mul(nb02) as isize)
                     .offset((i03 as u64).wrapping_mul(nb03) as isize)
                     as *mut f32;
                 let mut sum: ggml_float = 0.0f64;
-                let mut i00: int64_t = 0 as i32 as int64_t;
+                let mut i00: int64_t = 0_i32 as int64_t;
                 while i00 < ne00 {
                     sum += *x.offset(i00 as isize) as ggml_float;
                     i00 += 1;
                     i00;
                 }
                 let mut mean: f32 = (sum / ne00 as f64) as f32;
-                let mut y: *mut f32 = ((*dst).data as *mut libc::c_char)
+                let mut y: *mut f32 = ((*dst).data as *mut i8)
                     .offset((i01 as u64).wrapping_mul(nb1) as isize)
                     .offset((i02 as u64).wrapping_mul(nb2) as isize)
                     .offset((i03 as u64).wrapping_mul(nb3) as isize)
                     as *mut f32;
                 let mut sum2: ggml_float = 0.0f64;
-                let mut i00_0: int64_t = 0 as i32 as int64_t;
+                let mut i00_0: int64_t = 0_i32 as int64_t;
                 while i00_0 < ne00 {
                     let mut v: f32 = *x.offset(i00_0 as isize) - mean;
                     *y.offset(i00_0 as isize) = v;
@@ -12466,13 +12421,13 @@ unsafe extern "C" fn ggml_compute_forward_norm(
             ggml_compute_forward_norm_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    9119 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    9119_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -12487,10 +12442,10 @@ unsafe extern "C" fn ggml_compute_forward_rms_norm_f32(
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9128 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9128_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -12499,49 +12454,49 @@ unsafe extern "C" fn ggml_compute_forward_rms_norm_f32(
     {
         return;
     }
-    if (*src0).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+    if (*src0).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9134 as i32,
-            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9134_i32,
+            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     let eps: f32 = 1e-6f32;
-    let mut i03: int64_t = 0 as i32 as int64_t;
+    let mut i03: int64_t = 0_i32 as int64_t;
     while i03 < ne03 {
-        let mut i02: int64_t = 0 as i32 as int64_t;
+        let mut i02: int64_t = 0_i32 as int64_t;
         while i02 < ne02 {
             let mut i01: int64_t = ith as int64_t;
             while i01 < ne01 {
-                let mut x: *const f32 = ((*src0).data as *mut libc::c_char)
+                let mut x: *const f32 = ((*src0).data as *mut i8)
                     .offset((i01 as u64).wrapping_mul(nb01) as isize)
                     .offset((i02 as u64).wrapping_mul(nb02) as isize)
                     .offset((i03 as u64).wrapping_mul(nb03) as isize)
                     as *mut f32;
                 let mut sum: ggml_float = 0.0f64;
-                let mut i00: int64_t = 0 as i32 as int64_t;
+                let mut i00: int64_t = 0_i32 as int64_t;
                 while i00 < ne00 {
                     sum += (*x.offset(i00 as isize) * *x.offset(i00 as isize)) as ggml_float;
                     i00 += 1;
                     i00;
                 }
                 let mut mean: f32 = (sum / ne00 as f64) as f32;
-                let mut y: *mut f32 = ((*dst).data as *mut libc::c_char)
+                let mut y: *mut f32 = ((*dst).data as *mut i8)
                     .offset((i01 as u64).wrapping_mul(nb1) as isize)
                     .offset((i02 as u64).wrapping_mul(nb2) as isize)
                     .offset((i03 as u64).wrapping_mul(nb3) as isize)
@@ -12572,13 +12527,13 @@ unsafe extern "C" fn ggml_compute_forward_rms_norm(
             ggml_compute_forward_rms_norm_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    9193 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    9193_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -12595,11 +12550,11 @@ unsafe extern "C" fn ggml_compute_forward_rms_norm_back_f32(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9204 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9204_i32,
             b"ggml_are_same_shape(src0, dst) && ggml_are_same_shape(src0, src1)\0" as *const u8
-                as *const libc::c_char,
+                as *const i8,
         );
         abort();
     }
@@ -12608,54 +12563,54 @@ unsafe extern "C" fn ggml_compute_forward_rms_norm_back_f32(
     {
         return;
     }
-    if (*src0).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+    if (*src0).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9210 as i32,
-            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9210_i32,
+            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let nb11: size_t = (*src1).nb[1 as i32 as usize];
-    let nb12: size_t = (*src1).nb[2 as i32 as usize];
-    let nb13: size_t = (*src1).nb[3 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let nb11: size_t = (*src1).nb[1_i32 as usize];
+    let nb12: size_t = (*src1).nb[2_i32 as usize];
+    let nb13: size_t = (*src1).nb[3_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     let eps: f32 = 1e-6f32;
-    let mut i03: int64_t = 0 as i32 as int64_t;
+    let mut i03: int64_t = 0_i32 as int64_t;
     while i03 < ne03 {
-        let mut i02: int64_t = 0 as i32 as int64_t;
+        let mut i02: int64_t = 0_i32 as int64_t;
         while i02 < ne02 {
             let mut i01: int64_t = ith as int64_t;
             while i01 < ne01 {
                 let i11: int64_t = i01;
                 let i12: int64_t = i02;
                 let i13: int64_t = i03;
-                let mut x: *const f32 = ((*src0).data as *mut libc::c_char)
+                let mut x: *const f32 = ((*src0).data as *mut i8)
                     .offset((i01 as u64).wrapping_mul(nb01) as isize)
                     .offset((i02 as u64).wrapping_mul(nb02) as isize)
                     .offset((i03 as u64).wrapping_mul(nb03) as isize)
                     as *mut f32;
-                let mut dz: *const f32 = ((*src1).data as *mut libc::c_char)
+                let mut dz: *const f32 = ((*src1).data as *mut i8)
                     .offset((i11 as u64).wrapping_mul(nb11) as isize)
                     .offset((i12 as u64).wrapping_mul(nb12) as isize)
                     .offset((i13 as u64).wrapping_mul(nb13) as isize)
                     as *mut f32;
                 let mut sum_xx: ggml_float = 0.0f64;
                 let mut sum_xdz: ggml_float = 0.0f64;
-                let mut i00: int64_t = 0 as i32 as int64_t;
+                let mut i00: int64_t = 0_i32 as int64_t;
                 while i00 < ne00 {
                     sum_xx += (*x.offset(i00 as isize) * *x.offset(i00 as isize)) as ggml_float;
                     sum_xdz += (*x.offset(i00 as isize) * *dz.offset(i00 as isize)) as ggml_float;
@@ -12665,7 +12620,7 @@ unsafe extern "C" fn ggml_compute_forward_rms_norm_back_f32(
                 let mean_eps: f32 = sum_xx as f32 / ne00 as f32 + eps;
                 let sum_eps: f32 = sum_xx as f32 + eps * ne00 as f32;
                 let rrms: f32 = 1.0f32 / sqrtf(mean_eps);
-                let mut dx: *mut f32 = ((*dst).data as *mut libc::c_char)
+                let mut dx: *mut f32 = ((*dst).data as *mut i8)
                     .offset((i01 as u64).wrapping_mul(nb1) as isize)
                     .offset((i02 as u64).wrapping_mul(nb2) as isize)
                     .offset((i03 as u64).wrapping_mul(nb3) as isize)
@@ -12694,13 +12649,13 @@ unsafe extern "C" fn ggml_compute_forward_rms_norm_back(
             ggml_compute_forward_rms_norm_back_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    9382 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    9382_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -12713,22 +12668,22 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f32(
     mut src1: *const ggml_tensor,
     mut dst: *mut ggml_tensor,
 ) {
-    let mut _t0: int64_t = 0 as i32 as int64_t;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let ne11: int64_t = (*src1).ne[1 as i32 as usize];
-    let nb01: i32 = (*src0).nb[1 as i32 as usize] as i32;
-    let nb02: i32 = (*src0).nb[2 as i32 as usize] as i32;
-    let nb03: i32 = (*src0).nb[3 as i32 as usize] as i32;
-    let nb11: i32 = (*src1).nb[1 as i32 as usize] as i32;
-    let nb12: i32 = (*src1).nb[2 as i32 as usize] as i32;
-    let nb13: i32 = (*src1).nb[3 as i32 as usize] as i32;
-    let nb0: i32 = (*dst).nb[0 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
-    let nb2: i32 = (*dst).nb[2 as i32 as usize] as i32;
-    let nb3: i32 = (*dst).nb[3 as i32 as usize] as i32;
+    let mut _t0: int64_t = 0_i32 as int64_t;
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let ne11: int64_t = (*src1).ne[1_i32 as usize];
+    let nb01: i32 = (*src0).nb[1_i32 as usize] as i32;
+    let nb02: i32 = (*src0).nb[2_i32 as usize] as i32;
+    let nb03: i32 = (*src0).nb[3_i32 as usize] as i32;
+    let nb11: i32 = (*src1).nb[1_i32 as usize] as i32;
+    let nb12: i32 = (*src1).nb[2_i32 as usize] as i32;
+    let nb13: i32 = (*src1).nb[3_i32 as usize] as i32;
+    let nb0: i32 = (*dst).nb[0_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
+    let nb2: i32 = (*dst).nb[2_i32 as usize] as i32;
+    let nb3: i32 = (*dst).nb[3_i32 as usize] as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     if (*params).type_0 as u32 == GGML_TASK_INIT as i32 as u32 {
@@ -12738,7 +12693,7 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f32(
         return;
     }
     let nr: i32 = (ne01 * ne02 * ne03) as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
@@ -12746,7 +12701,7 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f32(
         let i03: i32 = (ir as i64 / (ne02 * ne01)) as i32;
         let i02: i32 = ((ir as i64 - i03 as i64 * ne02 * ne01) / ne01) as i32;
         let i01: i32 = (ir as i64 - i03 as i64 * ne02 * ne01 - i02 as i64 * ne01) as i32;
-        let mut ic: int64_t = 0 as i32 as int64_t;
+        let mut ic: int64_t = 0_i32 as int64_t;
         while ic < ne11 {
             let i13: i32 = i03;
             let i12: i32 = i02;
@@ -12757,14 +12712,12 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f32(
             let i3: i32 = i03;
             ggml_vec_dot_f32(
                 ne00 as i32,
-                ((*dst).data as *mut libc::c_char)
+                ((*dst).data as *mut i8)
                     .offset((i0 * nb0 + i1 * nb1 + i2 * nb2 + i3 * nb3) as isize)
                     as *mut f32,
-                ((*src0).data as *mut libc::c_char)
-                    .offset((i01 * nb01 + i02 * nb02 + i03 * nb03) as isize)
+                ((*src0).data as *mut i8).offset((i01 * nb01 + i02 * nb02 + i03 * nb03) as isize)
                     as *mut f32,
-                ((*src1).data as *mut libc::c_char)
-                    .offset((i11 * nb11 + i12 * nb12 + i13 * nb13) as isize)
+                ((*src1).data as *mut i8).offset((i11 * nb11 + i12 * nb12 + i13 * nb13) as isize)
                     as *mut f32,
             );
             ic += 1;
@@ -12780,173 +12733,173 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f16_f32(
     mut src1: *const ggml_tensor,
     mut dst: *mut ggml_tensor,
 ) {
-    let mut _t0: int64_t = 0 as i32 as int64_t;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let ne10: int64_t = (*src1).ne[0 as i32 as usize];
-    let ne11: int64_t = (*src1).ne[1 as i32 as usize];
-    let ne12: int64_t = (*src1).ne[2 as i32 as usize];
-    let ne13: int64_t = (*src1).ne[3 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    let nb00: i32 = (*src0).nb[0 as i32 as usize] as i32;
-    let nb01: i32 = (*src0).nb[1 as i32 as usize] as i32;
-    let nb02: i32 = (*src0).nb[2 as i32 as usize] as i32;
-    let nb03: i32 = (*src0).nb[3 as i32 as usize] as i32;
-    let nb10: i32 = (*src1).nb[0 as i32 as usize] as i32;
-    let nb11: i32 = (*src1).nb[1 as i32 as usize] as i32;
-    let nb12: i32 = (*src1).nb[2 as i32 as usize] as i32;
-    let nb13: i32 = (*src1).nb[3 as i32 as usize] as i32;
-    let nb0: i32 = (*dst).nb[0 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
-    let nb2: i32 = (*dst).nb[2 as i32 as usize] as i32;
-    let nb3: i32 = (*dst).nb[3 as i32 as usize] as i32;
+    let mut _t0: int64_t = 0_i32 as int64_t;
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let ne10: int64_t = (*src1).ne[0_i32 as usize];
+    let ne11: int64_t = (*src1).ne[1_i32 as usize];
+    let ne12: int64_t = (*src1).ne[2_i32 as usize];
+    let ne13: int64_t = (*src1).ne[3_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let ne3: int64_t = (*dst).ne[3_i32 as usize];
+    let nb00: i32 = (*src0).nb[0_i32 as usize] as i32;
+    let nb01: i32 = (*src0).nb[1_i32 as usize] as i32;
+    let nb02: i32 = (*src0).nb[2_i32 as usize] as i32;
+    let nb03: i32 = (*src0).nb[3_i32 as usize] as i32;
+    let nb10: i32 = (*src1).nb[0_i32 as usize] as i32;
+    let nb11: i32 = (*src1).nb[1_i32 as usize] as i32;
+    let nb12: i32 = (*src1).nb[2_i32 as usize] as i32;
+    let nb13: i32 = (*src1).nb[3_i32 as usize] as i32;
+    let nb0: i32 = (*dst).nb[0_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
+    let nb2: i32 = (*dst).nb[2_i32 as usize] as i32;
+    let nb3: i32 = (*dst).nb[3_i32 as usize] as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     if ne02 != ne12 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9638 as i32,
-            b"ne02 == ne12\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9638_i32,
+            b"ne02 == ne12\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne03 != ne13 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9639 as i32,
-            b"ne03 == ne13\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9639_i32,
+            b"ne03 == ne13\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne2 != ne12 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9640 as i32,
-            b"ne2 == ne12\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9640_i32,
+            b"ne2 == ne12\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne3 != ne13 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9641 as i32,
-            b"ne3 == ne13\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9641_i32,
+            b"ne3 == ne13\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 as u64 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9644 as i32,
-            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9644_i32,
+            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9647 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9647_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 > nb1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9648 as i32,
-            b"nb0 <= nb1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9648_i32,
+            b"nb0 <= nb1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb1 > nb2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9649 as i32,
-            b"nb1 <= nb2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9649_i32,
+            b"nb1 <= nb2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb2 > nb3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9650 as i32,
-            b"nb2 <= nb3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9650_i32,
+            b"nb2 <= nb3\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne0 != ne01 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9652 as i32,
-            b"ne0 == ne01\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9652_i32,
+            b"ne0 == ne01\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne1 != ne11 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9653 as i32,
-            b"ne1 == ne11\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9653_i32,
+            b"ne1 == ne11\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne2 != ne02 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9654 as i32,
-            b"ne2 == ne02\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9654_i32,
+            b"ne2 == ne02\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne3 != ne03 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9655 as i32,
-            b"ne3 == ne03\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9655_i32,
+            b"ne3 == ne03\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*params).type_0 as u32 == GGML_TASK_INIT as i32 as u32 {
         let wdata: *mut ggml_fp16_t = (*params).wdata as *mut ggml_fp16_t;
-        let mut id: size_t = 0 as i32 as size_t;
-        let mut i13: int64_t = 0 as i32 as int64_t;
+        let mut id: size_t = 0_i32 as size_t;
+        let mut i13: int64_t = 0_i32 as int64_t;
         while i13 < ne13 {
-            let mut i12: int64_t = 0 as i32 as int64_t;
+            let mut i12: int64_t = 0_i32 as int64_t;
             while i12 < ne12 {
-                let mut i11: int64_t = 0 as i32 as int64_t;
+                let mut i11: int64_t = 0_i32 as int64_t;
                 while i11 < ne11 {
-                    let mut i10: int64_t = 0 as i32 as int64_t;
+                    let mut i10: int64_t = 0_i32 as int64_t;
                     while i10 < ne10 {
                         let fresh4 = id;
                         id = id.wrapping_add(1);
@@ -12957,18 +12910,18 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f16_f32(
                                     / ::core::mem::size_of::<i16>()],
                             >(_mm_cvtps_ph(
                                 _mm_setr_ps(
-                                    *(((*src1).data as *mut libc::c_char)
+                                    *(((*src1).data as *mut i8)
                                         .offset((i13 * nb13 as i64) as isize)
                                         .offset((i12 * nb12 as i64) as isize)
                                         .offset((i11 * nb11 as i64) as isize)
                                         .offset((i10 * nb10 as i64) as isize)
                                         as *mut f32),
-                                    0 as i32 as f32,
-                                    0 as i32 as f32,
-                                    0 as i32 as f32,
+                                    0_i32 as f32,
+                                    0_i32 as f32,
+                                    0_i32 as f32,
                                 ),
-                                0 as i32,
-                            ))[0 as i32 as usize] as u16
+                                0_i32,
+                            ))[0_i32 as usize] as u16
                         };
                         i10 += 1;
                         i10;
@@ -12985,10 +12938,10 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f16_f32(
         if id.wrapping_mul(::core::mem::size_of::<ggml_fp16_t>() as u64) > (*params).wsize {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                9740 as i32,
-                b"id*sizeof(ggml_fp16_t) <= params->wsize\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                9740_i32,
+                b"id*sizeof(ggml_fp16_t) <= params->wsize\0" as *const u8 as *const i8,
             );
             abort();
         }
@@ -12998,7 +12951,7 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f16_f32(
         return;
     }
     let nr: i32 = (ne01 * ne02 * ne03) as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut wdata_0: *mut ggml_fp16_t = (*params).wdata as *mut ggml_fp16_t;
@@ -13012,16 +12965,16 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f16_f32(
         let i0: i32 = i01;
         let i2: i32 = i02;
         let i3: i32 = i03;
-        let mut src0_row: *mut ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+        let mut src0_row: *mut ggml_fp16_t = ((*src0).data as *mut i8)
             .offset((i01 * nb01 + i02 * nb02 + i03 * nb03) as isize)
             as *mut ggml_fp16_t;
         let mut src1_col: *mut ggml_fp16_t = wdata_0.offset(
-            ((0 as i32 as i64 + i12_0 as i64 * ne11 + i13_0 as i64 * ne12 * ne11) * ne00) as isize,
+            ((0_i32 as i64 + i12_0 as i64 * ne11 + i13_0 as i64 * ne12 * ne11) * ne00) as isize,
         );
-        let mut dst_col: *mut f32 = ((*dst).data as *mut libc::c_char)
-            .offset((i0 * nb0 + 0 as i32 * nb1 + i2 * nb2 + i3 * nb3) as isize)
+        let mut dst_col: *mut f32 = ((*dst).data as *mut i8)
+            .offset((i0 * nb0 + 0_i32 * nb1 + i2 * nb2 + i3 * nb3) as isize)
             as *mut f32;
-        let mut ic: int64_t = 0 as i32 as int64_t;
+        let mut ic: int64_t = 0_i32 as int64_t;
         while ic < ne11 {
             ggml_vec_dot_f16(
                 ne00 as i32,
@@ -13042,70 +12995,70 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_q_f32(
     mut src1: *const ggml_tensor,
     mut dst: *mut ggml_tensor,
 ) {
-    let mut _t0: int64_t = 0 as i32 as int64_t;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne03: int64_t = (*src0).ne[3 as i32 as usize];
-    let ne10: int64_t = (*src1).ne[0 as i32 as usize];
-    let ne11: int64_t = (*src1).ne[1 as i32 as usize];
-    let ne12: int64_t = (*src1).ne[2 as i32 as usize];
-    let ne13: int64_t = (*src1).ne[3 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    let nb00: i32 = (*src0).nb[0 as i32 as usize] as i32;
-    let nb01: i32 = (*src0).nb[1 as i32 as usize] as i32;
-    let nb02: i32 = (*src0).nb[2 as i32 as usize] as i32;
-    let nb03: i32 = (*src0).nb[3 as i32 as usize] as i32;
-    let nb10: i32 = (*src1).nb[0 as i32 as usize] as i32;
-    let nb11: i32 = (*src1).nb[1 as i32 as usize] as i32;
-    let nb12: i32 = (*src1).nb[2 as i32 as usize] as i32;
-    let nb13: i32 = (*src1).nb[3 as i32 as usize] as i32;
-    let nb0: i32 = (*dst).nb[0 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
-    let nb2: i32 = (*dst).nb[2 as i32 as usize] as i32;
-    let nb3: i32 = (*dst).nb[3 as i32 as usize] as i32;
+    let mut _t0: int64_t = 0_i32 as int64_t;
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne03: int64_t = (*src0).ne[3_i32 as usize];
+    let ne10: int64_t = (*src1).ne[0_i32 as usize];
+    let ne11: int64_t = (*src1).ne[1_i32 as usize];
+    let ne12: int64_t = (*src1).ne[2_i32 as usize];
+    let ne13: int64_t = (*src1).ne[3_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let ne3: int64_t = (*dst).ne[3_i32 as usize];
+    let nb00: i32 = (*src0).nb[0_i32 as usize] as i32;
+    let nb01: i32 = (*src0).nb[1_i32 as usize] as i32;
+    let nb02: i32 = (*src0).nb[2_i32 as usize] as i32;
+    let nb03: i32 = (*src0).nb[3_i32 as usize] as i32;
+    let nb10: i32 = (*src1).nb[0_i32 as usize] as i32;
+    let nb11: i32 = (*src1).nb[1_i32 as usize] as i32;
+    let nb12: i32 = (*src1).nb[2_i32 as usize] as i32;
+    let nb13: i32 = (*src1).nb[3_i32 as usize] as i32;
+    let nb0: i32 = (*dst).nb[0_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
+    let nb2: i32 = (*dst).nb[2_i32 as usize] as i32;
+    let nb3: i32 = (*dst).nb[3_i32 as usize] as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     if ne02 != ne12 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9844 as i32,
-            b"ne02 == ne12\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9844_i32,
+            b"ne02 == ne12\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne03 != ne13 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9845 as i32,
-            b"ne03 == ne13\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9845_i32,
+            b"ne03 == ne13\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne2 != ne12 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9846 as i32,
-            b"ne2 == ne12\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9846_i32,
+            b"ne2 == ne12\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne3 != ne13 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9847 as i32,
-            b"ne3 == ne13\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9847_i32,
+            b"ne3 == ne13\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -13116,116 +13069,116 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_q_f32(
     if nb00 != GGML_TYPE_SIZE[type_0 as usize] as i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9855 as i32,
-            b"nb00 == (int) GGML_TYPE_SIZE[type]\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9855_i32,
+            b"nb00 == (int) GGML_TYPE_SIZE[type]\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb10 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9856 as i32,
-            b"nb10 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9856_i32,
+            b"nb10 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9859 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9859_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 > nb1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9860 as i32,
-            b"nb0 <= nb1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9860_i32,
+            b"nb0 <= nb1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb1 > nb2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9861 as i32,
-            b"nb1 <= nb2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9861_i32,
+            b"nb1 <= nb2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb2 > nb3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9862 as i32,
-            b"nb2 <= nb3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9862_i32,
+            b"nb2 <= nb3\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne0 != ne01 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9864 as i32,
-            b"ne0 == ne01\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9864_i32,
+            b"ne0 == ne01\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne1 != ne11 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9865 as i32,
-            b"ne1 == ne11\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9865_i32,
+            b"ne1 == ne11\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne2 != ne02 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9866 as i32,
-            b"ne2 == ne02\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9866_i32,
+            b"ne2 == ne02\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne3 != ne03 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            9867 as i32,
-            b"ne3 == ne03\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            9867_i32,
+            b"ne3 == ne03\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*params).type_0 as u32 == GGML_TASK_INIT as i32 as u32 {
-        let mut wdata: *mut libc::c_char = (*params).wdata as *mut libc::c_char;
+        let mut wdata: *mut i8 = (*params).wdata as *mut i8;
         let row_size: size_t = (ne10 as u64)
             .wrapping_mul(GGML_TYPE_SIZE[vec_dot_type as usize])
             .wrapping_div(GGML_BLCK_SIZE[vec_dot_type as usize] as u64);
-        let mut i13: int64_t = 0 as i32 as int64_t;
+        let mut i13: int64_t = 0_i32 as int64_t;
         while i13 < ne13 {
-            let mut i12: int64_t = 0 as i32 as int64_t;
+            let mut i12: int64_t = 0_i32 as int64_t;
             while i12 < ne12 {
-                let mut i11: int64_t = 0 as i32 as int64_t;
+                let mut i11: int64_t = 0_i32 as int64_t;
                 while i11 < ne11 {
                     quantize_row_q_dot.expect("non-null function pointer")(
-                        ((*src1).data as *mut libc::c_char)
+                        ((*src1).data as *mut i8)
                             .offset((i13 * nb13 as i64) as isize)
                             .offset((i12 * nb12 as i64) as isize)
                             .offset((i11 * nb11 as i64) as isize)
@@ -13249,7 +13202,7 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_q_f32(
         return;
     }
     let nr: i32 = (ne01 * ne02 * ne03) as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut wdata_0: *mut libc::c_void = (*params).wdata;
@@ -13266,17 +13219,17 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_q_f32(
         let i0: i32 = i01;
         let i2: i32 = i02;
         let i3: i32 = i03;
-        let mut src0_row: *mut libc::c_void = ((*src0).data as *mut libc::c_char)
+        let mut src0_row: *mut libc::c_void = ((*src0).data as *mut i8)
             .offset((i01 * nb01 + i02 * nb02 + i03 * nb03) as isize)
             as *mut libc::c_void;
-        let mut src1_col: *mut libc::c_char = (wdata_0 as *mut libc::c_char).offset(
-            ((0 as i32 as i64 + i12_0 as i64 * ne11 + i13_0 as i64 * ne12 * ne11) as u64)
+        let mut src1_col: *mut i8 = (wdata_0 as *mut i8).offset(
+            ((0_i32 as i64 + i12_0 as i64 * ne11 + i13_0 as i64 * ne12 * ne11) as u64)
                 .wrapping_mul(row_size_0) as isize,
         );
-        let mut dst_col: *mut f32 = ((*dst).data as *mut libc::c_char)
-            .offset((i0 * nb0 + 0 as i32 * nb1 + i2 * nb2 + i3 * nb3) as isize)
+        let mut dst_col: *mut f32 = ((*dst).data as *mut i8)
+            .offset((i0 * nb0 + 0_i32 * nb1 + i2 * nb2 + i3 * nb3) as isize)
             as *mut f32;
-        let mut ic: int64_t = 0 as i32 as int64_t;
+        let mut ic: int64_t = 0_i32 as int64_t;
         while ic < ne11 {
             vec_dot_q.expect("non-null function pointer")(
                 ne00 as i32,
@@ -13308,13 +13261,13 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat(
             ggml_compute_forward_mul_mat_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10035 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10035_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -13330,40 +13283,40 @@ unsafe extern "C" fn ggml_compute_forward_scale_f32(
     if !ggml_is_contiguous(src0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10047 as i32,
-            b"ggml_is_contiguous(src0)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10047_i32,
+            b"ggml_is_contiguous(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10048 as i32,
-            b"ggml_is_contiguous(dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10048_i32,
+            b"ggml_is_contiguous(dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10049 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10049_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_scalar(src1) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10050 as i32,
-            b"ggml_is_scalar(src1)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10050_i32,
+            b"ggml_is_scalar(src1)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -13375,28 +13328,27 @@ unsafe extern "C" fn ggml_compute_forward_scale_f32(
     let v: f32 = *((*src1).data as *mut f32);
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
     let nr: i32 = ggml_nrows(src0);
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
     let mut i1: i32 = ir0;
     while i1 < ir1 {
         if (*dst).data != (*src0).data {
             memcpy(
-                ((*dst).data as *mut libc::c_char).offset((i1 as u64).wrapping_mul(nb1) as isize)
+                ((*dst).data as *mut i8).offset((i1 as u64).wrapping_mul(nb1) as isize)
                     as *mut libc::c_void,
-                ((*src0).data as *mut libc::c_char).offset((i1 as u64).wrapping_mul(nb01) as isize)
+                ((*src0).data as *mut i8).offset((i1 as u64).wrapping_mul(nb01) as isize)
                     as *const libc::c_void,
                 (nc as u64).wrapping_mul(::core::mem::size_of::<f32>() as u64),
             );
         }
         ggml_vec_scale_f32(
             nc,
-            ((*dst).data as *mut libc::c_char).offset((i1 as u64).wrapping_mul(nb1) as isize)
-                as *mut f32,
+            ((*dst).data as *mut i8).offset((i1 as u64).wrapping_mul(nb1) as isize) as *mut f32,
             v,
         );
         i1 += 1;
@@ -13414,13 +13366,13 @@ unsafe extern "C" fn ggml_compute_forward_scale(
             ggml_compute_forward_scale_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10098 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10098_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -13437,53 +13389,52 @@ unsafe extern "C" fn ggml_compute_forward_set_f32(
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10111 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10111_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !(ggml_is_contiguous(dst) as i32 != 0 && ggml_is_contiguous(src0) as i32 != 0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10112 as i32,
-            b"ggml_is_contiguous(dst) && ggml_is_contiguous(src0)\0" as *const u8
-                as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10112_i32,
+            b"ggml_is_contiguous(dst) && ggml_is_contiguous(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*opt0).type_0 as u32 != GGML_TYPE_I32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10114 as i32,
-            b"opt0->type == GGML_TYPE_I32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10114_i32,
+            b"opt0->type == GGML_TYPE_I32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if ggml_nelements(opt0) != 5 as i32 as i64 {
+    if ggml_nelements(opt0) != 5_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10115 as i32,
-            b"ggml_nelements(opt0) == 5\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10115_i32,
+            b"ggml_nelements(opt0) == 5\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut nb1: size_t = *((*opt0).data as *mut int32_t).offset(0 as i32 as isize) as size_t;
-    let mut nb2: size_t = *((*opt0).data as *mut int32_t).offset(1 as i32 as isize) as size_t;
-    let mut nb3: size_t = *((*opt0).data as *mut int32_t).offset(2 as i32 as isize) as size_t;
-    let mut offset: size_t = *((*opt0).data as *mut int32_t).offset(3 as i32 as isize) as size_t;
-    let mut inplace: bool = *((*opt0).data as *mut int32_t).offset(4 as i32 as isize) != 0;
+    let mut nb1: size_t = *((*opt0).data as *mut int32_t).offset(0_i32 as isize) as size_t;
+    let mut nb2: size_t = *((*opt0).data as *mut int32_t).offset(1_i32 as isize) as size_t;
+    let mut nb3: size_t = *((*opt0).data as *mut int32_t).offset(2_i32 as isize) as size_t;
+    let mut offset: size_t = *((*opt0).data as *mut int32_t).offset(3_i32 as isize) as size_t;
+    let mut inplace: bool = *((*opt0).data as *mut int32_t).offset(4_i32 as isize) != 0;
     if !inplace && (*params).type_0 as u32 == GGML_TASK_INIT as i32 as u32 {
         memcpy(
-            (*dst).data as *mut libc::c_char as *mut libc::c_void,
-            (*src0).data as *mut libc::c_char as *const libc::c_void,
+            (*dst).data as *mut i8 as *mut libc::c_void,
+            (*src0).data as *mut i8 as *const libc::c_void,
             ggml_nbytes(dst),
         );
     }
@@ -13495,35 +13446,35 @@ unsafe extern "C" fn ggml_compute_forward_set_f32(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(src1);
-    let nc: i32 = (*src1).ne[0 as i32 as usize] as i32;
-    let ne10: int64_t = (*src1).ne[0 as i32 as usize];
-    let ne11: int64_t = (*src1).ne[1 as i32 as usize];
-    let ne12: int64_t = (*src1).ne[2 as i32 as usize];
-    let ne13: int64_t = (*src1).ne[3 as i32 as usize];
-    let nb10: size_t = (*src1).nb[0 as i32 as usize];
-    let nb11: size_t = (*src1).nb[1 as i32 as usize];
-    let nb12: size_t = (*src1).nb[2 as i32 as usize];
-    let nb13: size_t = (*src1).nb[3 as i32 as usize];
+    let nc: i32 = (*src1).ne[0_i32 as usize] as i32;
+    let ne10: int64_t = (*src1).ne[0_i32 as usize];
+    let ne11: int64_t = (*src1).ne[1_i32 as usize];
+    let ne12: int64_t = (*src1).ne[2_i32 as usize];
+    let ne13: int64_t = (*src1).ne[3_i32 as usize];
+    let nb10: size_t = (*src1).nb[0_i32 as usize];
+    let nb11: size_t = (*src1).nb[1_i32 as usize];
+    let nb12: size_t = (*src1).nb[2_i32 as usize];
+    let nb13: size_t = (*src1).nb[3_i32 as usize];
     let nb0: size_t = ggml_element_size(src0);
-    let im0: i32 = (if ne10 == 0 as i32 as i64 {
-        0 as i32 as i64
+    let im0: i32 = (if ne10 == 0_i32 as i64 {
+        0_i32 as i64
     } else {
-        ne10 - 1 as i32 as i64
+        ne10 - 1_i32 as i64
     }) as i32;
-    let im1: i32 = (if ne11 == 0 as i32 as i64 {
-        0 as i32 as i64
+    let im1: i32 = (if ne11 == 0_i32 as i64 {
+        0_i32 as i64
     } else {
-        ne11 - 1 as i32 as i64
+        ne11 - 1_i32 as i64
     }) as i32;
-    let im2: i32 = (if ne12 == 0 as i32 as i64 {
-        0 as i32 as i64
+    let im2: i32 = (if ne12 == 0_i32 as i64 {
+        0_i32 as i64
     } else {
-        ne12 - 1 as i32 as i64
+        ne12 - 1_i32 as i64
     }) as i32;
-    let im3: i32 = (if ne13 == 0 as i32 as i64 {
-        0 as i32 as i64
+    let im3: i32 = (if ne13 == 0_i32 as i64 {
+        0_i32 as i64
     } else {
-        ne13 - 1 as i32 as i64
+        ne13 - 1_i32 as i64
     }) as i32;
     if offset
         .wrapping_add((im0 as u64).wrapping_mul(nb0))
@@ -13534,25 +13485,25 @@ unsafe extern "C" fn ggml_compute_forward_set_f32(
     {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10162 as i32,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10162_i32,
             b"offset + im0*nb0 + im1*nb1 + im2*nb2 + im3*nb3 < ggml_nbytes(dst)\0" as *const u8
-                as *const libc::c_char,
+                as *const i8,
         );
         abort();
     }
     if nb10 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10164 as i32,
-            b"nb10 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10164_i32,
+            b"nb10 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
@@ -13562,12 +13513,12 @@ unsafe extern "C" fn ggml_compute_forward_set_f32(
         let i1: i32 = (ir as i64 - i3 as i64 * ne12 * ne11 - i2 as i64 * ne11) as i32;
         ggml_vec_cpy_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
+            ((*dst).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
                 .offset((i1 as u64).wrapping_mul(nb1) as isize)
                 .offset(offset as isize) as *mut f32,
-            ((*src1).data as *mut libc::c_char)
+            ((*src1).data as *mut i8)
                 .offset((i3 as u64).wrapping_mul(nb13) as isize)
                 .offset((i2 as u64).wrapping_mul(nb12) as isize)
                 .offset((i1 as u64).wrapping_mul(nb11) as isize) as *mut f32,
@@ -13588,13 +13539,13 @@ unsafe extern "C" fn ggml_compute_forward_set(
             ggml_compute_forward_set_f32(params, src0, src1, opt0, dst);
         }
         1 | 2 | 3 | 6 | 7 | 8 | 9 | _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10207 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10207_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -13647,19 +13598,19 @@ unsafe extern "C" fn ggml_compute_forward_get_rows_q(
     {
         return;
     }
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
     let nr: i32 = ggml_nelements(src1) as i32;
     let type_0: ggml_type = (*src0).type_0;
     let dequantize_row_q: dequantize_row_q_t = quantize_fns[type_0 as usize].dequantize_row_q;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nr {
         let r: i32 = *((*src1).data as *mut int32_t).offset(i as isize);
         dequantize_row_q.expect("non-null function pointer")(
-            ((*src0).data as *mut libc::c_char)
-                .offset((r as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((r as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *const libc::c_void,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
             nc,
         );
@@ -13678,19 +13629,19 @@ unsafe extern "C" fn ggml_compute_forward_get_rows_f16(
     {
         return;
     }
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
     let nr: i32 = ggml_nelements(src1) as i32;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nr {
         let r: i32 = *((*src1).data as *mut int32_t).offset(i as isize);
-        let mut j: i32 = 0 as i32;
+        let mut j: i32 = 0_i32;
         while j < nc {
-            let mut v: ggml_fp16_t = *(((*src0).data as *mut libc::c_char)
-                .offset((r as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            let mut v: ggml_fp16_t = *(((*src0).data as *mut i8)
+                .offset((r as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut ggml_fp16_t)
                 .offset(j as isize);
-            *(((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            *(((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32)
                 .offset(j as isize) = ggml_lookup_fp16_to_fp32(v);
             j += 1;
@@ -13711,18 +13662,18 @@ unsafe extern "C" fn ggml_compute_forward_get_rows_f32(
     {
         return;
     }
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
     let nr: i32 = ggml_nelements(src1) as i32;
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nr {
         let r: i32 = *((*src1).data as *mut int32_t).offset(i as isize);
         ggml_vec_cpy_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((r as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((r as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -13746,13 +13697,13 @@ unsafe extern "C" fn ggml_compute_forward_get_rows(
             ggml_compute_forward_get_rows_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10383 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10383_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -13766,43 +13717,43 @@ unsafe extern "C" fn ggml_compute_forward_get_rows_back_f32_f16(
     mut opt0: *const ggml_tensor,
     mut dst: *mut ggml_tensor,
 ) {
-    if (*params).ith != 0 as i32 {
+    if (*params).ith != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10414 as i32,
-            b"params->ith == 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10414_i32,
+            b"params->ith == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_are_same_shape(opt0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10415 as i32,
-            b"ggml_are_same_shape(opt0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10415_i32,
+            b"ggml_are_same_shape(opt0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(opt0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10416 as i32,
-            b"ggml_is_contiguous(opt0)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10416_i32,
+            b"ggml_is_contiguous(opt0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10417 as i32,
-            b"ggml_is_contiguous(dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10417_i32,
+            b"ggml_is_contiguous(dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -13812,39 +13763,39 @@ unsafe extern "C" fn ggml_compute_forward_get_rows_back_f32_f16(
     {
         return;
     }
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
     let nr: i32 = ggml_nelements(src1) as i32;
-    if (*dst).ne[0 as i32 as usize] != nc as i64 {
+    if (*dst).ne[0_i32 as usize] != nc as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10428 as i32,
-            b"dst->ne[0] == nc\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10428_i32,
+            b"dst->ne[0] == nc\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if (*src0).nb[0 as i32 as usize] != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
+    if (*src0).nb[0_i32 as usize] != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10429 as i32,
-            b"src0->nb[0] == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10429_i32,
+            b"src0->nb[0] == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nr {
         let r: i32 = *((*src1).data as *mut int32_t).offset(i as isize);
-        let mut j: i32 = 0 as i32;
+        let mut j: i32 = 0_i32;
         while j < nc {
-            let mut v: ggml_fp16_t = *(((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            let mut v: ggml_fp16_t = *(((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut ggml_fp16_t)
                 .offset(j as isize);
-            *(((*dst).data as *mut libc::c_char)
-                .offset((r as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            *(((*dst).data as *mut i8)
+                .offset((r as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32)
                 .offset(j as isize) += ggml_lookup_fp16_to_fp32(v);
             j += 1;
@@ -13861,43 +13812,43 @@ unsafe extern "C" fn ggml_compute_forward_get_rows_back_f32(
     mut opt0: *const ggml_tensor,
     mut dst: *mut ggml_tensor,
 ) {
-    if (*params).ith != 0 as i32 {
+    if (*params).ith != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10447 as i32,
-            b"params->ith == 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10447_i32,
+            b"params->ith == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_are_same_shape(opt0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10448 as i32,
-            b"ggml_are_same_shape(opt0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10448_i32,
+            b"ggml_are_same_shape(opt0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(opt0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10449 as i32,
-            b"ggml_is_contiguous(opt0)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10449_i32,
+            b"ggml_is_contiguous(opt0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10450 as i32,
-            b"ggml_is_contiguous(dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10450_i32,
+            b"ggml_is_contiguous(dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -13907,41 +13858,41 @@ unsafe extern "C" fn ggml_compute_forward_get_rows_back_f32(
     {
         return;
     }
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
     let nr: i32 = ggml_nelements(src1) as i32;
-    if (*dst).ne[0 as i32 as usize] != nc as i64 {
+    if (*dst).ne[0_i32 as usize] != nc as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10461 as i32,
-            b"dst->ne[0] == nc\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10461_i32,
+            b"dst->ne[0] == nc\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if (*src0).nb[0 as i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
+    if (*src0).nb[0_i32 as usize] != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10462 as i32,
-            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10462_i32,
+            b"src0->nb[0] == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < nr {
         let r: i32 = *((*src1).data as *mut int32_t).offset(i as isize);
         ggml_vec_add_f32(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((r as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((r as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*dst).data as *mut libc::c_char)
-                .offset((r as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((r as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -13963,13 +13914,13 @@ unsafe extern "C" fn ggml_compute_forward_get_rows_back(
             ggml_compute_forward_get_rows_back_f32(params, src0, src1, opt0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10492 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10492_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -13981,13 +13932,13 @@ unsafe extern "C" fn ggml_compute_forward_diag_f32(
     mut src0: *const ggml_tensor,
     mut dst: *mut ggml_tensor,
 ) {
-    if (*params).ith != 0 as i32 {
+    if (*params).ith != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10521 as i32,
-            b"params->ith == 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10521_i32,
+            b"params->ith == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -13996,114 +13947,114 @@ unsafe extern "C" fn ggml_compute_forward_diag_f32(
     {
         return;
     }
-    let ne00: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let ne01: i32 = (*src0).ne[1 as i32 as usize] as i32;
-    let ne02: i32 = (*src0).ne[2 as i32 as usize] as i32;
-    let ne03: i32 = (*src0).ne[3 as i32 as usize] as i32;
-    let ne0: i32 = (*dst).ne[0 as i32 as usize] as i32;
-    let ne1: i32 = (*dst).ne[1 as i32 as usize] as i32;
-    let ne2: i32 = (*dst).ne[2 as i32 as usize] as i32;
-    let ne3: i32 = (*dst).ne[3 as i32 as usize] as i32;
+    let ne00: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let ne01: i32 = (*src0).ne[1_i32 as usize] as i32;
+    let ne02: i32 = (*src0).ne[2_i32 as usize] as i32;
+    let ne03: i32 = (*src0).ne[3_i32 as usize] as i32;
+    let ne0: i32 = (*dst).ne[0_i32 as usize] as i32;
+    let ne1: i32 = (*dst).ne[1_i32 as usize] as i32;
+    let ne2: i32 = (*dst).ne[2_i32 as usize] as i32;
+    let ne3: i32 = (*dst).ne[3_i32 as usize] as i32;
     if ne00 != ne0 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10537 as i32,
-            b"ne00 == ne0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10537_i32,
+            b"ne00 == ne0\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne00 != ne1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10538 as i32,
-            b"ne00 == ne1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10538_i32,
+            b"ne00 == ne1\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if ne01 != 1 as i32 {
+    if ne01 != 1_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10539 as i32,
-            b"ne01 == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10539_i32,
+            b"ne01 == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne02 != ne2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10540 as i32,
-            b"ne02 == ne2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10540_i32,
+            b"ne02 == ne2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne03 != ne3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10541 as i32,
-            b"ne03 == ne3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10541_i32,
+            b"ne03 == ne3\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let nb00: i32 = (*src0).nb[0 as i32 as usize] as i32;
-    let nb02: i32 = (*src0).nb[2 as i32 as usize] as i32;
-    let nb03: i32 = (*src0).nb[3 as i32 as usize] as i32;
-    let nb0: i32 = (*dst).nb[0 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
-    let nb2: i32 = (*dst).nb[2 as i32 as usize] as i32;
-    let nb3: i32 = (*dst).nb[3 as i32 as usize] as i32;
+    let nb00: i32 = (*src0).nb[0_i32 as usize] as i32;
+    let nb02: i32 = (*src0).nb[2_i32 as usize] as i32;
+    let nb03: i32 = (*src0).nb[3_i32 as usize] as i32;
+    let nb0: i32 = (*dst).nb[0_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
+    let nb2: i32 = (*dst).nb[2_i32 as usize] as i32;
+    let nb3: i32 = (*dst).nb[3_i32 as usize] as i32;
     if nb00 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10552 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10552_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10553 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10553_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut i3: i32 = 0 as i32;
+    let mut i3: i32 = 0_i32;
     while i3 < ne3 {
-        let mut i2: i32 = 0 as i32;
+        let mut i2: i32 = 0_i32;
         while i2 < ne2 {
-            let mut i1: i32 = 0 as i32;
+            let mut i1: i32 = 0_i32;
             while i1 < ne1 {
-                let mut d: *mut f32 = ((*dst).data as *mut libc::c_char)
+                let mut d: *mut f32 = ((*dst).data as *mut i8)
                     .offset((i3 * nb3) as isize)
                     .offset((i2 * nb2) as isize)
                     .offset((i1 * nb1) as isize) as *mut f32;
-                let mut s: *mut f32 = ((*src0).data as *mut libc::c_char)
+                let mut s: *mut f32 = ((*src0).data as *mut i8)
                     .offset((i3 * nb03) as isize)
                     .offset((i2 * nb02) as isize) as *mut f32;
-                let mut i0: i32 = 0 as i32;
+                let mut i0: i32 = 0_i32;
                 while i0 < i1 {
-                    *d.offset(i0 as isize) = 0 as i32 as f32;
+                    *d.offset(i0 as isize) = 0_i32 as f32;
                     i0 += 1;
                     i0;
                 }
                 *d.offset(i1 as isize) = *s.offset(i1 as isize);
-                let mut i0_0: i32 = i1 + 1 as i32;
+                let mut i0_0: i32 = i1 + 1_i32;
                 while i0_0 < ne0 {
-                    *d.offset(i0_0 as isize) = 0 as i32 as f32;
+                    *d.offset(i0_0 as isize) = 0_i32 as f32;
                     i0_0 += 1;
                     i0_0;
                 }
@@ -14127,13 +14078,13 @@ unsafe extern "C" fn ggml_compute_forward_diag(
             ggml_compute_forward_diag_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10583 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10583_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -14149,34 +14100,32 @@ unsafe extern "C" fn ggml_compute_forward_diag_mask_f32(
 ) {
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
-    let n_past: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
-    let inplace: bool = *((*src1).data as *mut int32_t).offset(1 as i32 as isize) != 0;
+    let n_past: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
+    let inplace: bool = *((*src1).data as *mut int32_t).offset(1_i32 as isize) != 0;
     if !inplace && (*params).type_0 as u32 == GGML_TASK_INIT as i32 as u32 {
         if ggml_nelements(dst) != ggml_nelements(src0) {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                10610 as i32,
-                b"ggml_nelements(dst) == ggml_nelements(src0)\0" as *const u8
-                    as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                10610_i32,
+                b"ggml_nelements(dst) == ggml_nelements(src0)\0" as *const u8 as *const i8,
             );
             abort();
         }
         if !(ggml_is_contiguous(dst) as i32 != 0 && ggml_is_contiguous(src0) as i32 != 0) {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                10611 as i32,
-                b"ggml_is_contiguous(dst) && ggml_is_contiguous(src0)\0" as *const u8
-                    as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                10611_i32,
+                b"ggml_is_contiguous(dst) && ggml_is_contiguous(src0)\0" as *const u8 as *const i8,
             );
             abort();
         }
         memcpy(
-            (*dst).data as *mut libc::c_char as *mut libc::c_void,
-            (*src0).data as *mut libc::c_char as *const libc::c_void,
+            (*dst).data as *mut i8 as *mut libc::c_void,
+            (*src0).data as *mut i8 as *const libc::c_void,
             ggml_nbytes(dst),
         );
     }
@@ -14186,20 +14135,20 @@ unsafe extern "C" fn ggml_compute_forward_diag_mask_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let nr: i32 = (*src0).ne[1 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let nr: i32 = (*src0).ne[1_i32 as usize] as i32;
     let nz: i32 = n / nr;
-    let mut k: i32 = 0 as i32;
+    let mut k: i32 = 0_i32;
     while k < nz {
         let mut j: i32 = ith;
         while j < nr {
             let mut i: i32 = n_past;
             while i < nc {
                 if i > n_past + j {
-                    *(((*dst).data as *mut libc::c_char)
-                        .offset((k as u64).wrapping_mul((*dst).nb[2 as i32 as usize]) as isize)
-                        .offset((j as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
-                        .offset((i as u64).wrapping_mul((*dst).nb[0 as i32 as usize]) as isize)
+                    *(((*dst).data as *mut i8)
+                        .offset((k as u64).wrapping_mul((*dst).nb[2_i32 as usize]) as isize)
+                        .offset((j as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
+                        .offset((i as u64).wrapping_mul((*dst).nb[0_i32 as usize]) as isize)
                         as *mut f32) = value;
                 }
                 i += 1;
@@ -14222,13 +14171,13 @@ unsafe extern "C" fn ggml_compute_forward_diag_mask_inf(
             ggml_compute_forward_diag_mask_f32(params, src0, src1, dst, -::core::f32::INFINITY);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10655 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10655_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -14243,16 +14192,16 @@ unsafe extern "C" fn ggml_compute_forward_diag_mask_zero(
 ) {
     match (*src0).type_0 as u32 {
         0 => {
-            ggml_compute_forward_diag_mask_f32(params, src0, src1, dst, 0 as i32 as f32);
+            ggml_compute_forward_diag_mask_f32(params, src0, src1, dst, 0_i32 as f32);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10672 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10672_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -14267,30 +14216,30 @@ unsafe extern "C" fn ggml_compute_forward_soft_max_f32(
     if !ggml_is_contiguous(src0) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10683 as i32,
-            b"ggml_is_contiguous(src0)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10683_i32,
+            b"ggml_is_contiguous(src0)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_is_contiguous(dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10684 as i32,
-            b"ggml_is_contiguous(dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10684_i32,
+            b"ggml_is_contiguous(dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10685 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10685_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -14301,24 +14250,24 @@ unsafe extern "C" fn ggml_compute_forward_soft_max_f32(
     }
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
     let nr: i32 = ggml_nrows(src0);
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut i1: i32 = ir0;
     while i1 < ir1 {
-        let mut sp: *mut f32 = ((*src0).data as *mut libc::c_char)
-            .offset((i1 as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+        let mut sp: *mut f32 = ((*src0).data as *mut i8)
+            .offset((i1 as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
             as *mut f32;
-        let mut dp: *mut f32 = ((*dst).data as *mut libc::c_char)
-            .offset((i1 as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+        let mut dp: *mut f32 = ((*dst).data as *mut i8)
+            .offset((i1 as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
             as *mut f32;
         let mut max: f32 = -::core::f32::INFINITY;
         ggml_vec_max_f32(nc, &mut max, sp);
         let mut sum: ggml_float = 0.0f64;
         let mut scvt: uint16_t = 0;
-        let mut i: i32 = 0 as i32;
+        let mut i: i32 = 0_i32;
         while i < nc {
             if *sp.offset(i as isize) == -::core::f32::INFINITY {
                 *dp.offset(i as isize) = 0.0f32;
@@ -14330,12 +14279,12 @@ unsafe extern "C" fn ggml_compute_forward_soft_max_f32(
                     >(_mm_cvtps_ph(
                         _mm_setr_ps(
                             *sp.offset(i as isize) - max,
-                            0 as i32 as f32,
-                            0 as i32 as f32,
-                            0 as i32 as f32,
+                            0_i32 as f32,
+                            0_i32 as f32,
+                            0_i32 as f32,
                         ),
-                        0 as i32,
-                    ))[0 as i32 as usize] as u16
+                        0_i32,
+                    ))[0_i32 as usize] as u16
                 };
                 memcpy(
                     &mut scvt as *mut uint16_t as *mut libc::c_void,
@@ -14365,13 +14314,13 @@ unsafe extern "C" fn ggml_compute_forward_soft_max(
             ggml_compute_forward_soft_max_f32(params, src0, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10761 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10761_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -14389,42 +14338,42 @@ unsafe extern "C" fn ggml_compute_forward_alibi_f32(
     {
         return;
     }
-    let _n_past: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
-    let n_head: i32 = *((*src1).data as *mut int32_t).offset(1 as i32 as isize);
-    let max_bias: f32 = *((*src1).data as *mut f32).offset(2 as i32 as isize);
-    let ne0: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let ne1: i32 = (*src0).ne[1 as i32 as usize] as i32;
+    let _n_past: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
+    let n_head: i32 = *((*src1).data as *mut int32_t).offset(1_i32 as isize);
+    let max_bias: f32 = *((*src1).data as *mut f32).offset(2_i32 as isize);
+    let ne0: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let ne1: i32 = (*src0).ne[1_i32 as usize] as i32;
     let n: i32 = ggml_nrows(src0);
     let ne2_ne3: i32 = n / ne1;
-    let nb0: i32 = (*src0).nb[0 as i32 as usize] as i32;
-    let nb1: i32 = (*src0).nb[1 as i32 as usize] as i32;
-    let nb2: i32 = (*src0).nb[2 as i32 as usize] as i32;
-    let n_heads_log2_floor: i32 = (1 as i32) << floor(log2(n_head as f64)) as i32;
+    let nb0: i32 = (*src0).nb[0_i32 as usize] as i32;
+    let nb1: i32 = (*src0).nb[1_i32 as usize] as i32;
+    let nb2: i32 = (*src0).nb[2_i32 as usize] as i32;
+    let n_heads_log2_floor: i32 = 1_i32 << floor(log2(n_head as f64)) as i32;
     let m0: f32 = powf(2.0f32, -max_bias / n_heads_log2_floor as f32);
     let m1: f32 = powf(2.0f32, -(max_bias / 2.0f32) / n_heads_log2_floor as f32);
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < ne0 {
-        let mut j: i32 = 0 as i32;
+        let mut j: i32 = 0_i32;
         while j < ne1 {
-            let mut k: i32 = 0 as i32;
+            let mut k: i32 = 0_i32;
             while k < ne2_ne3 {
-                let src: *mut f32 = ((*src0).data as *mut libc::c_char)
+                let src: *mut f32 = ((*src0).data as *mut i8)
                     .offset((i * nb0) as isize)
                     .offset((j * nb1) as isize)
                     .offset((k * nb2) as isize) as *mut f32;
-                let mut pdst: *mut f32 = ((*dst).data as *mut libc::c_char)
+                let mut pdst: *mut f32 = ((*dst).data as *mut i8)
                     .offset((i * nb0) as isize)
                     .offset((j * nb1) as isize)
                     .offset((k * nb2) as isize)
                     as *mut f32;
                 let mut m_k: f32 = 0.;
                 if k < n_heads_log2_floor {
-                    m_k = powf(m0, (k + 1 as i32) as f32);
+                    m_k = powf(m0, (k + 1_i32) as f32);
                 } else {
-                    m_k = powf(m1, (2 as i32 * (k - n_heads_log2_floor) + 1 as i32) as f32);
+                    m_k = powf(m1, (2_i32 * (k - n_heads_log2_floor) + 1_i32) as f32);
                 }
-                *pdst.offset(0 as i32 as isize) =
-                    (i - ne0 + 1 as i32) as f32 * m_k + *src.offset(0 as i32 as isize);
+                *pdst.offset(0_i32 as isize) =
+                    (i - ne0 + 1_i32) as f32 * m_k + *src.offset(0_i32 as isize);
                 k += 1;
                 k;
             }
@@ -14446,43 +14395,43 @@ unsafe extern "C" fn ggml_compute_forward_alibi_f16(
     {
         return;
     }
-    let _n_past: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
-    let n_head: i32 = *((*src1).data as *mut int32_t).offset(1 as i32 as isize);
-    let max_bias: f32 = *((*src1).data as *mut f32).offset(2 as i32 as isize);
-    let ne0: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let ne1: i32 = (*src0).ne[1 as i32 as usize] as i32;
+    let _n_past: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
+    let n_head: i32 = *((*src1).data as *mut int32_t).offset(1_i32 as isize);
+    let max_bias: f32 = *((*src1).data as *mut f32).offset(2_i32 as isize);
+    let ne0: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let ne1: i32 = (*src0).ne[1_i32 as usize] as i32;
     let n: i32 = ggml_nrows(src0);
     let ne2_ne3: i32 = n / ne1;
-    let nb0: i32 = (*src0).nb[0 as i32 as usize] as i32;
-    let nb1: i32 = (*src0).nb[1 as i32 as usize] as i32;
-    let nb2: i32 = (*src0).nb[2 as i32 as usize] as i32;
-    let n_heads_log2_floor: i32 = (1 as i32) << floor(log2(n_head as f64)) as i32;
+    let nb0: i32 = (*src0).nb[0_i32 as usize] as i32;
+    let nb1: i32 = (*src0).nb[1_i32 as usize] as i32;
+    let nb2: i32 = (*src0).nb[2_i32 as usize] as i32;
+    let n_heads_log2_floor: i32 = 1_i32 << floor(log2(n_head as f64)) as i32;
     let m0: f32 = powf(2.0f32, -max_bias / n_heads_log2_floor as f32);
     let m1: f32 = powf(2.0f32, -(max_bias / 2.0f32) / n_heads_log2_floor as f32);
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < ne0 {
-        let mut j: i32 = 0 as i32;
+        let mut j: i32 = 0_i32;
         while j < ne1 {
-            let mut k: i32 = 0 as i32;
+            let mut k: i32 = 0_i32;
             while k < ne2_ne3 {
-                let src: *mut ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+                let src: *mut ggml_fp16_t = ((*src0).data as *mut i8)
                     .offset((i * nb0) as isize)
                     .offset((j * nb1) as isize)
                     .offset((k * nb2) as isize)
                     as *mut ggml_fp16_t;
-                let mut pdst: *mut f32 = ((*dst).data as *mut libc::c_char)
+                let mut pdst: *mut f32 = ((*dst).data as *mut i8)
                     .offset((i * nb0) as isize)
                     .offset((j * nb1) as isize)
                     .offset((k * nb2) as isize)
                     as *mut f32;
                 let mut m_k: f32 = 0.;
                 if k < n_heads_log2_floor {
-                    m_k = powf(m0, (k + 1 as i32) as f32);
+                    m_k = powf(m0, (k + 1_i32) as f32);
                 } else {
-                    m_k = powf(m1, (2 as i32 * (k - n_heads_log2_floor) + 1 as i32) as f32);
+                    m_k = powf(m1, (2_i32 * (k - n_heads_log2_floor) + 1_i32) as f32);
                 }
-                *pdst.offset(0 as i32 as isize) = (i - ne0 + 1 as i32) as f32 * m_k
-                    + ggml_lookup_fp16_to_fp32(*src.offset(0 as i32 as isize));
+                *pdst.offset(0_i32 as isize) = (i - ne0 + 1_i32) as f32 * m_k
+                    + ggml_lookup_fp16_to_fp32(*src.offset(0_i32 as isize));
                 k += 1;
                 k;
             }
@@ -14507,13 +14456,13 @@ unsafe extern "C" fn ggml_compute_forward_alibi(
             ggml_compute_forward_alibi_f32(params, src0, src1, dst);
         }
         2 | 3 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10921 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10921_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -14532,45 +14481,43 @@ unsafe extern "C" fn ggml_compute_forward_clamp_f32(
     {
         return;
     }
-    let min: i32 = *((*src1).data as *mut f32).offset(0 as i32 as isize) as i32;
-    let max: i32 = *((*src1).data as *mut f32).offset(1 as i32 as isize) as i32;
+    let min: i32 = *((*src1).data as *mut f32).offset(0_i32 as isize) as i32;
+    let max: i32 = *((*src1).data as *mut f32).offset(1_i32 as isize) as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
     if nb0 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10957 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10957_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            10958 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            10958_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     let mut j: i32 = ith;
     while j < n {
-        let mut dst_ptr: *mut f32 = ((*dst).data as *mut libc::c_char)
-            .offset((j as u64).wrapping_mul(nb1) as isize)
-            as *mut f32;
-        let mut src0_ptr: *mut f32 = ((*src0).data as *mut libc::c_char)
-            .offset((j as u64).wrapping_mul(nb01) as isize)
-            as *mut f32;
-        let mut i: i32 = 0 as i32;
+        let mut dst_ptr: *mut f32 =
+            ((*dst).data as *mut i8).offset((j as u64).wrapping_mul(nb1) as isize) as *mut f32;
+        let mut src0_ptr: *mut f32 =
+            ((*src0).data as *mut i8).offset((j as u64).wrapping_mul(nb01) as isize) as *mut f32;
+        let mut i: i32 = 0_i32;
         while i < nc {
             *dst_ptr.offset(i as isize) = if (if *src0_ptr.offset(i as isize) < max as f32 {
                 *src0_ptr.offset(i as isize)
@@ -14603,13 +14550,13 @@ unsafe extern "C" fn ggml_compute_forward_clamp(
             ggml_compute_forward_clamp_f32(params, src0, src1, dst);
         }
         1 | 2 | 3 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    10992 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    10992_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -14626,20 +14573,20 @@ unsafe extern "C" fn ggml_compute_forward_rope_f32(
     if (*src1).type_0 as u32 != GGML_TYPE_I32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11004 as i32,
-            b"src1->type == GGML_TYPE_I32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11004_i32,
+            b"src1->type == GGML_TYPE_I32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if ggml_nelements(src1) != 3 as i32 as i64 {
+    if ggml_nelements(src1) != 3_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11005 as i32,
-            b"ggml_nelements(src1) == 3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11005_i32,
+            b"ggml_nelements(src1) == 3\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -14648,28 +14595,28 @@ unsafe extern "C" fn ggml_compute_forward_rope_f32(
     {
         return;
     }
-    let n_past: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
-    let n_dims: i32 = *((*src1).data as *mut int32_t).offset(1 as i32 as isize);
-    let mode: i32 = *((*src1).data as *mut int32_t).offset(2 as i32 as isize);
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let n_past: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
+    let n_dims: i32 = *((*src1).data as *mut int32_t).offset(1_i32 as isize);
+    let mode: i32 = *((*src1).data as *mut int32_t).offset(2_i32 as isize);
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let ne3: int64_t = (*dst).ne[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if nb00 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11035 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11035_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -14679,43 +14626,43 @@ unsafe extern "C" fn ggml_compute_forward_rope_f32(
     if n_dims as i64 > ne0 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11042 as i32,
-            b"n_dims <= ne0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11042_i32,
+            b"n_dims <= ne0\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if n_dims % 2 as i32 != 0 as i32 {
+    if n_dims % 2_i32 != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11043 as i32,
-            b"n_dims % 2 == 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11043_i32,
+            b"n_dims % 2 == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
-    let mut ir: i32 = 0 as i32;
+    let mut ir: i32 = 0_i32;
     let theta_scale: f32 = powf(10000.0f64 as f32, -2.0f32 / n_dims as f32);
-    let is_neox: bool = mode & 2 as i32 != 0;
-    let mut i3: int64_t = 0 as i32 as int64_t;
+    let is_neox: bool = mode & 2_i32 != 0;
+    let mut i3: int64_t = 0_i32 as int64_t;
     while i3 < ne3 {
-        let mut i2: int64_t = (if mode & 1 as i32 == 0 as i32 {
-            0 as i32
+        let mut i2: int64_t = (if mode & 1_i32 == 0_i32 {
+            0_i32
         } else {
             n_past
         }) as int64_t;
         while i2 < ne2 {
-            let p: int64_t = if mode & 1 as i32 == 0 as i32 {
+            let p: int64_t = if mode & 1_i32 == 0_i32 {
                 n_past as i64 + i2
             } else {
                 i2
             };
-            let mut i1: int64_t = 0 as i32 as int64_t;
+            let mut i1: int64_t = 0_i32 as int64_t;
             while i1 < ne1 {
                 let fresh5 = ir;
                 ir += 1;
@@ -14725,57 +14672,57 @@ unsafe extern "C" fn ggml_compute_forward_rope_f32(
                     }
                     let mut theta: f32 = p as f32;
                     if !is_neox {
-                        let mut i0: int64_t = 0 as i32 as int64_t;
+                        let mut i0: int64_t = 0_i32 as int64_t;
                         while i0 < ne0 {
                             let cos_theta: f32 = cosf(theta);
                             let sin_theta: f32 = sinf(theta);
                             theta *= theta_scale;
-                            let src: *const f32 = ((*src0).data as *mut libc::c_char)
+                            let src: *const f32 = ((*src0).data as *mut i8)
                                 .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                 .offset((i2 as u64).wrapping_mul(nb02) as isize)
                                 .offset((i1 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i0 as u64).wrapping_mul(nb00) as isize)
                                 as *mut f32;
-                            let mut dst_data: *mut f32 = ((*dst).data as *mut libc::c_char)
+                            let mut dst_data: *mut f32 = ((*dst).data as *mut i8)
                                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
                                 .offset((i1 as u64).wrapping_mul(nb1) as isize)
                                 .offset((i0 as u64).wrapping_mul(nb0) as isize)
                                 as *mut f32;
-                            let x0: f32 = *src.offset(0 as i32 as isize);
-                            let x1: f32 = *src.offset(1 as i32 as isize);
-                            *dst_data.offset(0 as i32 as isize) = x0 * cos_theta - x1 * sin_theta;
-                            *dst_data.offset(1 as i32 as isize) = x0 * sin_theta + x1 * cos_theta;
-                            i0 += 2 as i32 as i64;
+                            let x0: f32 = *src.offset(0_i32 as isize);
+                            let x1: f32 = *src.offset(1_i32 as isize);
+                            *dst_data.offset(0_i32 as isize) = x0 * cos_theta - x1 * sin_theta;
+                            *dst_data.offset(1_i32 as isize) = x0 * sin_theta + x1 * cos_theta;
+                            i0 += 2_i32 as i64;
                         }
                     } else {
-                        let mut ib: int64_t = 0 as i32 as int64_t;
+                        let mut ib: int64_t = 0_i32 as int64_t;
                         while ib < ne0 / n_dims as i64 {
-                            let mut ic: int64_t = 0 as i32 as int64_t;
+                            let mut ic: int64_t = 0_i32 as int64_t;
                             while ic < n_dims as i64 {
                                 let cos_theta_0: f32 = cosf(theta);
                                 let sin_theta_0: f32 = sinf(theta);
                                 theta *= theta_scale;
-                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2 as i32 as i64;
-                                let src_0: *const f32 = ((*src0).data as *mut libc::c_char)
+                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2_i32 as i64;
+                                let src_0: *const f32 = ((*src0).data as *mut i8)
                                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
                                     .offset((i1 as u64).wrapping_mul(nb01) as isize)
                                     .offset((i0_0 as u64).wrapping_mul(nb00) as isize)
                                     as *mut f32;
-                                let mut dst_data_0: *mut f32 = ((*dst).data as *mut libc::c_char)
+                                let mut dst_data_0: *mut f32 = ((*dst).data as *mut i8)
                                     .offset((i3 as u64).wrapping_mul(nb3) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb2) as isize)
                                     .offset((i1 as u64).wrapping_mul(nb1) as isize)
                                     .offset((i0_0 as u64).wrapping_mul(nb0) as isize)
                                     as *mut f32;
-                                let x0_0: f32 = *src_0.offset(0 as i32 as isize);
-                                let x1_0: f32 = *src_0.offset((n_dims / 2 as i32) as isize);
-                                *dst_data_0.offset(0 as i32 as isize) =
+                                let x0_0: f32 = *src_0.offset(0_i32 as isize);
+                                let x1_0: f32 = *src_0.offset((n_dims / 2_i32) as isize);
+                                *dst_data_0.offset(0_i32 as isize) =
                                     x0_0 * cos_theta_0 - x1_0 * sin_theta_0;
-                                *dst_data_0.offset((n_dims / 2 as i32) as isize) =
+                                *dst_data_0.offset((n_dims / 2_i32) as isize) =
                                     x0_0 * sin_theta_0 + x1_0 * cos_theta_0;
-                                ic += 2 as i32 as i64;
+                                ic += 2_i32 as i64;
                             }
                             ib += 1;
                             ib;
@@ -14801,20 +14748,20 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
     if (*src1).type_0 as u32 != GGML_TYPE_I32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11117 as i32,
-            b"src1->type == GGML_TYPE_I32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11117_i32,
+            b"src1->type == GGML_TYPE_I32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if ggml_nelements(src1) != 3 as i32 as i64 {
+    if ggml_nelements(src1) != 3_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11118 as i32,
-            b"ggml_nelements(src1) == 3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11118_i32,
+            b"ggml_nelements(src1) == 3\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -14823,28 +14770,28 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
     {
         return;
     }
-    let n_past: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
-    let n_dims: i32 = *((*src1).data as *mut int32_t).offset(1 as i32 as isize);
-    let mode: i32 = *((*src1).data as *mut int32_t).offset(2 as i32 as isize);
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let n_past: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
+    let n_dims: i32 = *((*src1).data as *mut int32_t).offset(1_i32 as isize);
+    let mode: i32 = *((*src1).data as *mut int32_t).offset(2_i32 as isize);
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let ne3: int64_t = (*dst).ne[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     if nb0 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11148 as i32,
-            b"nb0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11148_i32,
+            b"nb0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -14854,43 +14801,43 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
     if n_dims as i64 > ne0 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11155 as i32,
-            b"n_dims <= ne0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11155_i32,
+            b"n_dims <= ne0\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if n_dims % 2 as i32 != 0 as i32 {
+    if n_dims % 2_i32 != 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11156 as i32,
-            b"n_dims % 2 == 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11156_i32,
+            b"n_dims % 2 == 0\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
-    let mut ir: i32 = 0 as i32;
+    let mut ir: i32 = 0_i32;
     let theta_scale: f32 = powf(10000.0f64 as f32, -2.0f32 / n_dims as f32);
-    let is_neox: bool = mode & 2 as i32 != 0;
-    let mut i3: int64_t = 0 as i32 as int64_t;
+    let is_neox: bool = mode & 2_i32 != 0;
+    let mut i3: int64_t = 0_i32 as int64_t;
     while i3 < ne3 {
-        let mut i2: int64_t = (if mode & 1 as i32 == 0 as i32 {
-            0 as i32
+        let mut i2: int64_t = (if mode & 1_i32 == 0_i32 {
+            0_i32
         } else {
             n_past
         }) as int64_t;
         while i2 < ne2 {
-            let p: int64_t = if mode & 1 as i32 == 0 as i32 {
+            let p: int64_t = if mode & 1_i32 == 0_i32 {
                 n_past as i64 + i2
             } else {
                 i2
             };
-            let mut i1: int64_t = 0 as i32 as int64_t;
+            let mut i1: int64_t = 0_i32 as int64_t;
             while i1 < ne1 {
                 let fresh6 = ir;
                 ir += 1;
@@ -14900,26 +14847,26 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                     }
                     let mut theta: f32 = p as f32;
                     if !is_neox {
-                        let mut i0: int64_t = 0 as i32 as int64_t;
+                        let mut i0: int64_t = 0_i32 as int64_t;
                         while i0 < ne0 {
                             let cos_theta: f32 = cosf(theta);
                             let sin_theta: f32 = sinf(theta);
                             theta *= theta_scale;
-                            let src: *const ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+                            let src: *const ggml_fp16_t = ((*src0).data as *mut i8)
                                 .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                 .offset((i2 as u64).wrapping_mul(nb02) as isize)
                                 .offset((i1 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i0 as u64).wrapping_mul(nb00) as isize)
                                 as *mut ggml_fp16_t;
-                            let mut dst_data: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
+                            let mut dst_data: *mut ggml_fp16_t = ((*dst).data as *mut i8)
                                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
                                 .offset((i1 as u64).wrapping_mul(nb1) as isize)
                                 .offset((i0 as u64).wrapping_mul(nb0) as isize)
                                 as *mut ggml_fp16_t;
-                            let x0: f32 = ggml_lookup_fp16_to_fp32(*src.offset(0 as i32 as isize));
-                            let x1: f32 = ggml_lookup_fp16_to_fp32(*src.offset(1 as i32 as isize));
-                            *dst_data.offset(0 as i32 as isize) = {
+                            let x0: f32 = ggml_lookup_fp16_to_fp32(*src.offset(0_i32 as isize));
+                            let x1: f32 = ggml_lookup_fp16_to_fp32(*src.offset(1_i32 as isize));
+                            *dst_data.offset(0_i32 as isize) = {
                                 ::core::mem::transmute::<
                                     _,
                                     [i16; ::core::mem::size_of::<__v8hi>()
@@ -14927,14 +14874,14 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                 >(_mm_cvtps_ph(
                                     _mm_setr_ps(
                                         x0 * cos_theta - x1 * sin_theta,
-                                        0 as i32 as f32,
-                                        0 as i32 as f32,
-                                        0 as i32 as f32,
+                                        0_i32 as f32,
+                                        0_i32 as f32,
+                                        0_i32 as f32,
                                     ),
-                                    0 as i32,
-                                ))[0 as i32 as usize] as u16
+                                    0_i32,
+                                ))[0_i32 as usize] as u16
                             };
-                            *dst_data.offset(1 as i32 as isize) = {
+                            *dst_data.offset(1_i32 as isize) = {
                                 ::core::mem::transmute::<
                                     _,
                                     [i16; ::core::mem::size_of::<__v8hi>()
@@ -14942,43 +14889,42 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                 >(_mm_cvtps_ph(
                                     _mm_setr_ps(
                                         x0 * sin_theta + x1 * cos_theta,
-                                        0 as i32 as f32,
-                                        0 as i32 as f32,
-                                        0 as i32 as f32,
+                                        0_i32 as f32,
+                                        0_i32 as f32,
+                                        0_i32 as f32,
                                     ),
-                                    0 as i32,
-                                ))[0 as i32 as usize] as u16
+                                    0_i32,
+                                ))[0_i32 as usize] as u16
                             };
-                            i0 += 2 as i32 as i64;
+                            i0 += 2_i32 as i64;
                         }
                     } else {
-                        let mut ib: int64_t = 0 as i32 as int64_t;
+                        let mut ib: int64_t = 0_i32 as int64_t;
                         while ib < ne0 / n_dims as i64 {
-                            let mut ic: int64_t = 0 as i32 as int64_t;
+                            let mut ic: int64_t = 0_i32 as int64_t;
                             while ic < n_dims as i64 {
                                 let cos_theta_0: f32 = cosf(theta);
                                 let sin_theta_0: f32 = sinf(theta);
                                 theta *= theta_scale;
-                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2 as i32 as i64;
-                                let src_0: *const ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2_i32 as i64;
+                                let src_0: *const ggml_fp16_t = ((*src0).data as *mut i8)
                                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
                                     .offset((i1 as u64).wrapping_mul(nb01) as isize)
                                     .offset((i0_0 as u64).wrapping_mul(nb00) as isize)
                                     as *mut ggml_fp16_t;
-                                let mut dst_data_0: *mut ggml_fp16_t = ((*dst).data
-                                    as *mut libc::c_char)
+                                let mut dst_data_0: *mut ggml_fp16_t = ((*dst).data as *mut i8)
                                     .offset((i3 as u64).wrapping_mul(nb3) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb2) as isize)
                                     .offset((i1 as u64).wrapping_mul(nb1) as isize)
                                     .offset((i0_0 as u64).wrapping_mul(nb0) as isize)
                                     as *mut ggml_fp16_t;
                                 let x0_0: f32 =
-                                    ggml_lookup_fp16_to_fp32(*src_0.offset(0 as i32 as isize));
+                                    ggml_lookup_fp16_to_fp32(*src_0.offset(0_i32 as isize));
                                 let x1_0: f32 = ggml_lookup_fp16_to_fp32(
-                                    *src_0.offset((n_dims / 2 as i32) as isize),
+                                    *src_0.offset((n_dims / 2_i32) as isize),
                                 );
-                                *dst_data_0.offset(0 as i32 as isize) = {
+                                *dst_data_0.offset(0_i32 as isize) = {
                                     ::core::mem::transmute::<
                                         _,
                                         [i16; ::core::mem::size_of::<__v8hi>()
@@ -14986,14 +14932,14 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                     >(_mm_cvtps_ph(
                                         _mm_setr_ps(
                                             x0_0 * cos_theta_0 - x1_0 * sin_theta_0,
-                                            0 as i32 as f32,
-                                            0 as i32 as f32,
-                                            0 as i32 as f32,
+                                            0_i32 as f32,
+                                            0_i32 as f32,
+                                            0_i32 as f32,
                                         ),
-                                        0 as i32,
-                                    ))[0 as i32 as usize] as u16
+                                        0_i32,
+                                    ))[0_i32 as usize] as u16
                                 };
-                                *dst_data_0.offset((n_dims / 2 as i32) as isize) = {
+                                *dst_data_0.offset((n_dims / 2_i32) as isize) = {
                                     ::core::mem::transmute::<
                                         _,
                                         [i16; ::core::mem::size_of::<__v8hi>()
@@ -15001,14 +14947,14 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                     >(_mm_cvtps_ph(
                                         _mm_setr_ps(
                                             x0_0 * sin_theta_0 + x1_0 * cos_theta_0,
-                                            0 as i32 as f32,
-                                            0 as i32 as f32,
-                                            0 as i32 as f32,
+                                            0_i32 as f32,
+                                            0_i32 as f32,
+                                            0_i32 as f32,
                                         ),
-                                        0 as i32,
-                                    ))[0 as i32 as usize] as u16
+                                        0_i32,
+                                    ))[0_i32 as usize] as u16
                                 };
-                                ic += 2 as i32 as i64;
+                                ic += 2_i32 as i64;
                             }
                             ib += 1;
                             ib;
@@ -15039,13 +14985,13 @@ unsafe extern "C" fn ggml_compute_forward_rope(
             ggml_compute_forward_rope_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    11241 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    11241_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -15063,44 +15009,44 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f32(
     {
         return;
     }
-    let n_past: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
-    let n_dims: i32 = *((*src1).data as *mut int32_t).offset(1 as i32 as isize);
-    let mode: i32 = *((*src1).data as *mut int32_t).offset(2 as i32 as isize);
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let n_past: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
+    let n_dims: i32 = *((*src1).data as *mut int32_t).offset(1_i32 as isize);
+    let mode: i32 = *((*src1).data as *mut int32_t).offset(2_i32 as isize);
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let ne3: int64_t = (*dst).ne[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(dst);
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
-    let mut ir: i32 = 0 as i32;
+    let mut ir: i32 = 0_i32;
     let theta_scale: f32 = powf(10000.0f64 as f32, -2.0f32 / n_dims as f32);
-    let is_neox: bool = mode & 2 as i32 != 0;
-    let mut i3: int64_t = 0 as i32 as int64_t;
+    let is_neox: bool = mode & 2_i32 != 0;
+    let mut i3: int64_t = 0_i32 as int64_t;
     while i3 < ne3 {
-        let mut i2: int64_t = (if mode & 1 as i32 == 0 as i32 {
-            0 as i32
+        let mut i2: int64_t = (if mode & 1_i32 == 0_i32 {
+            0_i32
         } else {
             n_past
         }) as int64_t;
         while i2 < ne2 {
-            let p: int64_t = if mode & 1 as i32 == 0 as i32 {
+            let p: int64_t = if mode & 1_i32 == 0_i32 {
                 n_past as i64 + i2
             } else {
                 i2
             };
-            let mut i1: int64_t = 0 as i32 as int64_t;
+            let mut i1: int64_t = 0_i32 as int64_t;
             while i1 < ne1 {
                 let fresh7 = ir;
                 ir += 1;
@@ -15110,57 +15056,57 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f32(
                     }
                     let mut theta: f32 = p as f32;
                     if !is_neox {
-                        let mut i0: int64_t = 0 as i32 as int64_t;
+                        let mut i0: int64_t = 0_i32 as int64_t;
                         while i0 < ne0 {
                             let cos_theta: f32 = cosf(theta);
                             let sin_theta: f32 = sinf(theta);
                             theta *= theta_scale;
-                            let dy: *const f32 = ((*src0).data as *mut libc::c_char)
+                            let dy: *const f32 = ((*src0).data as *mut i8)
                                 .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                 .offset((i2 as u64).wrapping_mul(nb02) as isize)
                                 .offset((i1 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i0 as u64).wrapping_mul(nb00) as isize)
                                 as *mut f32;
-                            let mut dx: *mut f32 = ((*dst).data as *mut libc::c_char)
+                            let mut dx: *mut f32 = ((*dst).data as *mut i8)
                                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
                                 .offset((i1 as u64).wrapping_mul(nb1) as isize)
                                 .offset((i0 as u64).wrapping_mul(nb0) as isize)
                                 as *mut f32;
-                            let dy0: f32 = *dy.offset(0 as i32 as isize);
-                            let dy1: f32 = *dy.offset(1 as i32 as isize);
-                            *dx.offset(0 as i32 as isize) = dy0 * cos_theta + dy1 * sin_theta;
-                            *dx.offset(1 as i32 as isize) = -dy0 * sin_theta + dy1 * cos_theta;
-                            i0 += 2 as i32 as i64;
+                            let dy0: f32 = *dy.offset(0_i32 as isize);
+                            let dy1: f32 = *dy.offset(1_i32 as isize);
+                            *dx.offset(0_i32 as isize) = dy0 * cos_theta + dy1 * sin_theta;
+                            *dx.offset(1_i32 as isize) = -dy0 * sin_theta + dy1 * cos_theta;
+                            i0 += 2_i32 as i64;
                         }
                     } else {
-                        let mut ib: int64_t = 0 as i32 as int64_t;
+                        let mut ib: int64_t = 0_i32 as int64_t;
                         while ib < ne0 / n_dims as i64 {
-                            let mut ic: int64_t = 0 as i32 as int64_t;
+                            let mut ic: int64_t = 0_i32 as int64_t;
                             while ic < n_dims as i64 {
                                 let cos_theta_0: f32 = cosf(theta);
                                 let sin_theta_0: f32 = sinf(theta);
                                 theta *= theta_scale;
-                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2 as i32 as i64;
-                                let dy_0: *const f32 = ((*src0).data as *mut libc::c_char)
+                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2_i32 as i64;
+                                let dy_0: *const f32 = ((*src0).data as *mut i8)
                                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
                                     .offset((i1 as u64).wrapping_mul(nb01) as isize)
                                     .offset((i0_0 as u64).wrapping_mul(nb00) as isize)
                                     as *mut f32;
-                                let mut dx_0: *mut f32 = ((*dst).data as *mut libc::c_char)
+                                let mut dx_0: *mut f32 = ((*dst).data as *mut i8)
                                     .offset((i3 as u64).wrapping_mul(nb3) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb2) as isize)
                                     .offset((i1 as u64).wrapping_mul(nb1) as isize)
                                     .offset((i0_0 as u64).wrapping_mul(nb0) as isize)
                                     as *mut f32;
-                                let dy0_0: f32 = *dy_0.offset(0 as i32 as isize);
-                                let dy1_0: f32 = *dy_0.offset((n_dims / 2 as i32) as isize);
-                                *dx_0.offset(0 as i32 as isize) =
+                                let dy0_0: f32 = *dy_0.offset(0_i32 as isize);
+                                let dy1_0: f32 = *dy_0.offset((n_dims / 2_i32) as isize);
+                                *dx_0.offset(0_i32 as isize) =
                                     dy0_0 * cos_theta_0 + dy1_0 * sin_theta_0;
-                                *dx_0.offset((n_dims / 2 as i32) as isize) =
+                                *dx_0.offset((n_dims / 2_i32) as isize) =
                                     -dy0_0 * sin_theta_0 + dy1_0 * cos_theta_0;
-                                ic += 2 as i32 as i64;
+                                ic += 2_i32 as i64;
                             }
                             ib += 1;
                             ib;
@@ -15188,44 +15134,44 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
     {
         return;
     }
-    let n_past: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
-    let n_dims: i32 = *((*src1).data as *mut int32_t).offset(1 as i32 as isize);
-    let mode: i32 = *((*src1).data as *mut int32_t).offset(2 as i32 as isize);
-    let nb00: size_t = (*src0).nb[0 as i32 as usize];
-    let nb01: size_t = (*src0).nb[1 as i32 as usize];
-    let nb02: size_t = (*src0).nb[2 as i32 as usize];
-    let nb03: size_t = (*src0).nb[3 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    let nb0: size_t = (*dst).nb[0 as i32 as usize];
-    let nb1: size_t = (*dst).nb[1 as i32 as usize];
-    let nb2: size_t = (*dst).nb[2 as i32 as usize];
-    let nb3: size_t = (*dst).nb[3 as i32 as usize];
+    let n_past: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
+    let n_dims: i32 = *((*src1).data as *mut int32_t).offset(1_i32 as isize);
+    let mode: i32 = *((*src1).data as *mut int32_t).offset(2_i32 as isize);
+    let nb00: size_t = (*src0).nb[0_i32 as usize];
+    let nb01: size_t = (*src0).nb[1_i32 as usize];
+    let nb02: size_t = (*src0).nb[2_i32 as usize];
+    let nb03: size_t = (*src0).nb[3_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let ne3: int64_t = (*dst).ne[3_i32 as usize];
+    let nb0: size_t = (*dst).nb[0_i32 as usize];
+    let nb1: size_t = (*dst).nb[1_i32 as usize];
+    let nb2: size_t = (*dst).nb[2_i32 as usize];
+    let nb3: size_t = (*dst).nb[3_i32 as usize];
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(dst);
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
-    let mut ir: i32 = 0 as i32;
+    let mut ir: i32 = 0_i32;
     let theta_scale: f32 = powf(10000.0f64 as f32, -2.0f32 / n_dims as f32);
-    let is_neox: bool = mode & 2 as i32 != 0;
-    let mut i3: int64_t = 0 as i32 as int64_t;
+    let is_neox: bool = mode & 2_i32 != 0;
+    let mut i3: int64_t = 0_i32 as int64_t;
     while i3 < ne3 {
-        let mut i2: int64_t = (if mode & 1 as i32 == 0 as i32 {
-            0 as i32
+        let mut i2: int64_t = (if mode & 1_i32 == 0_i32 {
+            0_i32
         } else {
             n_past
         }) as int64_t;
         while i2 < ne2 {
-            let p: int64_t = if mode & 1 as i32 == 0 as i32 {
+            let p: int64_t = if mode & 1_i32 == 0_i32 {
                 n_past as i64 + i2
             } else {
                 i2
             };
-            let mut i1: int64_t = 0 as i32 as int64_t;
+            let mut i1: int64_t = 0_i32 as int64_t;
             while i1 < ne1 {
                 let fresh8 = ir;
                 ir += 1;
@@ -15235,26 +15181,26 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                     }
                     let mut theta: f32 = p as f32;
                     if !is_neox {
-                        let mut i0: int64_t = 0 as i32 as int64_t;
+                        let mut i0: int64_t = 0_i32 as int64_t;
                         while i0 < ne0 {
                             let cos_theta: f32 = cosf(theta);
                             let sin_theta: f32 = sinf(theta);
                             theta *= theta_scale;
-                            let dy: *const ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+                            let dy: *const ggml_fp16_t = ((*src0).data as *mut i8)
                                 .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                 .offset((i2 as u64).wrapping_mul(nb02) as isize)
                                 .offset((i1 as u64).wrapping_mul(nb01) as isize)
                                 .offset((i0 as u64).wrapping_mul(nb00) as isize)
                                 as *mut ggml_fp16_t;
-                            let mut dx: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
+                            let mut dx: *mut ggml_fp16_t = ((*dst).data as *mut i8)
                                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
                                 .offset((i1 as u64).wrapping_mul(nb1) as isize)
                                 .offset((i0 as u64).wrapping_mul(nb0) as isize)
                                 as *mut ggml_fp16_t;
-                            let dy0: f32 = ggml_lookup_fp16_to_fp32(*dy.offset(0 as i32 as isize));
-                            let dy1: f32 = ggml_lookup_fp16_to_fp32(*dy.offset(1 as i32 as isize));
-                            *dx.offset(0 as i32 as isize) = {
+                            let dy0: f32 = ggml_lookup_fp16_to_fp32(*dy.offset(0_i32 as isize));
+                            let dy1: f32 = ggml_lookup_fp16_to_fp32(*dy.offset(1_i32 as isize));
+                            *dx.offset(0_i32 as isize) = {
                                 ::core::mem::transmute::<
                                     _,
                                     [i16; ::core::mem::size_of::<__v8hi>()
@@ -15262,14 +15208,14 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                 >(_mm_cvtps_ph(
                                     _mm_setr_ps(
                                         dy0 * cos_theta + dy1 * sin_theta,
-                                        0 as i32 as f32,
-                                        0 as i32 as f32,
-                                        0 as i32 as f32,
+                                        0_i32 as f32,
+                                        0_i32 as f32,
+                                        0_i32 as f32,
                                     ),
-                                    0 as i32,
-                                ))[0 as i32 as usize] as u16
+                                    0_i32,
+                                ))[0_i32 as usize] as u16
                             };
-                            *dx.offset(1 as i32 as isize) = {
+                            *dx.offset(1_i32 as isize) = {
                                 ::core::mem::transmute::<
                                     _,
                                     [i16; ::core::mem::size_of::<__v8hi>()
@@ -15277,42 +15223,42 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                 >(_mm_cvtps_ph(
                                     _mm_setr_ps(
                                         -dy0 * sin_theta + dy1 * cos_theta,
-                                        0 as i32 as f32,
-                                        0 as i32 as f32,
-                                        0 as i32 as f32,
+                                        0_i32 as f32,
+                                        0_i32 as f32,
+                                        0_i32 as f32,
                                     ),
-                                    0 as i32,
-                                ))[0 as i32 as usize] as u16
+                                    0_i32,
+                                ))[0_i32 as usize] as u16
                             };
-                            i0 += 2 as i32 as i64;
+                            i0 += 2_i32 as i64;
                         }
                     } else {
-                        let mut ib: int64_t = 0 as i32 as int64_t;
+                        let mut ib: int64_t = 0_i32 as int64_t;
                         while ib < ne0 / n_dims as i64 {
-                            let mut ic: int64_t = 0 as i32 as int64_t;
+                            let mut ic: int64_t = 0_i32 as int64_t;
                             while ic < n_dims as i64 {
                                 let cos_theta_0: f32 = cosf(theta);
                                 let sin_theta_0: f32 = sinf(theta);
                                 theta *= theta_scale;
-                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2 as i32 as i64;
-                                let dy_0: *const ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2_i32 as i64;
+                                let dy_0: *const ggml_fp16_t = ((*src0).data as *mut i8)
                                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
                                     .offset((i1 as u64).wrapping_mul(nb01) as isize)
                                     .offset((i0_0 as u64).wrapping_mul(nb00) as isize)
                                     as *mut ggml_fp16_t;
-                                let mut dx_0: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
+                                let mut dx_0: *mut ggml_fp16_t = ((*dst).data as *mut i8)
                                     .offset((i3 as u64).wrapping_mul(nb3) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb2) as isize)
                                     .offset((i1 as u64).wrapping_mul(nb1) as isize)
                                     .offset((i0_0 as u64).wrapping_mul(nb0) as isize)
                                     as *mut ggml_fp16_t;
                                 let dy0_0: f32 =
-                                    ggml_lookup_fp16_to_fp32(*dy_0.offset(0 as i32 as isize));
+                                    ggml_lookup_fp16_to_fp32(*dy_0.offset(0_i32 as isize));
                                 let dy1_0: f32 = ggml_lookup_fp16_to_fp32(
-                                    *dy_0.offset((n_dims / 2 as i32) as isize),
+                                    *dy_0.offset((n_dims / 2_i32) as isize),
                                 );
-                                *dx_0.offset(0 as i32 as isize) = {
+                                *dx_0.offset(0_i32 as isize) = {
                                     ::core::mem::transmute::<
                                         _,
                                         [i16; ::core::mem::size_of::<__v8hi>()
@@ -15320,14 +15266,14 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                     >(_mm_cvtps_ph(
                                         _mm_setr_ps(
                                             dy0_0 * cos_theta_0 + dy1_0 * sin_theta_0,
-                                            0 as i32 as f32,
-                                            0 as i32 as f32,
-                                            0 as i32 as f32,
+                                            0_i32 as f32,
+                                            0_i32 as f32,
+                                            0_i32 as f32,
                                         ),
-                                        0 as i32,
-                                    ))[0 as i32 as usize] as u16
+                                        0_i32,
+                                    ))[0_i32 as usize] as u16
                                 };
-                                *dx_0.offset((n_dims / 2 as i32) as isize) = {
+                                *dx_0.offset((n_dims / 2_i32) as isize) = {
                                     ::core::mem::transmute::<
                                         _,
                                         [i16; ::core::mem::size_of::<__v8hi>()
@@ -15335,14 +15281,14 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                     >(_mm_cvtps_ph(
                                         _mm_setr_ps(
                                             -dy0_0 * sin_theta_0 + dy1_0 * cos_theta_0,
-                                            0 as i32 as f32,
-                                            0 as i32 as f32,
-                                            0 as i32 as f32,
+                                            0_i32 as f32,
+                                            0_i32 as f32,
+                                            0_i32 as f32,
                                         ),
-                                        0 as i32,
-                                    ))[0 as i32 as usize] as u16
+                                        0_i32,
+                                    ))[0_i32 as usize] as u16
                                 };
-                                ic += 2 as i32 as i64;
+                                ic += 2_i32 as i64;
                             }
                             ib += 1;
                             ib;
@@ -15373,13 +15319,13 @@ unsafe extern "C" fn ggml_compute_forward_rope_back(
             ggml_compute_forward_rope_back_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    11490 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    11490_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -15395,95 +15341,95 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f16_f32(
     if (*src0).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11502 as i32,
-            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11502_i32,
+            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src1).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11503 as i32,
-            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11503_i32,
+            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*dst).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11504 as i32,
-            b"dst->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11504_i32,
+            b"dst->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut _t0: int64_t = 0 as i32 as int64_t;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne10: int64_t = (*src1).ne[0 as i32 as usize];
-    let ne11: int64_t = (*src1).ne[1 as i32 as usize];
-    let nb00: i32 = (*src0).nb[0 as i32 as usize] as i32;
-    let nb01: i32 = (*src0).nb[1 as i32 as usize] as i32;
-    let nb02: i32 = (*src0).nb[2 as i32 as usize] as i32;
-    let nb10: i32 = (*src1).nb[0 as i32 as usize] as i32;
-    let nb11: i32 = (*src1).nb[1 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
+    let mut _t0: int64_t = 0_i32 as int64_t;
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne10: int64_t = (*src1).ne[0_i32 as usize];
+    let ne11: int64_t = (*src1).ne[1_i32 as usize];
+    let nb00: i32 = (*src0).nb[0_i32 as usize] as i32;
+    let nb01: i32 = (*src0).nb[1_i32 as usize] as i32;
+    let nb02: i32 = (*src0).nb[2_i32 as usize] as i32;
+    let nb10: i32 = (*src1).nb[0_i32 as usize] as i32;
+    let nb11: i32 = (*src1).nb[1_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nk: i32 = ne00 as i32;
-    let nh: i32 = nk / 2 as i32;
+    let nh: i32 = nk / 2_i32;
     let ew0: i32 = ggml_up32(ne01 as i32);
-    if ne00 % 2 as i32 as i64 != 1 as i32 as i64 {
+    if ne00 % 2_i32 as i64 != 1_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11548 as i32,
-            b"ne00 % 2 == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11548_i32,
+            b"ne00 % 2 == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 as u64 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11549 as i32,
-            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11549_i32,
+            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb10 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11550 as i32,
-            b"nb10 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11550_i32,
+            b"nb10 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*params).type_0 as u32 == GGML_TASK_INIT as i32 as u32 {
-        memset((*params).wdata, 0 as i32, (*params).wsize);
+        memset((*params).wdata, 0_i32, (*params).wsize);
         let wdata: *mut ggml_fp16_t =
-            ((*params).wdata as *mut ggml_fp16_t).offset(0 as i32 as isize);
-        let mut i02: int64_t = 0 as i32 as int64_t;
+            ((*params).wdata as *mut ggml_fp16_t).offset(0_i32 as isize);
+        let mut i02: int64_t = 0_i32 as int64_t;
         while i02 < ne02 {
-            let mut i01: int64_t = 0 as i32 as int64_t;
+            let mut i01: int64_t = 0_i32 as int64_t;
             while i01 < ne01 {
-                let src: *const ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+                let src: *const ggml_fp16_t = ((*src0).data as *mut i8)
                     .offset((i02 * nb02 as i64) as isize)
                     .offset((i01 * nb01 as i64) as isize)
                     as *mut ggml_fp16_t;
                 let mut dst_data: *mut ggml_fp16_t =
                     wdata.offset((i02 * ew0 as i64 * ne00) as isize);
-                let mut i00: int64_t = 0 as i32 as int64_t;
+                let mut i00: int64_t = 0_i32 as int64_t;
                 while i00 < ne00 {
                     *dst_data.offset((i00 * ew0 as i64 + i01) as isize) = *src.offset(i00 as isize);
                     i00 += 1;
@@ -15497,13 +15443,12 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f16_f32(
         }
         let wdata_0: *mut ggml_fp16_t =
             ((*params).wdata as *mut ggml_fp16_t).offset((ne02 * ew0 as i64 * ne00) as isize);
-        let mut i11: int64_t = 0 as i32 as int64_t;
+        let mut i11: int64_t = 0_i32 as int64_t;
         while i11 < ne11 {
-            let src_0: *const f32 = ((*src1).data as *mut libc::c_char)
-                .offset((i11 * nb11 as i64) as isize)
-                as *mut f32;
+            let src_0: *const f32 =
+                ((*src1).data as *mut i8).offset((i11 * nb11 as i64) as isize) as *mut f32;
             let mut dst_data_0: *mut ggml_fp16_t = wdata_0;
-            let mut i10: int64_t = 0 as i32 as int64_t;
+            let mut i10: int64_t = 0_i32 as int64_t;
             while i10 < ne10 {
                 *dst_data_0.offset(((i10 + nh as i64) * ew0 as i64 + i11) as isize) = {
                     ::core::mem::transmute::<
@@ -15512,12 +15457,12 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f16_f32(
                     >(_mm_cvtps_ph(
                         _mm_setr_ps(
                             *src_0.offset(i10 as isize),
-                            0 as i32 as f32,
-                            0 as i32 as f32,
-                            0 as i32 as f32,
+                            0_i32 as f32,
+                            0_i32 as f32,
+                            0_i32 as f32,
                         ),
-                        0 as i32,
-                    ))[0 as i32 as usize] as u16
+                        0_i32,
+                    ))[0_i32 as usize] as u16
                 };
                 i10 += 1;
                 i10;
@@ -15531,16 +15476,16 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f16_f32(
         return;
     }
     let nr: i32 = ne02 as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut i1: i32 = ir0;
     while i1 < ir1 {
         let mut dst_data_1: *mut f32 =
-            ((*dst).data as *mut libc::c_char).offset((i1 * nb1) as isize) as *mut f32;
-        let mut i0: int64_t = 0 as i32 as int64_t;
+            ((*dst).data as *mut i8).offset((i1 * nb1) as isize) as *mut f32;
+        let mut i0: int64_t = 0_i32 as int64_t;
         while i0 < ne10 {
-            *dst_data_1.offset(i0 as isize) = 0 as i32 as f32;
+            *dst_data_1.offset(i0 as isize) = 0_i32 as f32;
             let mut k: i32 = -nh;
             while k <= nh {
                 let mut v: f32 = 0.0f32;
@@ -15574,93 +15519,93 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f32(
     if (*src0).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11622 as i32,
-            b"src0->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11622_i32,
+            b"src0->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src1).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11623 as i32,
-            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11623_i32,
+            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*dst).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11624 as i32,
-            b"dst->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11624_i32,
+            b"dst->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut _t0: int64_t = 0 as i32 as int64_t;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne10: int64_t = (*src1).ne[0 as i32 as usize];
-    let ne11: int64_t = (*src1).ne[1 as i32 as usize];
-    let nb00: i32 = (*src0).nb[0 as i32 as usize] as i32;
-    let nb01: i32 = (*src0).nb[1 as i32 as usize] as i32;
-    let nb02: i32 = (*src0).nb[2 as i32 as usize] as i32;
-    let nb10: i32 = (*src1).nb[0 as i32 as usize] as i32;
-    let nb11: i32 = (*src1).nb[1 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
+    let mut _t0: int64_t = 0_i32 as int64_t;
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne10: int64_t = (*src1).ne[0_i32 as usize];
+    let ne11: int64_t = (*src1).ne[1_i32 as usize];
+    let nb00: i32 = (*src0).nb[0_i32 as usize] as i32;
+    let nb01: i32 = (*src0).nb[1_i32 as usize] as i32;
+    let nb02: i32 = (*src0).nb[2_i32 as usize] as i32;
+    let nb10: i32 = (*src1).nb[0_i32 as usize] as i32;
+    let nb11: i32 = (*src1).nb[1_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nk: i32 = ne00 as i32;
-    let nh: i32 = nk / 2 as i32;
+    let nh: i32 = nk / 2_i32;
     let ew0: i32 = ggml_up32(ne01 as i32);
-    if ne00 % 2 as i32 as i64 != 1 as i32 as i64 {
+    if ne00 % 2_i32 as i64 != 1_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11668 as i32,
-            b"ne00 % 2 == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11668_i32,
+            b"ne00 % 2 == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11669 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11669_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb10 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11670 as i32,
-            b"nb10 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11670_i32,
+            b"nb10 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*params).type_0 as u32 == GGML_TASK_INIT as i32 as u32 {
-        memset((*params).wdata, 0 as i32, (*params).wsize);
-        let wdata: *mut f32 = ((*params).wdata as *mut f32).offset(0 as i32 as isize);
-        let mut i02: int64_t = 0 as i32 as int64_t;
+        memset((*params).wdata, 0_i32, (*params).wsize);
+        let wdata: *mut f32 = ((*params).wdata as *mut f32).offset(0_i32 as isize);
+        let mut i02: int64_t = 0_i32 as int64_t;
         while i02 < ne02 {
-            let mut i01: int64_t = 0 as i32 as int64_t;
+            let mut i01: int64_t = 0_i32 as int64_t;
             while i01 < ne01 {
-                let src: *const f32 = ((*src0).data as *mut libc::c_char)
+                let src: *const f32 = ((*src0).data as *mut i8)
                     .offset((i02 * nb02 as i64) as isize)
                     .offset((i01 * nb01 as i64) as isize)
                     as *mut f32;
                 let mut dst_data: *mut f32 = wdata.offset((i02 * ew0 as i64 * ne00) as isize);
-                let mut i00: int64_t = 0 as i32 as int64_t;
+                let mut i00: int64_t = 0_i32 as int64_t;
                 while i00 < ne00 {
                     *dst_data.offset((i00 * ew0 as i64 + i01) as isize) = *src.offset(i00 as isize);
                     i00 += 1;
@@ -15674,13 +15619,12 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f32(
         }
         let wdata_0: *mut f32 =
             ((*params).wdata as *mut f32).offset((ne02 * ew0 as i64 * ne00) as isize);
-        let mut i11: int64_t = 0 as i32 as int64_t;
+        let mut i11: int64_t = 0_i32 as int64_t;
         while i11 < ne11 {
-            let src_0: *const f32 = ((*src1).data as *mut libc::c_char)
-                .offset((i11 * nb11 as i64) as isize)
-                as *mut f32;
+            let src_0: *const f32 =
+                ((*src1).data as *mut i8).offset((i11 * nb11 as i64) as isize) as *mut f32;
             let mut dst_data_0: *mut f32 = wdata_0;
-            let mut i10: int64_t = 0 as i32 as int64_t;
+            let mut i10: int64_t = 0_i32 as int64_t;
             while i10 < ne10 {
                 *dst_data_0.offset(((i10 + nh as i64) * ew0 as i64 + i11) as isize) =
                     *src_0.offset(i10 as isize);
@@ -15696,16 +15640,16 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f32(
         return;
     }
     let nr: i32 = ne02 as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut i1: i32 = ir0;
     while i1 < ir1 {
         let mut dst_data_1: *mut f32 =
-            ((*dst).data as *mut libc::c_char).offset((i1 * nb1) as isize) as *mut f32;
-        let mut i0: int64_t = 0 as i32 as int64_t;
+            ((*dst).data as *mut i8).offset((i1 * nb1) as isize) as *mut f32;
+        let mut i0: int64_t = 0_i32 as int64_t;
         while i0 < ne10 {
-            *dst_data_1.offset(i0 as isize) = 0 as i32 as f32;
+            *dst_data_1.offset(i0 as isize) = 0_i32 as f32;
             let mut k: i32 = -nh;
             while k <= nh {
                 let mut v: f32 = 0.0f32;
@@ -15744,13 +15688,13 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s(
             ggml_compute_forward_conv_1d_1s_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    11753 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    11753_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -15766,95 +15710,95 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
     if (*src0).type_0 as u32 != GGML_TYPE_F16 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11765 as i32,
-            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11765_i32,
+            b"src0->type == GGML_TYPE_F16\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src1).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11766 as i32,
-            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11766_i32,
+            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*dst).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11767 as i32,
-            b"dst->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11767_i32,
+            b"dst->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut _t0: int64_t = 0 as i32 as int64_t;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne10: int64_t = (*src1).ne[0 as i32 as usize];
-    let ne11: int64_t = (*src1).ne[1 as i32 as usize];
-    let nb00: i32 = (*src0).nb[0 as i32 as usize] as i32;
-    let nb01: i32 = (*src0).nb[1 as i32 as usize] as i32;
-    let nb02: i32 = (*src0).nb[2 as i32 as usize] as i32;
-    let nb10: i32 = (*src1).nb[0 as i32 as usize] as i32;
-    let nb11: i32 = (*src1).nb[1 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
+    let mut _t0: int64_t = 0_i32 as int64_t;
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne10: int64_t = (*src1).ne[0_i32 as usize];
+    let ne11: int64_t = (*src1).ne[1_i32 as usize];
+    let nb00: i32 = (*src0).nb[0_i32 as usize] as i32;
+    let nb01: i32 = (*src0).nb[1_i32 as usize] as i32;
+    let nb02: i32 = (*src0).nb[2_i32 as usize] as i32;
+    let nb10: i32 = (*src1).nb[0_i32 as usize] as i32;
+    let nb11: i32 = (*src1).nb[1_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nk: i32 = ne00 as i32;
-    let nh: i32 = nk / 2 as i32;
+    let nh: i32 = nk / 2_i32;
     let ew0: i32 = ggml_up32(ne01 as i32);
-    if ne00 % 2 as i32 as i64 != 1 as i32 as i64 {
+    if ne00 % 2_i32 as i64 != 1_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11811 as i32,
-            b"ne00 % 2 == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11811_i32,
+            b"ne00 % 2 == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 as u64 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11812 as i32,
-            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11812_i32,
+            b"nb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb10 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11813 as i32,
-            b"nb10 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11813_i32,
+            b"nb10 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*params).type_0 as u32 == GGML_TASK_INIT as i32 as u32 {
-        memset((*params).wdata, 0 as i32, (*params).wsize);
+        memset((*params).wdata, 0_i32, (*params).wsize);
         let wdata: *mut ggml_fp16_t =
-            ((*params).wdata as *mut ggml_fp16_t).offset(0 as i32 as isize);
-        let mut i02: int64_t = 0 as i32 as int64_t;
+            ((*params).wdata as *mut ggml_fp16_t).offset(0_i32 as isize);
+        let mut i02: int64_t = 0_i32 as int64_t;
         while i02 < ne02 {
-            let mut i01: int64_t = 0 as i32 as int64_t;
+            let mut i01: int64_t = 0_i32 as int64_t;
             while i01 < ne01 {
-                let src: *const ggml_fp16_t = ((*src0).data as *mut libc::c_char)
+                let src: *const ggml_fp16_t = ((*src0).data as *mut i8)
                     .offset((i02 * nb02 as i64) as isize)
                     .offset((i01 * nb01 as i64) as isize)
                     as *mut ggml_fp16_t;
                 let mut dst_data: *mut ggml_fp16_t =
                     wdata.offset((i02 * ew0 as i64 * ne00) as isize);
-                let mut i00: int64_t = 0 as i32 as int64_t;
+                let mut i00: int64_t = 0_i32 as int64_t;
                 while i00 < ne00 {
                     *dst_data.offset((i00 * ew0 as i64 + i01) as isize) = *src.offset(i00 as isize);
                     i00 += 1;
@@ -15868,13 +15812,12 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
         }
         let wdata_0: *mut ggml_fp16_t =
             ((*params).wdata as *mut ggml_fp16_t).offset((ne02 * ew0 as i64 * ne00) as isize);
-        let mut i11: int64_t = 0 as i32 as int64_t;
+        let mut i11: int64_t = 0_i32 as int64_t;
         while i11 < ne11 {
-            let src_0: *const f32 = ((*src1).data as *mut libc::c_char)
-                .offset((i11 * nb11 as i64) as isize)
-                as *mut f32;
+            let src_0: *const f32 =
+                ((*src1).data as *mut i8).offset((i11 * nb11 as i64) as isize) as *mut f32;
             let mut dst_data_0: *mut ggml_fp16_t = wdata_0;
-            let mut i10: int64_t = 0 as i32 as int64_t;
+            let mut i10: int64_t = 0_i32 as int64_t;
             while i10 < ne10 {
                 *dst_data_0.offset(((i10 + nh as i64) * ew0 as i64 + i11) as isize) = {
                     ::core::mem::transmute::<
@@ -15883,12 +15826,12 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
                     >(_mm_cvtps_ph(
                         _mm_setr_ps(
                             *src_0.offset(i10 as isize),
-                            0 as i32 as f32,
-                            0 as i32 as f32,
-                            0 as i32 as f32,
+                            0_i32 as f32,
+                            0_i32 as f32,
+                            0_i32 as f32,
                         ),
-                        0 as i32,
-                    ))[0 as i32 as usize] as u16
+                        0_i32,
+                    ))[0_i32 as usize] as u16
                 };
                 i10 += 1;
                 i10;
@@ -15902,16 +15845,16 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
         return;
     }
     let nr: i32 = ne02 as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut i1: i32 = ir0;
     while i1 < ir1 {
         let mut dst_data_1: *mut f32 =
-            ((*dst).data as *mut libc::c_char).offset((i1 * nb1) as isize) as *mut f32;
-        let mut i0: int64_t = 0 as i32 as int64_t;
+            ((*dst).data as *mut i8).offset((i1 * nb1) as isize) as *mut f32;
+        let mut i0: int64_t = 0_i32 as int64_t;
         while i0 < ne10 {
-            *dst_data_1.offset((i0 / 2 as i32 as i64) as isize) = 0 as i32 as f32;
+            *dst_data_1.offset((i0 / 2_i32 as i64) as isize) = 0_i32 as f32;
             let mut k: i32 = -nh;
             while k <= nh {
                 let mut v: f32 = 0.0f32;
@@ -15925,11 +15868,11 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
                         .offset((ne02 * ew0 as i64 * ne00) as isize)
                         .offset(((i0 + nh as i64 + k as i64) * ew0 as i64) as isize),
                 );
-                *dst_data_1.offset((i0 / 2 as i32 as i64) as isize) += v;
+                *dst_data_1.offset((i0 / 2_i32 as i64) as isize) += v;
                 k += 1;
                 k;
             }
-            i0 += 2 as i32 as i64;
+            i0 += 2_i32 as i64;
         }
         i1 += 1;
         i1;
@@ -15944,93 +15887,93 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f32(
     if (*src0).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11885 as i32,
-            b"src0->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11885_i32,
+            b"src0->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*src1).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11886 as i32,
-            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11886_i32,
+            b"src1->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*dst).type_0 as u32 != GGML_TYPE_F32 as i32 as u32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11887 as i32,
-            b"dst->type == GGML_TYPE_F32\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11887_i32,
+            b"dst->type == GGML_TYPE_F32\0" as *const u8 as *const i8,
         );
         abort();
     }
-    let mut _t0: int64_t = 0 as i32 as int64_t;
-    let ne00: int64_t = (*src0).ne[0 as i32 as usize];
-    let ne01: int64_t = (*src0).ne[1 as i32 as usize];
-    let ne02: int64_t = (*src0).ne[2 as i32 as usize];
-    let ne10: int64_t = (*src1).ne[0 as i32 as usize];
-    let ne11: int64_t = (*src1).ne[1 as i32 as usize];
-    let nb00: i32 = (*src0).nb[0 as i32 as usize] as i32;
-    let nb01: i32 = (*src0).nb[1 as i32 as usize] as i32;
-    let nb02: i32 = (*src0).nb[2 as i32 as usize] as i32;
-    let nb10: i32 = (*src1).nb[0 as i32 as usize] as i32;
-    let nb11: i32 = (*src1).nb[1 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
+    let mut _t0: int64_t = 0_i32 as int64_t;
+    let ne00: int64_t = (*src0).ne[0_i32 as usize];
+    let ne01: int64_t = (*src0).ne[1_i32 as usize];
+    let ne02: int64_t = (*src0).ne[2_i32 as usize];
+    let ne10: int64_t = (*src1).ne[0_i32 as usize];
+    let ne11: int64_t = (*src1).ne[1_i32 as usize];
+    let nb00: i32 = (*src0).nb[0_i32 as usize] as i32;
+    let nb01: i32 = (*src0).nb[1_i32 as usize] as i32;
+    let nb02: i32 = (*src0).nb[2_i32 as usize] as i32;
+    let nb10: i32 = (*src1).nb[0_i32 as usize] as i32;
+    let nb11: i32 = (*src1).nb[1_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nk: i32 = ne00 as i32;
-    let nh: i32 = nk / 2 as i32;
+    let nh: i32 = nk / 2_i32;
     let ew0: i32 = ggml_up32(ne01 as i32);
-    if ne00 % 2 as i32 as i64 != 1 as i32 as i64 {
+    if ne00 % 2_i32 as i64 != 1_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11931 as i32,
-            b"ne00 % 2 == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11931_i32,
+            b"ne00 % 2 == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb00 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11932 as i32,
-            b"nb00 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11932_i32,
+            b"nb00 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb10 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            11933 as i32,
-            b"nb10 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            11933_i32,
+            b"nb10 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if (*params).type_0 as u32 == GGML_TASK_INIT as i32 as u32 {
-        memset((*params).wdata, 0 as i32, (*params).wsize);
-        let wdata: *mut f32 = ((*params).wdata as *mut f32).offset(0 as i32 as isize);
-        let mut i02: int64_t = 0 as i32 as int64_t;
+        memset((*params).wdata, 0_i32, (*params).wsize);
+        let wdata: *mut f32 = ((*params).wdata as *mut f32).offset(0_i32 as isize);
+        let mut i02: int64_t = 0_i32 as int64_t;
         while i02 < ne02 {
-            let mut i01: int64_t = 0 as i32 as int64_t;
+            let mut i01: int64_t = 0_i32 as int64_t;
             while i01 < ne01 {
-                let src: *const f32 = ((*src0).data as *mut libc::c_char)
+                let src: *const f32 = ((*src0).data as *mut i8)
                     .offset((i02 * nb02 as i64) as isize)
                     .offset((i01 * nb01 as i64) as isize)
                     as *mut f32;
                 let mut dst_data: *mut f32 = wdata.offset((i02 * ew0 as i64 * ne00) as isize);
-                let mut i00: int64_t = 0 as i32 as int64_t;
+                let mut i00: int64_t = 0_i32 as int64_t;
                 while i00 < ne00 {
                     *dst_data.offset((i00 * ew0 as i64 + i01) as isize) = *src.offset(i00 as isize);
                     i00 += 1;
@@ -16044,13 +15987,12 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f32(
         }
         let wdata_0: *mut f32 =
             ((*params).wdata as *mut f32).offset((ne02 * ew0 as i64 * ne00) as isize);
-        let mut i11: int64_t = 0 as i32 as int64_t;
+        let mut i11: int64_t = 0_i32 as int64_t;
         while i11 < ne11 {
-            let src_0: *const f32 = ((*src1).data as *mut libc::c_char)
-                .offset((i11 * nb11 as i64) as isize)
-                as *mut f32;
+            let src_0: *const f32 =
+                ((*src1).data as *mut i8).offset((i11 * nb11 as i64) as isize) as *mut f32;
             let mut dst_data_0: *mut f32 = wdata_0;
-            let mut i10: int64_t = 0 as i32 as int64_t;
+            let mut i10: int64_t = 0_i32 as int64_t;
             while i10 < ne10 {
                 *dst_data_0.offset(((i10 + nh as i64) * ew0 as i64 + i11) as isize) =
                     *src_0.offset(i10 as isize);
@@ -16066,16 +16008,16 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f32(
         return;
     }
     let nr: i32 = ne02 as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut i1: i32 = ir0;
     while i1 < ir1 {
         let mut dst_data_1: *mut f32 =
-            ((*dst).data as *mut libc::c_char).offset((i1 * nb1) as isize) as *mut f32;
-        let mut i0: int64_t = 0 as i32 as int64_t;
+            ((*dst).data as *mut i8).offset((i1 * nb1) as isize) as *mut f32;
+        let mut i0: int64_t = 0_i32 as int64_t;
         while i0 < ne10 {
-            *dst_data_1.offset((i0 / 2 as i32 as i64) as isize) = 0 as i32 as f32;
+            *dst_data_1.offset((i0 / 2_i32 as i64) as isize) = 0_i32 as f32;
             let mut k: i32 = -nh;
             while k <= nh {
                 let mut v: f32 = 0.0f32;
@@ -16089,11 +16031,11 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f32(
                         .offset((ne02 * ew0 as i64 * ne00) as isize)
                         .offset(((i0 + nh as i64 + k as i64) * ew0 as i64) as isize),
                 );
-                *dst_data_1.offset((i0 / 2 as i32 as i64) as isize) += v;
+                *dst_data_1.offset((i0 / 2_i32 as i64) as isize) += v;
                 k += 1;
                 k;
             }
-            i0 += 2 as i32 as i64;
+            i0 += 2_i32 as i64;
         }
         i1 += 1;
         i1;
@@ -16113,13 +16055,13 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s(
             ggml_compute_forward_conv_1d_2s_f32(params, src0, src1, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    12016 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    12016_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -16134,196 +16076,196 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
     masked: bool,
     mut dst: *mut ggml_tensor,
 ) {
-    let mut _t0: int64_t = 0 as i32 as int64_t;
-    let neq0: int64_t = (*q).ne[0 as i32 as usize];
-    let neq1: int64_t = (*q).ne[1 as i32 as usize];
-    let neq2: int64_t = (*q).ne[2 as i32 as usize];
-    let neq3: int64_t = (*q).ne[3 as i32 as usize];
-    let nek0: int64_t = (*k).ne[0 as i32 as usize];
-    let nek1: int64_t = (*k).ne[1 as i32 as usize];
-    let nev1: int64_t = (*v).ne[1 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let nbk0: i32 = (*k).nb[0 as i32 as usize] as i32;
-    let nbk1: i32 = (*k).nb[1 as i32 as usize] as i32;
-    let nbk2: i32 = (*k).nb[2 as i32 as usize] as i32;
-    let nbk3: i32 = (*k).nb[3 as i32 as usize] as i32;
-    let nbq0: i32 = (*q).nb[0 as i32 as usize] as i32;
-    let nbq1: i32 = (*q).nb[1 as i32 as usize] as i32;
-    let nbq2: i32 = (*q).nb[2 as i32 as usize] as i32;
-    let nbq3: i32 = (*q).nb[3 as i32 as usize] as i32;
-    let nbv0: i32 = (*v).nb[0 as i32 as usize] as i32;
-    let nbv1: i32 = (*v).nb[1 as i32 as usize] as i32;
-    let nbv2: i32 = (*v).nb[2 as i32 as usize] as i32;
-    let nbv3: i32 = (*v).nb[3 as i32 as usize] as i32;
-    let nb0: i32 = (*dst).nb[0 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
-    let nb2: i32 = (*dst).nb[2 as i32 as usize] as i32;
-    let nb3: i32 = (*dst).nb[3 as i32 as usize] as i32;
+    let mut _t0: int64_t = 0_i32 as int64_t;
+    let neq0: int64_t = (*q).ne[0_i32 as usize];
+    let neq1: int64_t = (*q).ne[1_i32 as usize];
+    let neq2: int64_t = (*q).ne[2_i32 as usize];
+    let neq3: int64_t = (*q).ne[3_i32 as usize];
+    let nek0: int64_t = (*k).ne[0_i32 as usize];
+    let nek1: int64_t = (*k).ne[1_i32 as usize];
+    let nev1: int64_t = (*v).ne[1_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let nbk0: i32 = (*k).nb[0_i32 as usize] as i32;
+    let nbk1: i32 = (*k).nb[1_i32 as usize] as i32;
+    let nbk2: i32 = (*k).nb[2_i32 as usize] as i32;
+    let nbk3: i32 = (*k).nb[3_i32 as usize] as i32;
+    let nbq0: i32 = (*q).nb[0_i32 as usize] as i32;
+    let nbq1: i32 = (*q).nb[1_i32 as usize] as i32;
+    let nbq2: i32 = (*q).nb[2_i32 as usize] as i32;
+    let nbq3: i32 = (*q).nb[3_i32 as usize] as i32;
+    let nbv0: i32 = (*v).nb[0_i32 as usize] as i32;
+    let nbv1: i32 = (*v).nb[1_i32 as usize] as i32;
+    let nbv2: i32 = (*v).nb[2_i32 as usize] as i32;
+    let nbv3: i32 = (*v).nb[3_i32 as usize] as i32;
+    let nb0: i32 = (*dst).nb[0_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
+    let nb2: i32 = (*dst).nb[2_i32 as usize] as i32;
+    let nb3: i32 = (*dst).nb[3_i32 as usize] as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let D: int64_t = neq0;
     let N: int64_t = neq1;
     let P: int64_t = nek1 - N;
     let M: int64_t = P + N;
-    let Mup: i32 = ggml_up(M as i32, 4 as i32);
+    let Mup: i32 = ggml_up(M as i32, 4_i32);
     if ne0 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12083 as i32,
-            b"ne0 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12083_i32,
+            b"ne0 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne1 != N {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12084 as i32,
-            b"ne1 == N\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12084_i32,
+            b"ne1 == N\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if P < 0 as i32 as i64 {
+    if P < 0_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12085 as i32,
-            b"P >= 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12085_i32,
+            b"P >= 0\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nbq0 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12087 as i32,
-            b"nbq0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12087_i32,
+            b"nbq0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nbk0 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12088 as i32,
-            b"nbk0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12088_i32,
+            b"nbk0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nbv0 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12089 as i32,
-            b"nbv0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12089_i32,
+            b"nbv0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if neq0 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12091 as i32,
-            b"neq0 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12091_i32,
+            b"neq0 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nek0 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12092 as i32,
-            b"nek0 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12092_i32,
+            b"nek0 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nev1 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12093 as i32,
-            b"nev1 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12093_i32,
+            b"nev1 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if neq1 != N {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12095 as i32,
-            b"neq1 == N\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12095_i32,
+            b"neq1 == N\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nek1 != N + P {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12096 as i32,
-            b"nek1 == N + P\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12096_i32,
+            b"nek1 == N + P\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nev1 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12097 as i32,
-            b"nev1 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12097_i32,
+            b"nev1 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12100 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12100_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 > nb1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12101 as i32,
-            b"nb0 <= nb1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12101_i32,
+            b"nb0 <= nb1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb1 > nb2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12102 as i32,
-            b"nb1 <= nb2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12102_i32,
+            b"nb1 <= nb2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb2 > nb3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12103 as i32,
-            b"nb2 <= nb3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12103_i32,
+            b"nb2 <= nb3\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -16334,7 +16276,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
         return;
     }
     let nr: i32 = (neq1 * neq2 * neq3) as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let scale: f32 = 1.0f32 / sqrtf(D as f32);
@@ -16352,7 +16294,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
             i += 1;
             i;
         }
-        let mut ic: int64_t = 0 as i32 as int64_t;
+        let mut ic: int64_t = 0_i32 as int64_t;
         while ic < nek1 {
             let ik3: i32 = iq3;
             let ik2: i32 = iq2;
@@ -16361,11 +16303,9 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
             ggml_vec_dot_f32(
                 neq0 as i32,
                 S.offset(i1 as isize),
-                ((*k).data as *mut libc::c_char)
-                    .offset((ik1 * nbk1 + ik2 * nbk2 + ik3 * nbk3) as isize)
+                ((*k).data as *mut i8).offset((ik1 * nbk1 + ik2 * nbk2 + ik3 * nbk3) as isize)
                     as *mut f32,
-                ((*q).data as *mut libc::c_char)
-                    .offset((iq1 * nbq1 + iq2 * nbq2 + iq3 * nbq3) as isize)
+                ((*q).data as *mut i8).offset((iq1 * nbq1 + iq2 * nbq2 + iq3 * nbq3) as isize)
                     as *mut f32,
             );
             ic += 1;
@@ -16387,11 +16327,11 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
         let mut sum: ggml_float = 0.0f64;
         let mut scvt: [uint16_t; 4] = [0; 4];
         let mut sump: [ggml_float; 4] = [0.0f64, 0., 0., 0.];
-        let mut i_1: i32 = 0 as i32;
+        let mut i_1: i32 = 0_i32;
         while i_1 < Mup {
             let mut SS: *mut f32 = S.offset(i_1 as isize);
-            let mut j: i32 = 0 as i32;
-            while j < 4 as i32 {
+            let mut j: i32 = 0_i32;
+            while j < 4_i32 {
                 if *SS.offset(j as isize) == -::core::f32::INFINITY {
                     *SS.offset(j as isize) = 0.0f32;
                 } else {
@@ -16402,12 +16342,12 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
                         >(_mm_cvtps_ph(
                             _mm_setr_ps(
                                 *SS.offset(j as isize) - max,
-                                0 as i32 as f32,
-                                0 as i32 as f32,
-                                0 as i32 as f32,
+                                0_i32 as f32,
+                                0_i32 as f32,
+                                0_i32 as f32,
                             ),
-                            0 as i32,
-                        ))[0 as i32 as usize] as u16
+                            0_i32,
+                        ))[0_i32 as usize] as u16
                     };
                     memcpy(
                         &mut *scvt.as_mut_ptr().offset(j as isize) as *mut uint16_t
@@ -16423,30 +16363,30 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
                 j += 1;
                 j;
             }
-            i_1 += 4 as i32;
+            i_1 += 4_i32;
         }
-        let mut i_2: i32 = 0 as i32;
-        while i_2 < 4 as i32 {
+        let mut i_2: i32 = 0_i32;
+        while i_2 < 4_i32 {
             sum += sump[i_2 as usize];
             i_2 += 1;
             i_2;
         }
         sum = 1.0f64 / sum;
         ggml_vec_scale_f32(M as i32, S, sum as f32);
-        let mut ic_0: int64_t = 0 as i32 as int64_t;
+        let mut ic_0: int64_t = 0_i32 as int64_t;
         while ic_0 < nev1 {
             let i1_0: i32 = iq1;
             let i2: i32 = iq2;
             let i3: i32 = iq3;
             ggml_vec_dot_f32(
                 nek1 as i32,
-                ((*dst).data as *mut libc::c_char).offset(
+                ((*dst).data as *mut i8).offset(
                     (ic_0 * nb0 as i64
                         + (i1_0 * nb1) as i64
                         + (i2 * nb2) as i64
                         + (i3 * nb3) as i64) as isize,
                 ) as *mut f32,
-                ((*v).data as *mut libc::c_char)
+                ((*v).data as *mut i8)
                     .offset((ic_0 * nbv1 as i64 + (i2 * nbv2) as i64 + (i3 * nbv3) as i64) as isize)
                     as *mut f32,
                 S,
@@ -16466,196 +16406,196 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
     masked: bool,
     mut dst: *mut ggml_tensor,
 ) {
-    let mut _t0: int64_t = 0 as i32 as int64_t;
-    let neq0: int64_t = (*q).ne[0 as i32 as usize];
-    let neq1: int64_t = (*q).ne[1 as i32 as usize];
-    let neq2: int64_t = (*q).ne[2 as i32 as usize];
-    let neq3: int64_t = (*q).ne[3 as i32 as usize];
-    let nek0: int64_t = (*k).ne[0 as i32 as usize];
-    let nek1: int64_t = (*k).ne[1 as i32 as usize];
-    let nev1: int64_t = (*v).ne[1 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let nbk0: i32 = (*k).nb[0 as i32 as usize] as i32;
-    let nbk1: i32 = (*k).nb[1 as i32 as usize] as i32;
-    let nbk2: i32 = (*k).nb[2 as i32 as usize] as i32;
-    let nbk3: i32 = (*k).nb[3 as i32 as usize] as i32;
-    let nbq0: i32 = (*q).nb[0 as i32 as usize] as i32;
-    let nbq1: i32 = (*q).nb[1 as i32 as usize] as i32;
-    let nbq2: i32 = (*q).nb[2 as i32 as usize] as i32;
-    let nbq3: i32 = (*q).nb[3 as i32 as usize] as i32;
-    let nbv0: i32 = (*v).nb[0 as i32 as usize] as i32;
-    let nbv1: i32 = (*v).nb[1 as i32 as usize] as i32;
-    let nbv2: i32 = (*v).nb[2 as i32 as usize] as i32;
-    let nbv3: i32 = (*v).nb[3 as i32 as usize] as i32;
-    let nb0: i32 = (*dst).nb[0 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
-    let nb2: i32 = (*dst).nb[2 as i32 as usize] as i32;
-    let nb3: i32 = (*dst).nb[3 as i32 as usize] as i32;
+    let mut _t0: int64_t = 0_i32 as int64_t;
+    let neq0: int64_t = (*q).ne[0_i32 as usize];
+    let neq1: int64_t = (*q).ne[1_i32 as usize];
+    let neq2: int64_t = (*q).ne[2_i32 as usize];
+    let neq3: int64_t = (*q).ne[3_i32 as usize];
+    let nek0: int64_t = (*k).ne[0_i32 as usize];
+    let nek1: int64_t = (*k).ne[1_i32 as usize];
+    let nev1: int64_t = (*v).ne[1_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let nbk0: i32 = (*k).nb[0_i32 as usize] as i32;
+    let nbk1: i32 = (*k).nb[1_i32 as usize] as i32;
+    let nbk2: i32 = (*k).nb[2_i32 as usize] as i32;
+    let nbk3: i32 = (*k).nb[3_i32 as usize] as i32;
+    let nbq0: i32 = (*q).nb[0_i32 as usize] as i32;
+    let nbq1: i32 = (*q).nb[1_i32 as usize] as i32;
+    let nbq2: i32 = (*q).nb[2_i32 as usize] as i32;
+    let nbq3: i32 = (*q).nb[3_i32 as usize] as i32;
+    let nbv0: i32 = (*v).nb[0_i32 as usize] as i32;
+    let nbv1: i32 = (*v).nb[1_i32 as usize] as i32;
+    let nbv2: i32 = (*v).nb[2_i32 as usize] as i32;
+    let nbv3: i32 = (*v).nb[3_i32 as usize] as i32;
+    let nb0: i32 = (*dst).nb[0_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
+    let nb2: i32 = (*dst).nb[2_i32 as usize] as i32;
+    let nb3: i32 = (*dst).nb[3_i32 as usize] as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let D: int64_t = neq0;
     let N: int64_t = neq1;
     let P: int64_t = nek1 - N;
     let M: int64_t = P + N;
-    let Mup: i32 = ggml_up(M as i32, 4 as i32);
+    let Mup: i32 = ggml_up(M as i32, 4_i32);
     if ne0 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12292 as i32,
-            b"ne0 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12292_i32,
+            b"ne0 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne1 != N {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12293 as i32,
-            b"ne1 == N\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12293_i32,
+            b"ne1 == N\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if P < 0 as i32 as i64 {
+    if P < 0_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12294 as i32,
-            b"P >= 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12294_i32,
+            b"P >= 0\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nbq0 as u64 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12296 as i32,
-            b"nbq0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12296_i32,
+            b"nbq0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nbk0 as u64 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12297 as i32,
-            b"nbk0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12297_i32,
+            b"nbk0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nbv0 as u64 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12298 as i32,
-            b"nbv0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12298_i32,
+            b"nbv0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if neq0 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12300 as i32,
-            b"neq0 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12300_i32,
+            b"neq0 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nek0 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12301 as i32,
-            b"nek0 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12301_i32,
+            b"nek0 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nev1 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12302 as i32,
-            b"nev1 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12302_i32,
+            b"nev1 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if neq1 != N {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12304 as i32,
-            b"neq1 == N\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12304_i32,
+            b"neq1 == N\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nek1 != N + P {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12305 as i32,
-            b"nek1 == N + P\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12305_i32,
+            b"nek1 == N + P\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nev1 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12306 as i32,
-            b"nev1 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12306_i32,
+            b"nev1 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12309 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12309_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 > nb1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12310 as i32,
-            b"nb0 <= nb1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12310_i32,
+            b"nb0 <= nb1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb1 > nb2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12311 as i32,
-            b"nb1 <= nb2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12311_i32,
+            b"nb1 <= nb2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb2 > nb3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12312 as i32,
-            b"nb2 <= nb3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12312_i32,
+            b"nb2 <= nb3\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -16666,7 +16606,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
         return;
     }
     let nr: i32 = (neq1 * neq2 * neq3) as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let scale: f32 = 1.0f32 / sqrtf(D as f32);
@@ -16676,7 +16616,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
         let iq2: i32 = ((ir as i64 - iq3 as i64 * neq2 * neq1) / neq1) as i32;
         let iq1: i32 = (ir as i64 - iq3 as i64 * neq2 * neq1 - iq2 as i64 * neq1) as i32;
         let mut S: *mut f32 = ((*params).wdata as *mut f32).offset(
-            (ith as u64).wrapping_mul(((2 as i32 * Mup) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
+            (ith as u64).wrapping_mul(((2_i32 * Mup) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
                 as isize,
         );
         let mut i: i32 = M as i32;
@@ -16685,8 +16625,8 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
             i += 1;
             i;
         }
-        if 2 as i32 > 2 as i32 || nek1 % 2 as i32 as i64 != 0 as i32 as i64 {
-            let mut ic: int64_t = 0 as i32 as int64_t;
+        if 2_i32 > 2_i32 || nek1 % 2_i32 as i64 != 0_i32 as i64 {
+            let mut ic: int64_t = 0_i32 as int64_t;
             while ic < nek1 {
                 let ik3: i32 = iq3;
                 let ik2: i32 = iq2;
@@ -16695,18 +16635,16 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                 ggml_vec_dot_f16(
                     neq0 as i32,
                     S.offset(i1 as isize),
-                    ((*k).data as *mut libc::c_char)
-                        .offset((ik1 * nbk1 + ik2 * nbk2 + ik3 * nbk3) as isize)
+                    ((*k).data as *mut i8).offset((ik1 * nbk1 + ik2 * nbk2 + ik3 * nbk3) as isize)
                         as *mut ggml_fp16_t,
-                    ((*q).data as *mut libc::c_char)
-                        .offset((iq1 * nbq1 + iq2 * nbq2 + iq3 * nbq3) as isize)
+                    ((*q).data as *mut i8).offset((iq1 * nbq1 + iq2 * nbq2 + iq3 * nbq3) as isize)
                         as *mut ggml_fp16_t,
                 );
                 ic += 1;
                 ic;
             }
         } else {
-            let mut ic_0: int64_t = 0 as i32 as int64_t;
+            let mut ic_0: int64_t = 0_i32 as int64_t;
             while ic_0 < nek1 {
                 let ik3_0: i32 = iq3;
                 let ik2_0: i32 = iq2;
@@ -16716,14 +16654,13 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                     neq0 as i32,
                     nbk1,
                     S.offset(i1_0 as isize),
-                    ((*k).data as *mut libc::c_char)
+                    ((*k).data as *mut i8)
                         .offset((ik1_0 * nbk1 + ik2_0 * nbk2 + ik3_0 * nbk3) as isize)
                         as *mut libc::c_void,
-                    ((*q).data as *mut libc::c_char)
-                        .offset((iq1 * nbq1 + iq2 * nbq2 + iq3 * nbq3) as isize)
+                    ((*q).data as *mut i8).offset((iq1 * nbq1 + iq2 * nbq2 + iq3 * nbq3) as isize)
                         as *mut ggml_fp16_t,
                 );
-                ic_0 += 2 as i32 as i64;
+                ic_0 += 2_i32 as i64;
             }
         }
         ggml_vec_scale_f32(nek1 as i32, S, scale);
@@ -16742,11 +16679,11 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
         let mut sum: ggml_float = 0.0f64;
         let mut scvt: [uint16_t; 4] = [0; 4];
         let mut sump: [ggml_float; 4] = [0.0f64, 0., 0., 0.];
-        let mut i_1: i32 = 0 as i32;
+        let mut i_1: i32 = 0_i32;
         while i_1 < Mup {
             let mut SS: *mut f32 = S.offset(i_1 as isize);
-            let mut j: i32 = 0 as i32;
-            while j < 4 as i32 {
+            let mut j: i32 = 0_i32;
+            while j < 4_i32 {
                 if *SS.offset(j as isize) == -::core::f32::INFINITY {
                     *SS.offset(j as isize) = 0.0f32;
                 } else {
@@ -16757,12 +16694,12 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                         >(_mm_cvtps_ph(
                             _mm_setr_ps(
                                 *SS.offset(j as isize) - max,
-                                0 as i32 as f32,
-                                0 as i32 as f32,
-                                0 as i32 as f32,
+                                0_i32 as f32,
+                                0_i32 as f32,
+                                0_i32 as f32,
                             ),
-                            0 as i32,
-                        ))[0 as i32 as usize] as u16
+                            0_i32,
+                        ))[0_i32 as usize] as u16
                     };
                     memcpy(
                         &mut *scvt.as_mut_ptr().offset(j as isize) as *mut uint16_t
@@ -16778,10 +16715,10 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                 j += 1;
                 j;
             }
-            i_1 += 4 as i32;
+            i_1 += 4_i32;
         }
-        let mut i_2: i32 = 0 as i32;
-        while i_2 < 4 as i32 {
+        let mut i_2: i32 = 0_i32;
+        while i_2 < 4_i32 {
             sum += sump[i_2 as usize];
             i_2 += 1;
             i_2;
@@ -16791,11 +16728,11 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
         let mut S16: *mut ggml_fp16_t = ((*params).wdata as *mut f32)
             .offset(
                 (ith as u64)
-                    .wrapping_mul(((2 as i32 * Mup) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
+                    .wrapping_mul(((2_i32 * Mup) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
                     as isize,
             )
             .offset(Mup as isize) as *mut ggml_fp16_t;
-        let mut i_3: int64_t = 0 as i32 as int64_t;
+        let mut i_3: int64_t = 0_i32 as int64_t;
         while i_3 < M {
             *S16.offset(i_3 as isize) = {
                 ::core::mem::transmute::<
@@ -16804,31 +16741,31 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         *S.offset(i_3 as isize),
-                        0 as i32 as f32,
-                        0 as i32 as f32,
-                        0 as i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
                     ),
-                    0 as i32,
-                ))[0 as i32 as usize] as u16
+                    0_i32,
+                ))[0_i32 as usize] as u16
             };
             i_3 += 1;
             i_3;
         }
-        if 2 as i32 == 1 as i32 || nev1 % 2 as i32 as i64 != 0 as i32 as i64 {
-            let mut ic_1: int64_t = 0 as i32 as int64_t;
+        if 2_i32 == 1_i32 || nev1 % 2_i32 as i64 != 0_i32 as i64 {
+            let mut ic_1: int64_t = 0_i32 as int64_t;
             while ic_1 < nev1 {
                 let i1_1: i32 = iq1;
                 let i2: i32 = iq2;
                 let i3: i32 = iq3;
                 ggml_vec_dot_f16(
                     nek1 as i32,
-                    ((*dst).data as *mut libc::c_char).offset(
+                    ((*dst).data as *mut i8).offset(
                         (ic_1 * nb0 as i64
                             + (i1_1 * nb1) as i64
                             + (i2 * nb2) as i64
                             + (i3 * nb3) as i64) as isize,
                     ) as *mut f32,
-                    ((*v).data as *mut libc::c_char).offset(
+                    ((*v).data as *mut i8).offset(
                         (ic_1 * nbv1 as i64 + (i2 * nbv2) as i64 + (i3 * nbv3) as i64) as isize,
                     ) as *mut ggml_fp16_t,
                     S16,
@@ -16837,7 +16774,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                 ic_1;
             }
         } else {
-            let mut ic_2: int64_t = 0 as i32 as int64_t;
+            let mut ic_2: int64_t = 0_i32 as int64_t;
             while ic_2 < nev1 {
                 let i1_2: i32 = iq1;
                 let i2_0: i32 = iq2;
@@ -16845,18 +16782,18 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                 ggml_vec_dot_f16_unroll(
                     nek1 as i32,
                     nbv1,
-                    ((*dst).data as *mut libc::c_char).offset(
+                    ((*dst).data as *mut i8).offset(
                         (ic_2 * nb0 as i64
                             + (i1_2 * nb1) as i64
                             + (i2_0 * nb2) as i64
                             + (i3_0 * nb3) as i64) as isize,
                     ) as *mut f32,
-                    ((*v).data as *mut libc::c_char).offset(
+                    ((*v).data as *mut i8).offset(
                         (ic_2 * nbv1 as i64 + (i2_0 * nbv2) as i64 + (i3_0 * nbv3) as i64) as isize,
                     ) as *mut libc::c_void,
                     S16,
                 );
-                ic_2 += 2 as i32 as i64;
+                ic_2 += 2_i32 as i64;
             }
         }
         ir += 1;
@@ -16879,13 +16816,13 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn(
             ggml_compute_forward_flash_attn_f32(params, q, k, v, masked, dst);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    12496 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    12496_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -16901,40 +16838,40 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
     mut c1: *const ggml_tensor,
     mut dst: *mut ggml_tensor,
 ) {
-    let mut _t0: int64_t = 0 as i32 as int64_t;
-    let nea0: int64_t = (*a).ne[0 as i32 as usize];
-    let nea1: int64_t = (*a).ne[1 as i32 as usize];
-    let nea2: int64_t = (*a).ne[2 as i32 as usize];
-    let nea3: int64_t = (*a).ne[3 as i32 as usize];
-    let neb00: int64_t = (*b0).ne[0 as i32 as usize];
-    let neb01: int64_t = (*b0).ne[1 as i32 as usize];
-    let neb10: int64_t = (*b1).ne[0 as i32 as usize];
-    let neb11: int64_t = (*b1).ne[1 as i32 as usize];
-    let nec00: int64_t = (*c0).ne[0 as i32 as usize];
-    let nec01: int64_t = (*c0).ne[1 as i32 as usize];
-    let nec10: int64_t = (*c1).ne[0 as i32 as usize];
-    let nec11: int64_t = (*c1).ne[1 as i32 as usize];
-    let ne0: int64_t = (*dst).ne[0 as i32 as usize];
-    let ne1: int64_t = (*dst).ne[1 as i32 as usize];
-    let ne2: int64_t = (*dst).ne[2 as i32 as usize];
-    let nba0: i32 = (*a).nb[0 as i32 as usize] as i32;
-    let nba1: i32 = (*a).nb[1 as i32 as usize] as i32;
-    let nba2: i32 = (*a).nb[2 as i32 as usize] as i32;
-    let nba3: i32 = (*a).nb[3 as i32 as usize] as i32;
-    let nbb00: i32 = (*b0).nb[0 as i32 as usize] as i32;
-    let nbb01: i32 = (*b0).nb[1 as i32 as usize] as i32;
-    let nbb02: i32 = (*b0).nb[2 as i32 as usize] as i32;
-    let nbb03: i32 = (*b0).nb[3 as i32 as usize] as i32;
-    let nbb10: i32 = (*b1).nb[0 as i32 as usize] as i32;
-    let nbc00: i32 = (*c0).nb[0 as i32 as usize] as i32;
-    let nbc01: i32 = (*c0).nb[1 as i32 as usize] as i32;
-    let nbc02: i32 = (*c0).nb[2 as i32 as usize] as i32;
-    let nbc03: i32 = (*c0).nb[3 as i32 as usize] as i32;
-    let nbc10: i32 = (*c1).nb[0 as i32 as usize] as i32;
-    let nb0: i32 = (*dst).nb[0 as i32 as usize] as i32;
-    let nb1: i32 = (*dst).nb[1 as i32 as usize] as i32;
-    let nb2: i32 = (*dst).nb[2 as i32 as usize] as i32;
-    let nb3: i32 = (*dst).nb[3 as i32 as usize] as i32;
+    let mut _t0: int64_t = 0_i32 as int64_t;
+    let nea0: int64_t = (*a).ne[0_i32 as usize];
+    let nea1: int64_t = (*a).ne[1_i32 as usize];
+    let nea2: int64_t = (*a).ne[2_i32 as usize];
+    let nea3: int64_t = (*a).ne[3_i32 as usize];
+    let neb00: int64_t = (*b0).ne[0_i32 as usize];
+    let neb01: int64_t = (*b0).ne[1_i32 as usize];
+    let neb10: int64_t = (*b1).ne[0_i32 as usize];
+    let neb11: int64_t = (*b1).ne[1_i32 as usize];
+    let nec00: int64_t = (*c0).ne[0_i32 as usize];
+    let nec01: int64_t = (*c0).ne[1_i32 as usize];
+    let nec10: int64_t = (*c1).ne[0_i32 as usize];
+    let nec11: int64_t = (*c1).ne[1_i32 as usize];
+    let ne0: int64_t = (*dst).ne[0_i32 as usize];
+    let ne1: int64_t = (*dst).ne[1_i32 as usize];
+    let ne2: int64_t = (*dst).ne[2_i32 as usize];
+    let nba0: i32 = (*a).nb[0_i32 as usize] as i32;
+    let nba1: i32 = (*a).nb[1_i32 as usize] as i32;
+    let nba2: i32 = (*a).nb[2_i32 as usize] as i32;
+    let nba3: i32 = (*a).nb[3_i32 as usize] as i32;
+    let nbb00: i32 = (*b0).nb[0_i32 as usize] as i32;
+    let nbb01: i32 = (*b0).nb[1_i32 as usize] as i32;
+    let nbb02: i32 = (*b0).nb[2_i32 as usize] as i32;
+    let nbb03: i32 = (*b0).nb[3_i32 as usize] as i32;
+    let nbb10: i32 = (*b1).nb[0_i32 as usize] as i32;
+    let nbc00: i32 = (*c0).nb[0_i32 as usize] as i32;
+    let nbc01: i32 = (*c0).nb[1_i32 as usize] as i32;
+    let nbc02: i32 = (*c0).nb[2_i32 as usize] as i32;
+    let nbc03: i32 = (*c0).nb[3_i32 as usize] as i32;
+    let nbc10: i32 = (*c1).nb[0_i32 as usize] as i32;
+    let nb0: i32 = (*dst).nb[0_i32 as usize] as i32;
+    let nb1: i32 = (*dst).nb[1_i32 as usize] as i32;
+    let nb2: i32 = (*dst).nb[2_i32 as usize] as i32;
+    let nb3: i32 = (*dst).nb[3_i32 as usize] as i32;
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let D: int64_t = nea0;
@@ -16942,200 +16879,200 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
     if ne0 != nea0 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12581 as i32,
-            b"ne0 == nea0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12581_i32,
+            b"ne0 == nea0\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne1 != nea1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12582 as i32,
-            b"ne1 == nea1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12582_i32,
+            b"ne1 == nea1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if ne2 != nea2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12583 as i32,
-            b"ne2 == nea2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12583_i32,
+            b"ne2 == nea2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nba0 as u64 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12585 as i32,
-            b"nba0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12585_i32,
+            b"nba0 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nbb00 as u64 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12586 as i32,
-            b"nbb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12586_i32,
+            b"nbb00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nbb10 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12587 as i32,
-            b"nbb10 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12587_i32,
+            b"nbb10 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nbc00 as u64 != ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12588 as i32,
-            b"nbc00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12588_i32,
+            b"nbc00 == sizeof(ggml_fp16_t)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nbc10 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12589 as i32,
-            b"nbc10 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12589_i32,
+            b"nbc10 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if neb00 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12591 as i32,
-            b"neb00 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12591_i32,
+            b"neb00 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if neb01 != M {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12592 as i32,
-            b"neb01 == M\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12592_i32,
+            b"neb01 == M\0" as *const u8 as *const i8,
         );
         abort();
     }
     if neb10 != M {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12593 as i32,
-            b"neb10 == M\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12593_i32,
+            b"neb10 == M\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if neb11 != 1 as i32 as i64 {
+    if neb11 != 1_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12594 as i32,
-            b"neb11 == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12594_i32,
+            b"neb11 == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nec00 != M {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12596 as i32,
-            b"nec00 == M\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12596_i32,
+            b"nec00 == M\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nec01 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12597 as i32,
-            b"nec01 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12597_i32,
+            b"nec01 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nec10 != D {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12598 as i32,
-            b"nec10 == D\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12598_i32,
+            b"nec10 == D\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if nec11 != 1 as i32 as i64 {
+    if nec11 != 1_i32 as i64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12599 as i32,
-            b"nec11 == 1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12599_i32,
+            b"nec11 == 1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 as u64 != ::core::mem::size_of::<f32>() as u64 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12602 as i32,
-            b"nb0 == sizeof(float)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12602_i32,
+            b"nb0 == sizeof(float)\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb0 > nb1 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12603 as i32,
-            b"nb0 <= nb1\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12603_i32,
+            b"nb0 <= nb1\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb1 > nb2 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12604 as i32,
-            b"nb1 <= nb2\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12604_i32,
+            b"nb1 <= nb2\0" as *const u8 as *const i8,
         );
         abort();
     }
     if nb2 > nb3 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12605 as i32,
-            b"nb2 <= nb3\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12605_i32,
+            b"nb2 <= nb3\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -17146,7 +17083,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
         return;
     }
     let nr: i32 = (nea1 * nea2 * nea3) as i32;
-    let dr: i32 = (nr + nth - 1 as i32) / nth;
+    let dr: i32 = (nr + nth - 1_i32) / nth;
     let ir0: i32 = dr * ith;
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
@@ -17156,10 +17093,10 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
         let ia1: i32 = (ir as i64 - ia3 as i64 * nea2 * nea1 - ia2 as i64 * nea1) as i32;
         let mut S: *mut f32 = ((*params).wdata as *mut f32).offset(
             (ith as u64)
-                .wrapping_mul(((2 as i32 as i64 * M) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
+                .wrapping_mul(((2_i32 as i64 * M) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
                 as isize,
         );
-        let mut ic: int64_t = 0 as i32 as int64_t;
+        let mut ic: int64_t = 0_i32 as int64_t;
         while ic < neb01 {
             let ib03: i32 = ia3;
             let ib02: i32 = ia2;
@@ -17168,11 +17105,10 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
             ggml_vec_dot_f16(
                 nea0 as i32,
                 S.offset(i1 as isize),
-                ((*b0).data as *mut libc::c_char)
+                ((*b0).data as *mut i8)
                     .offset((ib01 * nbb01 + ib02 * nbb02 + ib03 * nbb03) as isize)
                     as *mut ggml_fp16_t,
-                ((*a).data as *mut libc::c_char)
-                    .offset((ia1 * nba1 + ia2 * nba2 + ia3 * nba3) as isize)
+                ((*a).data as *mut i8).offset((ia1 * nba1 + ia2 * nba2 + ia3 * nba3) as isize)
                     as *mut ggml_fp16_t,
             );
             ic += 1;
@@ -17182,11 +17118,11 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
         let mut S16: *mut ggml_fp16_t = ((*params).wdata as *mut f32)
             .offset(
                 (ith as u64)
-                    .wrapping_mul(((2 as i32 as i64 * M) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
+                    .wrapping_mul(((2_i32 as i64 * M) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
                     as isize,
             )
             .offset(M as isize) as *mut ggml_fp16_t;
-        let mut i: int64_t = 0 as i32 as int64_t;
+        let mut i: int64_t = 0_i32 as int64_t;
         while i < M {
             *S16.offset(i as isize) = {
                 ::core::mem::transmute::<
@@ -17195,12 +17131,12 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(
                         *S.offset(i as isize),
-                        0 as i32 as f32,
-                        0 as i32 as f32,
-                        0 as i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
+                        0_i32 as f32,
                     ),
-                    0 as i32,
-                ))[0 as i32 as usize] as u16
+                    0_i32,
+                ))[0_i32 as usize] as u16
             };
             i += 1;
             i;
@@ -17209,17 +17145,17 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
         let i1_0: i32 = ia1;
         let i2: i32 = ia2;
         let i3: i32 = ia3;
-        let mut ic_0: int64_t = 0 as i32 as int64_t;
+        let mut ic_0: int64_t = 0_i32 as int64_t;
         while ic_0 < nec01 {
             ggml_vec_dot_f16(
                 neb01 as i32,
-                ((*dst).data as *mut libc::c_char).offset(
+                ((*dst).data as *mut i8).offset(
                     (ic_0 * nb0 as i64
                         + (i1_0 * nb1) as i64
                         + (i2 * nb2) as i64
                         + (i3 * nb3) as i64) as isize,
                 ) as *mut f32,
-                ((*c0).data as *mut libc::c_char).offset(
+                ((*c0).data as *mut i8).offset(
                     (ic_0 * nbc01 as i64 + (i2 * nbc02) as i64 + (i3 * nbc03) as i64) as isize,
                 ) as *mut ggml_fp16_t,
                 S16,
@@ -17229,9 +17165,9 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
         }
         ggml_vec_add_f32(
             nec01 as i32,
-            ((*dst).data as *mut libc::c_char).offset((i1_0 * nb1 + i2 * nb2 + i3 * nb3) as isize)
+            ((*dst).data as *mut i8).offset((i1_0 * nb1 + i2 * nb2 + i3 * nb3) as isize)
                 as *mut f32,
-            ((*dst).data as *mut libc::c_char).offset((i1_0 * nb1 + i2 * nb2 + i3 * nb3) as isize)
+            ((*dst).data as *mut i8).offset((i1_0 * nb1 + i2 * nb2 + i3 * nb3) as isize)
                 as *mut f32,
             (*c1).data as *mut f32,
         );
@@ -17253,25 +17189,25 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff(
             ggml_compute_forward_flash_ff_f16(params, a, b0, b1, c0, c1, dst);
         }
         0 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    12698 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    12698_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    12702 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    12702_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -17287,10 +17223,10 @@ unsafe extern "C" fn ggml_compute_forward_map_unary_f32(
     if !ggml_are_same_shape(src0, dst) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12714 as i32,
-            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12714_i32,
+            b"ggml_are_same_shape(src0, dst)\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -17300,16 +17236,16 @@ unsafe extern "C" fn ggml_compute_forward_map_unary_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let mut i: i32 = 0 as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         fun.expect("non-null function pointer")(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -17327,13 +17263,13 @@ unsafe extern "C" fn ggml_compute_forward_map_unary(
             ggml_compute_forward_map_unary_f32(params, src0, dst, fun);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    12746 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    12746_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -17353,19 +17289,19 @@ unsafe extern "C" fn ggml_compute_forward_map_binary_f32(
         return;
     }
     let n: i32 = ggml_nrows(src0);
-    let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
-    let mut i: i32 = 0 as i32;
+    let nc: i32 = (*src0).ne[0_i32 as usize] as i32;
+    let mut i: i32 = 0_i32;
     while i < n {
         fun.expect("non-null function pointer")(
             nc,
-            ((*dst).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*dst).nb[1 as i32 as usize]) as isize)
+            ((*dst).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*dst).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src0).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src0).nb[1 as i32 as usize]) as isize)
+            ((*src0).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src0).nb[1_i32 as usize]) as isize)
                 as *mut f32,
-            ((*src1).data as *mut libc::c_char)
-                .offset((i as u64).wrapping_mul((*src1).nb[1 as i32 as usize]) as isize)
+            ((*src1).data as *mut i8)
+                .offset((i as u64).wrapping_mul((*src1).nb[1_i32 as usize]) as isize)
                 as *mut f32,
         );
         i += 1;
@@ -17384,13 +17320,13 @@ unsafe extern "C" fn ggml_compute_forward_map_binary(
             ggml_compute_forward_map_binary_f32(params, src0, src1, dst, fun);
         }
         _ => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    12795 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    12795_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -17404,10 +17340,10 @@ unsafe extern "C" fn ggml_compute_forward(
     if params.is_null() {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            12803 as i32,
-            b"params\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            12803_i32,
+            b"params\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -17426,7 +17362,7 @@ unsafe extern "C" fn ggml_compute_forward(
                 params,
                 (*tensor).src0,
                 (*tensor).src1,
-                (*tensor).opt[0 as i32 as usize],
+                (*tensor).opt[0_i32 as usize],
                 tensor,
             );
         }
@@ -17504,7 +17440,7 @@ unsafe extern "C" fn ggml_compute_forward(
                 params,
                 (*tensor).src0,
                 (*tensor).src1,
-                (*tensor).opt[0 as i32 as usize],
+                (*tensor).opt[0_i32 as usize],
                 tensor,
             );
         }
@@ -17534,7 +17470,7 @@ unsafe extern "C" fn ggml_compute_forward(
                 params,
                 (*tensor).src0,
                 (*tensor).src1,
-                (*tensor).opt[0 as i32 as usize],
+                (*tensor).opt[0_i32 as usize],
                 tensor,
             );
         }
@@ -17569,23 +17505,23 @@ unsafe extern "C" fn ggml_compute_forward(
             ggml_compute_forward_conv_1d_2s(params, (*tensor).src0, (*tensor).src1, tensor);
         }
         47 => {
-            let mut t: int32_t = ggml_get_i32_1d((*tensor).opt[1 as i32 as usize], 0 as i32);
-            if !(t == 0 as i32 || t == 1 as i32) {
+            let mut t: int32_t = ggml_get_i32_1d((*tensor).opt[1_i32 as usize], 0_i32);
+            if !(t == 0_i32 || t == 1_i32) {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    12993 as i32,
-                    b"t == 0 || t == 1\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    12993_i32,
+                    b"t == 0 || t == 1\0" as *const u8 as *const i8,
                 );
                 abort();
             }
-            let mut masked: bool = t != 0 as i32;
+            let mut masked: bool = t != 0_i32;
             ggml_compute_forward_flash_attn(
                 params,
                 (*tensor).src0,
                 (*tensor).src1,
-                (*tensor).opt[0 as i32 as usize],
+                (*tensor).opt[0_i32 as usize],
                 masked,
                 tensor,
             );
@@ -17595,30 +17531,30 @@ unsafe extern "C" fn ggml_compute_forward(
                 params,
                 (*tensor).src0,
                 (*tensor).src1,
-                (*tensor).opt[0 as i32 as usize],
-                (*tensor).opt[1 as i32 as usize],
-                (*tensor).opt[2 as i32 as usize],
+                (*tensor).opt[0_i32 as usize],
+                (*tensor).opt[1_i32 as usize],
+                (*tensor).opt[2_i32 as usize],
                 tensor,
             );
         }
         49 => {
             let fun: ggml_unary_op_f32_t =
-                *((*(*tensor).opt[0 as i32 as usize]).data as *mut ggml_unary_op_f32_t);
+                *((*(*tensor).opt[0_i32 as usize]).data as *mut ggml_unary_op_f32_t);
             ggml_compute_forward_map_unary(params, (*tensor).src0, tensor, fun);
         }
         50 => {
             let fun_0: ggml_binary_op_f32_t =
-                *((*(*tensor).opt[0 as i32 as usize]).data as *mut ggml_binary_op_f32_t);
+                *((*(*tensor).opt[0_i32 as usize]).data as *mut ggml_binary_op_f32_t);
             ggml_compute_forward_map_binary(params, (*tensor).src0, (*tensor).src1, tensor, fun_0);
         }
         51 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13019 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13019_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -17661,44 +17597,42 @@ unsafe extern "C" fn ggml_compute_backward(
                 (*src0).grad = ggml_add_impl(ctx, (*src0).grad, (*tensor).grad, inplace);
             }
             if !((*src1).grad).is_null() {
-                if ggml_nelements((*tensor).opt[0 as i32 as usize]) != 5 as i32 as i64 {
+                if ggml_nelements((*tensor).opt[0_i32 as usize]) != 5_i32 as i64 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        13064 as i32,
-                        b"ggml_nelements(tensor->opt[0]) == 5\0" as *const u8
-                            as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        13064_i32,
+                        b"ggml_nelements(tensor->opt[0]) == 5\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
-                if (*(*tensor).opt[0 as i32 as usize]).type_0 as u32 != GGML_TYPE_I32 as i32 as u32
+                if (*(*tensor).opt[0_i32 as usize]).type_0 as u32 != GGML_TYPE_I32 as i32 as u32
                 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        13065 as i32,
-                        b"tensor->opt[0]->type == GGML_TYPE_I32\0" as *const u8
-                            as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        13065_i32,
+                        b"tensor->opt[0]->type == GGML_TYPE_I32\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
-                let nb1: size_t = *((*(*tensor).opt[0 as i32 as usize]).data as *mut int32_t)
-                    .offset(0 as i32 as isize) as size_t;
-                let nb2: size_t = *((*(*tensor).opt[0 as i32 as usize]).data as *mut int32_t)
-                    .offset(1 as i32 as isize) as size_t;
-                let nb3: size_t = *((*(*tensor).opt[0 as i32 as usize]).data as *mut int32_t)
-                    .offset(2 as i32 as isize) as size_t;
-                let offset: size_t = *((*(*tensor).opt[0 as i32 as usize]).data as *mut int32_t)
-                    .offset(3 as i32 as isize) as size_t;
+                let nb1: size_t = *((*(*tensor).opt[0_i32 as usize]).data as *mut int32_t)
+                    .offset(0_i32 as isize) as size_t;
+                let nb2: size_t = *((*(*tensor).opt[0_i32 as usize]).data as *mut int32_t)
+                    .offset(1_i32 as isize) as size_t;
+                let nb3: size_t = *((*(*tensor).opt[0_i32 as usize]).data as *mut int32_t)
+                    .offset(2_i32 as isize) as size_t;
+                let offset: size_t = *((*(*tensor).opt[0_i32 as usize]).data as *mut int32_t)
+                    .offset(3_i32 as isize) as size_t;
                 let mut tensor_grad_view: *mut ggml_tensor = ggml_view_4d(
                     ctx,
                     (*tensor).grad,
-                    (*(*src1).grad).ne[0 as i32 as usize],
-                    (*(*src1).grad).ne[1 as i32 as usize],
-                    (*(*src1).grad).ne[2 as i32 as usize],
-                    (*(*src1).grad).ne[3 as i32 as usize],
+                    (*(*src1).grad).ne[0_i32 as usize],
+                    (*(*src1).grad).ne[1_i32 as usize],
+                    (*(*src1).grad).ne[2_i32 as usize],
+                    (*(*src1).grad).ne[3_i32 as usize],
                     nb1,
                     nb2,
                     nb3,
@@ -17814,34 +17748,33 @@ unsafe extern "C" fn ggml_compute_backward(
             }
         }
         13 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13195 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13195_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         14 => {
             if !((*src0).grad).is_null() {
-                if !((*src0).n_dims == 1 as i32 || (*src0).n_dims == 2 as i32) {
+                if !((*src0).n_dims == 1_i32 || (*src0).n_dims == 2_i32) {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        13201 as i32,
-                        b"src0->n_dims == 1 || src0->n_dims == 2\0" as *const u8
-                            as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        13201_i32,
+                        b"src0->n_dims == 1 || src0->n_dims == 2\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
-                let nc: i32 = (*tensor).ne[0 as i32 as usize] as i32;
-                let nr: i32 = (*tensor).ne[1 as i32 as usize] as i32;
-                let nc0: i32 = (*src0).ne[0 as i32 as usize] as i32;
-                let nr0: i32 = (*src0).ne[1 as i32 as usize] as i32;
+                let nc: i32 = (*tensor).ne[0_i32 as usize] as i32;
+                let nr: i32 = (*tensor).ne[1_i32 as usize] as i32;
+                let nc0: i32 = (*src0).ne[0_i32 as usize] as i32;
+                let nr0: i32 = (*src0).ne[1_i32 as usize] as i32;
                 let ncr: i32 = nc / nc0;
                 let nrr: i32 = nr / nr0;
                 let mut ne: [int64_t; 4] = [
@@ -17854,10 +17787,10 @@ unsafe extern "C" fn ggml_compute_backward(
                 let mut F01: *mut ggml_tensor = ggml_reshape(
                     ctx,
                     F00,
-                    ggml_new_tensor(ctx, (*(*tensor).grad).type_0, 4 as i32, ne.as_mut_ptr()),
+                    ggml_new_tensor(ctx, (*(*tensor).grad).type_0, 4_i32, ne.as_mut_ptr()),
                 );
                 let mut F02: *mut ggml_tensor =
-                    ggml_permute(ctx, F01, 0 as i32, 2 as i32, 1 as i32, 3 as i32);
+                    ggml_permute(ctx, F01, 0_i32, 2_i32, 1_i32, 3_i32);
                 let mut F03: *mut ggml_tensor = ggml_cont(ctx, F02);
                 let mut F04: *mut ggml_tensor =
                     ggml_reshape_2d(ctx, F03, (nc0 * nr0) as int64_t, (ncr * nrr) as int64_t);
@@ -17902,37 +17835,37 @@ unsafe extern "C" fn ggml_compute_backward(
             }
         }
         20 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13283 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13283_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         43 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13287 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13287_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         44 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13291 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13291_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -17948,25 +17881,25 @@ unsafe extern "C" fn ggml_compute_backward(
             }
         }
         22 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13305 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13305_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         23 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13309 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13309_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -17982,13 +17915,13 @@ unsafe extern "C" fn ggml_compute_backward(
             }
         }
         25 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13323 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13323_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -18030,7 +17963,7 @@ unsafe extern "C" fn ggml_compute_backward(
                 (*src0).grad = ggml_add_impl(
                     ctx,
                     (*src0).grad,
-                    ggml_scale_impl(ctx, (*tensor).grad, src1, 0 as i32 != 0),
+                    ggml_scale_impl(ctx, (*tensor).grad, src1, 0_i32 != 0),
                     inplace,
                 );
             }
@@ -18038,80 +17971,79 @@ unsafe extern "C" fn ggml_compute_backward(
                 (*src1).grad = ggml_add_impl(
                     ctx,
                     (*src1).grad,
-                    ggml_sum(ctx, ggml_mul_impl(ctx, (*tensor).grad, src0, 0 as i32 != 0)),
+                    ggml_sum(ctx, ggml_mul_impl(ctx, (*tensor).grad, src0, 0_i32 != 0)),
                     inplace,
                 );
             }
         }
         28 => {
-            if ggml_nelements((*tensor).opt[0 as i32 as usize]) != 5 as i32 as i64 {
+            if ggml_nelements((*tensor).opt[0_i32 as usize]) != 5_i32 as i64 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13396 as i32,
-                    b"ggml_nelements(tensor->opt[0]) == 5\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13396_i32,
+                    b"ggml_nelements(tensor->opt[0]) == 5\0" as *const u8 as *const i8,
                 );
                 abort();
             }
-            if (*(*tensor).opt[0 as i32 as usize]).type_0 as u32 != GGML_TYPE_I32 as i32 as u32 {
+            if (*(*tensor).opt[0_i32 as usize]).type_0 as u32 != GGML_TYPE_I32 as i32 as u32 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13397 as i32,
-                    b"tensor->opt[0]->type == GGML_TYPE_I32\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13397_i32,
+                    b"tensor->opt[0]->type == GGML_TYPE_I32\0" as *const u8 as *const i8,
                 );
                 abort();
             }
-            let nb1_0: size_t = *((*(*tensor).opt[0 as i32 as usize]).data as *mut int32_t)
-                .offset(0 as i32 as isize) as size_t;
-            let nb2_0: size_t = *((*(*tensor).opt[0 as i32 as usize]).data as *mut int32_t)
-                .offset(1 as i32 as isize) as size_t;
-            let nb3_0: size_t = *((*(*tensor).opt[0 as i32 as usize]).data as *mut int32_t)
-                .offset(2 as i32 as isize) as size_t;
-            let offset_0: size_t = *((*(*tensor).opt[0 as i32 as usize]).data as *mut int32_t)
-                .offset(3 as i32 as isize) as size_t;
+            let nb1_0: size_t = *((*(*tensor).opt[0_i32 as usize]).data as *mut int32_t)
+                .offset(0_i32 as isize) as size_t;
+            let nb2_0: size_t = *((*(*tensor).opt[0_i32 as usize]).data as *mut int32_t)
+                .offset(1_i32 as isize) as size_t;
+            let nb3_0: size_t = *((*(*tensor).opt[0_i32 as usize]).data as *mut int32_t)
+                .offset(2_i32 as isize) as size_t;
+            let offset_0: size_t = *((*(*tensor).opt[0_i32 as usize]).data as *mut int32_t)
+                .offset(3_i32 as isize) as size_t;
             let mut tensor_grad_view_0: *mut ggml_tensor = std::ptr::null_mut::<ggml_tensor>();
             if !((*src0).grad).is_null() || !((*src1).grad).is_null() {
                 if (*src0).type_0 as u32 != (*tensor).type_0 as u32 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        13406 as i32,
-                        b"src0->type == tensor->type\0" as *const u8 as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        13406_i32,
+                        b"src0->type == tensor->type\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
                 if (*(*tensor).grad).type_0 as u32 != (*tensor).type_0 as u32 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        13407 as i32,
-                        b"tensor->grad->type == tensor->type\0" as *const u8 as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        13407_i32,
+                        b"tensor->grad->type == tensor->type\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
                 if (*(*tensor).grad).type_0 as u32 != (*(*src1).grad).type_0 as u32 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        13408 as i32,
-                        b"tensor->grad->type == src1->grad->type\0" as *const u8
-                            as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        13408_i32,
+                        b"tensor->grad->type == src1->grad->type\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
                 tensor_grad_view_0 = ggml_view_4d(
                     ctx,
                     (*tensor).grad,
-                    (*(*src1).grad).ne[0 as i32 as usize],
-                    (*(*src1).grad).ne[1 as i32 as usize],
-                    (*(*src1).grad).ne[2 as i32 as usize],
-                    (*(*src1).grad).ne[3 as i32 as usize],
+                    (*(*src1).grad).ne[0_i32 as usize],
+                    (*(*src1).grad).ne[1_i32 as usize],
+                    (*(*src1).grad).ne[2_i32 as usize],
+                    (*(*src1).grad).ne[3_i32 as usize],
                     nb1_0,
                     nb2_0,
                     nb3_0,
@@ -18130,7 +18062,7 @@ unsafe extern "C" fn ggml_compute_backward(
                         nb2_0,
                         nb3_0,
                         offset_0,
-                        0 as i32 != 0,
+                        0_i32 != 0,
                     ),
                     inplace,
                 );
@@ -18155,20 +18087,20 @@ unsafe extern "C" fn ggml_compute_backward(
                 if !ggml_is_contiguous((*src0).grad) {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        13457 as i32,
-                        b"ggml_is_contiguous(src0->grad)\0" as *const u8 as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        13457_i32,
+                        b"ggml_is_contiguous(src0->grad)\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
                 if !ggml_is_contiguous((*tensor).grad) {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        13458 as i32,
-                        b"ggml_is_contiguous(tensor->grad)\0" as *const u8 as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        13458_i32,
+                        b"ggml_is_contiguous(tensor->grad)\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
@@ -18193,49 +18125,49 @@ unsafe extern "C" fn ggml_compute_backward(
                     ((*tensor).padding).as_mut_ptr() as *const libc::c_void,
                     ::core::mem::size_of::<size_t>() as u64,
                 );
-                let mut nb1_1: size_t = (*tensor).nb[1 as i32 as usize];
-                let mut nb2_1: size_t = (*tensor).nb[2 as i32 as usize];
-                let mut nb3_1: size_t = (*tensor).nb[3 as i32 as usize];
+                let mut nb1_1: size_t = (*tensor).nb[1_i32 as usize];
+                let mut nb2_1: size_t = (*tensor).nb[2_i32 as usize];
+                let mut nb3_1: size_t = (*tensor).nb[3_i32 as usize];
                 if (*src0).type_0 as u32 != (*(*src0).grad).type_0 as u32 {
                     let mut ng: size_t = ggml_element_size((*src0).grad);
                     let mut n0: size_t = ggml_element_size(src0);
-                    if offset_1.wrapping_rem(n0) != 0 as i32 as u64 {
+                    if offset_1.wrapping_rem(n0) != 0_i32 as u64 {
                         fprintf(
                             stderr,
-                            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                            b"ggml.c\0" as *const u8 as *const libc::c_char,
-                            13487 as i32,
-                            b"offset % n0 == 0\0" as *const u8 as *const libc::c_char,
+                            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                            b"ggml.c\0" as *const u8 as *const i8,
+                            13487_i32,
+                            b"offset % n0 == 0\0" as *const u8 as *const i8,
                         );
                         abort();
                     }
-                    if nb1_1.wrapping_rem(n0) != 0 as i32 as u64 {
+                    if nb1_1.wrapping_rem(n0) != 0_i32 as u64 {
                         fprintf(
                             stderr,
-                            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                            b"ggml.c\0" as *const u8 as *const libc::c_char,
-                            13488 as i32,
-                            b"nb1 % n0 == 0\0" as *const u8 as *const libc::c_char,
+                            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                            b"ggml.c\0" as *const u8 as *const i8,
+                            13488_i32,
+                            b"nb1 % n0 == 0\0" as *const u8 as *const i8,
                         );
                         abort();
                     }
-                    if nb2_1.wrapping_rem(n0) != 0 as i32 as u64 {
+                    if nb2_1.wrapping_rem(n0) != 0_i32 as u64 {
                         fprintf(
                             stderr,
-                            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                            b"ggml.c\0" as *const u8 as *const libc::c_char,
-                            13489 as i32,
-                            b"nb2 % n0 == 0\0" as *const u8 as *const libc::c_char,
+                            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                            b"ggml.c\0" as *const u8 as *const i8,
+                            13489_i32,
+                            b"nb2 % n0 == 0\0" as *const u8 as *const i8,
                         );
                         abort();
                     }
-                    if nb3_1.wrapping_rem(n0) != 0 as i32 as u64 {
+                    if nb3_1.wrapping_rem(n0) != 0_i32 as u64 {
                         fprintf(
                             stderr,
-                            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                            b"ggml.c\0" as *const u8 as *const libc::c_char,
-                            13490 as i32,
-                            b"nb3 % n0 == 0\0" as *const u8 as *const libc::c_char,
+                            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                            b"ggml.c\0" as *const u8 as *const i8,
+                            13490_i32,
+                            b"nb3 % n0 == 0\0" as *const u8 as *const i8,
                         );
                         abort();
                     }
@@ -18258,25 +18190,25 @@ unsafe extern "C" fn ggml_compute_backward(
         }
         33 => {
             if !((*src0).grad).is_null() {
-                let mut axis0: i32 = (*tensor).padding[0 as i32 as usize] as i32 & 0x3 as i32;
-                let mut axis1: i32 = (*tensor).padding[1 as i32 as usize] as i32 & 0x3 as i32;
-                let mut axis2: i32 = (*tensor).padding[2 as i32 as usize] as i32 & 0x3 as i32;
-                let mut axis3: i32 = (*tensor).padding[3 as i32 as usize] as i32 & 0x3 as i32;
-                let mut axes_backward: [i32; 4] = [0 as i32, 0 as i32, 0 as i32, 0 as i32];
-                axes_backward[axis0 as usize] = 0 as i32;
-                axes_backward[axis1 as usize] = 1 as i32;
-                axes_backward[axis2 as usize] = 2 as i32;
-                axes_backward[axis3 as usize] = 3 as i32;
+                let mut axis0: i32 = (*tensor).padding[0_i32 as usize] as i32 & 0x3_i32;
+                let mut axis1: i32 = (*tensor).padding[1_i32 as usize] as i32 & 0x3_i32;
+                let mut axis2: i32 = (*tensor).padding[2_i32 as usize] as i32 & 0x3_i32;
+                let mut axis3: i32 = (*tensor).padding[3_i32 as usize] as i32 & 0x3_i32;
+                let mut axes_backward: [i32; 4] = [0_i32, 0_i32, 0_i32, 0_i32];
+                axes_backward[axis0 as usize] = 0_i32;
+                axes_backward[axis1 as usize] = 1_i32;
+                axes_backward[axis2 as usize] = 2_i32;
+                axes_backward[axis3 as usize] = 3_i32;
                 (*src0).grad = ggml_add_impl(
                     ctx,
                     (*src0).grad,
                     ggml_permute(
                         ctx,
                         (*tensor).grad,
-                        axes_backward[0 as i32 as usize],
-                        axes_backward[1 as i32 as usize],
-                        axes_backward[2 as i32 as usize],
-                        axes_backward[3 as i32 as usize],
+                        axes_backward[0_i32 as usize],
+                        axes_backward[1_i32 as usize],
+                        axes_backward[2_i32 as usize],
+                        axes_backward[3_i32 as usize],
                     ),
                     inplace,
                 );
@@ -18304,36 +18236,36 @@ unsafe extern "C" fn ggml_compute_backward(
             let _ = ((*src1).grad).is_null();
         }
         36 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13549 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13549_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         37 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13553 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13553_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         38 => {
             if !((*src0).grad).is_null() {
-                let n_past: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
+                let n_past: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
                 (*src0).grad = ggml_add_impl(
                     ctx,
                     (*src0).grad,
-                    ggml_diag_mask_zero_impl(ctx, (*tensor).grad, n_past, 0 as i32 != 0),
+                    ggml_diag_mask_zero_impl(ctx, (*tensor).grad, n_past, 0_i32 != 0),
                     inplace,
                 );
             }
@@ -18341,11 +18273,11 @@ unsafe extern "C" fn ggml_compute_backward(
         }
         39 => {
             if !((*src0).grad).is_null() {
-                let n_past_0: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
+                let n_past_0: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
                 (*src0).grad = ggml_add_impl(
                     ctx,
                     (*src0).grad,
-                    ggml_diag_mask_zero_impl(ctx, (*tensor).grad, n_past_0, 0 as i32 != 0),
+                    ggml_diag_mask_zero_impl(ctx, (*tensor).grad, n_past_0, 0_i32 != 0),
                     inplace,
                 );
             }
@@ -18354,20 +18286,20 @@ unsafe extern "C" fn ggml_compute_backward(
         40 => {
             if !((*src0).grad).is_null() {
                 let mut ne2: [int64_t; 4] = [
-                    (*tensor).ne[0 as i32 as usize],
-                    1 as i32 as int64_t,
-                    (*tensor).ne[1 as i32 as usize] * (*tensor).ne[2 as i32 as usize],
-                    (*tensor).ne[3 as i32 as usize],
+                    (*tensor).ne[0_i32 as usize],
+                    1_i32 as int64_t,
+                    (*tensor).ne[1_i32 as usize] * (*tensor).ne[2_i32 as usize],
+                    (*tensor).ne[3_i32 as usize],
                 ];
                 let mut tensor2: *mut ggml_tensor = ggml_cont(
                     ctx,
                     ggml_reshape_4d(
                         ctx,
                         ggml_cont(ctx, tensor),
-                        ne2[0 as i32 as usize],
-                        ne2[1 as i32 as usize],
-                        ne2[2 as i32 as usize],
-                        ne2[3 as i32 as usize],
+                        ne2[0_i32 as usize],
+                        ne2[1_i32 as usize],
+                        ne2[2_i32 as usize],
+                        ne2[3_i32 as usize],
                     ),
                 );
                 let mut grad2: *mut ggml_tensor = ggml_cont(
@@ -18375,15 +18307,15 @@ unsafe extern "C" fn ggml_compute_backward(
                     ggml_reshape_4d(
                         ctx,
                         ggml_cont(ctx, (*tensor).grad),
-                        ne2[0 as i32 as usize],
-                        ne2[1 as i32 as usize],
-                        ne2[2 as i32 as usize],
-                        ne2[3 as i32 as usize],
+                        ne2[0_i32 as usize],
+                        ne2[1_i32 as usize],
+                        ne2[2_i32 as usize],
+                        ne2[3_i32 as usize],
                     ),
                 );
                 let mut tensor2_t: *mut ggml_tensor = ggml_cont(
                     ctx,
-                    ggml_permute(ctx, tensor2, 1 as i32, 0 as i32, 2 as i32, 3 as i32),
+                    ggml_permute(ctx, tensor2, 1_i32, 0_i32, 2_i32, 3_i32),
                 );
                 (*src0).grad = ggml_add_impl(
                     ctx,
@@ -18407,9 +18339,9 @@ unsafe extern "C" fn ggml_compute_backward(
         }
         41 => {
             if !((*src0).grad).is_null() {
-                let n_past_1: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
-                let n_dims: i32 = *((*src1).data as *mut int32_t).offset(1 as i32 as isize);
-                let mode: i32 = *((*src1).data as *mut int32_t).offset(2 as i32 as isize);
+                let n_past_1: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
+                let n_dims: i32 = *((*src1).data as *mut int32_t).offset(1_i32 as isize);
+                let mode: i32 = *((*src1).data as *mut int32_t).offset(2_i32 as isize);
                 (*src0).grad = ggml_add_impl(
                     ctx,
                     (*src0).grad,
@@ -18421,9 +18353,9 @@ unsafe extern "C" fn ggml_compute_backward(
         }
         42 => {
             if !((*src0).grad).is_null() {
-                let n_past_2: i32 = *((*src1).data as *mut int32_t).offset(0 as i32 as isize);
-                let n_dims_0: i32 = *((*src1).data as *mut int32_t).offset(1 as i32 as isize);
-                let mode_0: i32 = *((*src1).data as *mut int32_t).offset(2 as i32 as isize);
+                let n_past_2: i32 = *((*src1).data as *mut int32_t).offset(0_i32 as isize);
+                let n_dims_0: i32 = *((*src1).data as *mut int32_t).offset(1_i32 as isize);
+                let mode_0: i32 = *((*src1).data as *mut int32_t).offset(2_i32 as isize);
                 (*src0).grad = ggml_add_impl(
                     ctx,
                     (*src0).grad,
@@ -18434,73 +18366,73 @@ unsafe extern "C" fn ggml_compute_backward(
             let _ = ((*src1).grad).is_null();
         }
         45 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13681 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13681_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         46 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13685 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13685_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         47 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13689 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13689_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         48 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13693 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13693_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         49 | 50 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13698 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13698_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
         }
         51 => {
-            if 0 as i32 == 0 {
+            if 0_i32 == 0 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    13706 as i32,
-                    b"false\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    13706_i32,
+                    b"false\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -18512,7 +18444,7 @@ unsafe extern "C" fn ggml_visit_parents(mut cgraph: *mut ggml_cgraph, mut node: 
     if ((*node).grad).is_null() {
         let _ = (*node).op as u32 != GGML_OP_NONE as i32 as u32;
     }
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < (*cgraph).n_nodes {
         if (*cgraph).nodes[i as usize] == node {
             return;
@@ -18520,7 +18452,7 @@ unsafe extern "C" fn ggml_visit_parents(mut cgraph: *mut ggml_cgraph, mut node: 
         i += 1;
         i;
     }
-    let mut i_0: i32 = 0 as i32;
+    let mut i_0: i32 = 0_i32;
     while i_0 < (*cgraph).n_leafs {
         if (*cgraph).leafs[i_0 as usize] == node {
             return;
@@ -18534,8 +18466,8 @@ unsafe extern "C" fn ggml_visit_parents(mut cgraph: *mut ggml_cgraph, mut node: 
     if !((*node).src1).is_null() {
         ggml_visit_parents(cgraph, (*node).src1);
     }
-    let mut i_1: i32 = 0 as i32;
-    while i_1 < 4 as i32 {
+    let mut i_1: i32 = 0_i32;
+    while i_1 < 4_i32 {
         if !((*node).opt[i_1 as usize]).is_null() {
             ggml_visit_parents(cgraph, (*node).opt[i_1 as usize]);
         }
@@ -18543,13 +18475,13 @@ unsafe extern "C" fn ggml_visit_parents(mut cgraph: *mut ggml_cgraph, mut node: 
         i_1;
     }
     if (*node).op as u32 == GGML_OP_NONE as i32 as u32 && ((*node).grad).is_null() {
-        if (*cgraph).n_leafs >= 4096 as i32 {
+        if (*cgraph).n_leafs >= 4096_i32 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                13749 as i32,
-                b"cgraph->n_leafs < GGML_MAX_NODES\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                13749_i32,
+                b"cgraph->n_leafs < GGML_MAX_NODES\0" as *const u8 as *const i8,
             );
             abort();
         }
@@ -18557,13 +18489,13 @@ unsafe extern "C" fn ggml_visit_parents(mut cgraph: *mut ggml_cgraph, mut node: 
         (*cgraph).n_leafs += 1;
         (*cgraph).n_leafs;
     } else {
-        if (*cgraph).n_nodes >= 4096 as i32 {
+        if (*cgraph).n_nodes >= 4096_i32 {
             fprintf(
                 stderr,
-                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                b"ggml.c\0" as *const u8 as *const libc::c_char,
-                13754 as i32,
-                b"cgraph->n_nodes < GGML_MAX_NODES\0" as *const u8 as *const libc::c_char,
+                b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                b"ggml.c\0" as *const u8 as *const i8,
+                13754_i32,
+                b"cgraph->n_nodes < GGML_MAX_NODES\0" as *const u8 as *const i8,
             );
             abort();
         }
@@ -18579,19 +18511,19 @@ unsafe extern "C" fn ggml_build_forward_impl(
     mut expand: bool,
 ) {
     if !expand {
-        (*cgraph).n_nodes = 0 as i32;
-        (*cgraph).n_leafs = 0 as i32;
+        (*cgraph).n_nodes = 0_i32;
+        (*cgraph).n_leafs = 0_i32;
     }
     let n0: i32 = (*cgraph).n_nodes;
     ggml_visit_parents(cgraph, tensor);
     let n_new: i32 = (*cgraph).n_nodes - n0;
-    if n_new > 0 as i32 && (*cgraph).nodes[((*cgraph).n_nodes - 1 as i32) as usize] != tensor {
+    if n_new > 0_i32 && (*cgraph).nodes[((*cgraph).n_nodes - 1_i32) as usize] != tensor {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            13778 as i32,
-            b"cgraph->nodes[cgraph->n_nodes - 1] == tensor\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            13778_i32,
+            b"cgraph->nodes[cgraph->n_nodes - 1] == tensor\0" as *const u8 as *const i8,
         );
         abort();
     }
@@ -18601,16 +18533,16 @@ pub unsafe extern "C" fn ggml_build_forward_expand(
     mut cgraph: *mut ggml_cgraph,
     mut tensor: *mut ggml_tensor,
 ) {
-    ggml_build_forward_impl(cgraph, tensor, 1 as i32 != 0);
+    ggml_build_forward_impl(cgraph, tensor, 1_i32 != 0);
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_build_forward(mut tensor: *mut ggml_tensor) -> ggml_cgraph {
     let mut result: ggml_cgraph = {
         ggml_cgraph {
-            n_nodes: 0 as i32,
-            n_leafs: 0 as i32,
-            n_threads: 4 as i32,
-            work_size: 0 as i32 as size_t,
+            n_nodes: 0_i32,
+            n_leafs: 0_i32,
+            n_threads: 4_i32,
+            work_size: 0_i32 as size_t,
             work: std::ptr::null_mut::<ggml_tensor>(),
             nodes: [
                 std::ptr::null_mut::<ggml_tensor>(),
@@ -30906,12 +30838,12 @@ pub unsafe extern "C" fn ggml_build_forward(mut tensor: *mut ggml_tensor) -> ggm
                 std::ptr::null_mut::<ggml_tensor>(),
                 std::ptr::null_mut::<ggml_tensor>(),
             ],
-            perf_runs: 0 as i32,
-            perf_cycles: 0 as i32 as int64_t,
-            perf_time_us: 0 as i32 as int64_t,
+            perf_runs: 0_i32,
+            perf_cycles: 0_i32 as int64_t,
+            perf_time_us: 0_i32 as int64_t,
         }
     };
-    ggml_build_forward_impl(&mut result, tensor, 0 as i32 != 0);
+    ggml_build_forward_impl(&mut result, tensor, 0_i32 != 0);
     result
 }
 #[no_mangle]
@@ -30921,18 +30853,18 @@ pub unsafe extern "C" fn ggml_build_backward(
     mut keep: bool,
 ) -> ggml_cgraph {
     let mut result: ggml_cgraph = *gf;
-    if (*gf).n_nodes <= 0 as i32 {
+    if (*gf).n_nodes <= 0_i32 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            13809 as i32,
-            b"gf->n_nodes > 0\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            13809_i32,
+            b"gf->n_nodes > 0\0" as *const u8 as *const i8,
         );
         abort();
     }
     if keep {
-        let mut i: i32 = 0 as i32;
+        let mut i: i32 = 0_i32;
         while i < (*gf).n_nodes {
             let mut node: *mut ggml_tensor = (*gf).nodes[i as usize];
             if !((*node).grad).is_null() {
@@ -30943,8 +30875,8 @@ pub unsafe extern "C" fn ggml_build_backward(
             i;
         }
     }
-    let mut i_0: i32 = (*gf).n_nodes - 1 as i32;
-    while i_0 >= 0 as i32 {
+    let mut i_0: i32 = (*gf).n_nodes - 1_i32;
+    while i_0 >= 0_i32 {
         let mut node_0: *mut ggml_tensor = (*gf).nodes[i_0 as usize];
         if !((*node_0).grad).is_null() {
             ggml_compute_backward(ctx, node_0, keep);
@@ -30952,11 +30884,11 @@ pub unsafe extern "C" fn ggml_build_backward(
         i_0 -= 1;
         i_0;
     }
-    let mut i_1: i32 = (*gf).n_nodes - 1 as i32;
-    while i_1 >= 0 as i32 {
+    let mut i_1: i32 = (*gf).n_nodes - 1_i32;
+    while i_1 >= 0_i32 {
         let mut node_1: *mut ggml_tensor = (*gf).nodes[i_1 as usize];
         if (*node_1).is_param {
-            ggml_build_forward_impl(&mut result, (*node_1).grad, 1 as i32 != 0);
+            ggml_build_forward_impl(&mut result, (*node_1).grad, 1_i32 != 0);
         }
         i_1 -= 1;
         i_1;
@@ -30967,10 +30899,10 @@ unsafe extern "C" fn ggml_graph_compute_thread(mut data: *mut libc::c_void) -> t
     let mut state: *mut ggml_compute_state = data as *mut ggml_compute_state;
     let n_threads: i32 = (*(*state).shared).n_threads;
     loop {
-        if atomic_fetch_add(&mut (*(*state).shared).n_ready, 1 as i32) == n_threads - 1 as i32 {
+        if atomic_fetch_add(&mut (*(*state).shared).n_ready, 1_i32) == n_threads - 1_i32 {
             atomic_store(
                 &mut (*(*state).shared).has_work as *mut bool as *mut i32,
-                0 as i32,
+                0_i32,
             );
         } else {
             while atomic_load(&mut (*(*state).shared).has_work as *mut bool as *mut i32) != 0 {
@@ -30981,7 +30913,7 @@ unsafe extern "C" fn ggml_graph_compute_thread(mut data: *mut libc::c_void) -> t
                 let _ = &mut (*(*state).shared).spin;
             }
         }
-        atomic_fetch_sub(&mut (*(*state).shared).n_ready, 1 as i32);
+        atomic_fetch_sub(&mut (*(*state).shared).n_ready, 1_i32);
         while atomic_load(&mut (*(*state).shared).has_work as *mut bool as *mut i32) == 0 {
             if atomic_load(&mut (*(*state).shared).stop as *mut bool as *mut i32) != 0 {
                 return 0 as thread_ret_t;
@@ -31010,43 +30942,43 @@ pub unsafe extern "C" fn ggml_graph_compute(
     let n_threads: i32 = (*cgraph).n_threads;
     let mut state_shared: ggml_compute_state_shared = {
         ggml_compute_state_shared {
-            spin: 0 as i32,
+            spin: 0_i32,
             n_threads,
-            n_ready: 0 as i32,
-            has_work: 0 as i32 != 0,
-            stop: 0 as i32 != 0,
+            n_ready: 0_i32,
+            has_work: 0_i32 != 0,
+            stop: 0_i32 != 0,
         }
     };
-    let mut workers: *mut ggml_compute_state = (if n_threads > 1 as i32 {
+    let mut workers: *mut ggml_compute_state = (if n_threads > 1_i32 {
         let mut fresh9 = ::std::vec::from_elem(
             0,
             (::core::mem::size_of::<ggml_compute_state>() as u64)
-                .wrapping_mul((n_threads - 1 as i32) as u64) as usize,
+                .wrapping_mul((n_threads - 1_i32) as u64) as usize,
         );
         fresh9.as_mut_ptr()
     } else {
         std::ptr::null_mut::<i32>()
     }) as *mut ggml_compute_state;
-    if n_threads > 1 as i32 {
+    if n_threads > 1_i32 {
         let _ = &mut state_shared.spin;
         atomic_store(
             &mut state_shared.has_work as *mut bool as *mut i32,
-            1 as i32,
+            1_i32,
         );
-        let mut j: i32 = 0 as i32;
-        while j < n_threads - 1 as i32 {
+        let mut j: i32 = 0_i32;
+        while j < n_threads - 1_i32 {
             *workers.offset(j as isize) = {
                 ggml_compute_state {
-                    thrd: 0 as i32 as ggml_thread_t,
+                    thrd: 0_i32 as ggml_thread_t,
                     params: {
                         ggml_compute_params {
                             type_0: GGML_TASK_COMPUTE,
-                            ith: j + 1 as i32,
+                            ith: j + 1_i32,
                             nth: n_threads,
                             wsize: if !((*cgraph).work).is_null() {
                                 ggml_nbytes((*cgraph).work)
                             } else {
-                                0 as i32 as u64
+                                0_i32 as u64
                             },
                             wdata: if !((*cgraph).work).is_null() {
                                 (*(*cgraph).work).data
@@ -31068,13 +31000,13 @@ pub unsafe extern "C" fn ggml_graph_compute(
                 ),
                 &mut *workers.offset(j as isize) as *mut ggml_compute_state as *mut libc::c_void,
             );
-            if rc != 0 as i32 {
+            if rc != 0_i32 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    14008 as i32,
-                    b"rc == 0\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    14008_i32,
+                    b"rc == 0\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -31082,50 +31014,50 @@ pub unsafe extern "C" fn ggml_graph_compute(
             j;
         }
     }
-    let mut work_size: size_t = 0 as i32 as size_t;
-    let mut i: i32 = 0 as i32;
+    let mut work_size: size_t = 0_i32 as size_t;
+    let mut i: i32 = 0_i32;
     while i < (*cgraph).n_nodes {
         let mut node: *mut ggml_tensor = (*cgraph).nodes[i as usize];
         match (*node).op as u32 {
             29 | 1 => {
                 (*node).n_tasks = n_threads;
-                let mut cur: size_t = 0 as i32 as size_t;
+                let mut cur: size_t = 0_i32 as size_t;
                 if ggml_is_quantized((*node).type_0) {
                     cur = (GGML_TYPE_SIZE[GGML_TYPE_F32 as i32 as usize])
-                        .wrapping_mul((*node).ne[0 as i32 as usize] as u64)
+                        .wrapping_mul((*node).ne[0_i32 as usize] as u64)
                         .wrapping_mul(n_threads as u64);
                 }
                 work_size = if work_size > cur { work_size } else { cur };
             }
             2 | 3 => {
                 (*node).n_tasks = n_threads;
-                let mut cur_0: size_t = 0 as i32 as size_t;
+                let mut cur_0: size_t = 0_i32 as size_t;
                 if ggml_is_quantized((*(*node).src0).type_0) {
                     cur_0 = (GGML_TYPE_SIZE[GGML_TYPE_F32 as i32 as usize])
-                        .wrapping_mul((*(*node).src0).ne[0 as i32 as usize] as u64)
+                        .wrapping_mul((*(*node).src0).ne[0_i32 as usize] as u64)
                         .wrapping_mul(n_threads as u64);
                 }
                 work_size = if work_size > cur_0 { work_size } else { cur_0 };
             }
             4 => {
                 (*node).n_tasks = n_threads;
-                let mut cur_1: size_t = 0 as i32 as size_t;
+                let mut cur_1: size_t = 0_i32 as size_t;
                 if ggml_is_quantized((*(*node).src0).type_0) {
                     cur_1 = (GGML_TYPE_SIZE[GGML_TYPE_F32 as i32 as usize])
-                        .wrapping_mul((*(*node).src1).ne[0 as i32 as usize] as u64)
+                        .wrapping_mul((*(*node).src1).ne[0_i32 as usize] as u64)
                         .wrapping_mul(n_threads as u64);
                 }
                 work_size = if work_size > cur_1 { work_size } else { cur_1 };
             }
             5 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 => {
-                (*node).n_tasks = 1 as i32;
+                (*node).n_tasks = 1_i32;
             }
             6 | 20 | 21 | 22 | 23 | 24 | 25 => {
                 (*node).n_tasks = n_threads;
             }
             26 => {
                 (*node).n_tasks = n_threads;
-                let mut cur_2: size_t = 0 as i32 as size_t;
+                let mut cur_2: size_t = 0_i32 as size_t;
                 if (*(*node).src0).type_0 as u32 == GGML_TYPE_F16 as i32 as u32
                     && (*(*node).src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32
                 {
@@ -31134,7 +31066,7 @@ pub unsafe extern "C" fn ggml_graph_compute(
                 } else if (*(*node).src0).type_0 as u32 == GGML_TYPE_F32 as i32 as u32
                     && (*(*node).src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32
                 {
-                    cur_2 = 0 as i32 as size_t;
+                    cur_2 = 0_i32 as size_t;
                 } else if ggml_is_quantized((*(*node).src0).type_0) as i32 != 0
                     && (*(*node).src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32
                 {
@@ -31143,13 +31075,13 @@ pub unsafe extern "C" fn ggml_graph_compute(
                     cur_2 = (GGML_TYPE_SIZE[type_q as usize])
                         .wrapping_mul(ggml_nelements((*node).src1) as u64)
                         .wrapping_div(GGML_BLCK_SIZE[type_q as usize] as u64);
-                } else if 0 as i32 == 0 {
+                } else if 0_i32 == 0 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        14146 as i32,
-                        b"false\0" as *const u8 as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        14146_i32,
+                        b"false\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
@@ -31159,80 +31091,80 @@ pub unsafe extern "C" fn ggml_graph_compute(
                 (*node).n_tasks = n_threads;
             }
             28 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 39 => {
-                (*node).n_tasks = 1 as i32;
+                (*node).n_tasks = 1_i32;
             }
             38 | 40 | 41 | 42 => {
                 (*node).n_tasks = n_threads;
             }
             43 => {
-                (*node).n_tasks = 1 as i32;
+                (*node).n_tasks = 1_i32;
             }
             44 => {
-                (*node).n_tasks = 1 as i32;
+                (*node).n_tasks = 1_i32;
             }
             45 | 46 => {
                 (*node).n_tasks = n_threads;
-                if (*(*node).src0).ne[3 as i32 as usize] != 1 as i32 as i64 {
+                if (*(*node).src0).ne[3_i32 as usize] != 1_i32 as i64 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        14188 as i32,
-                        b"node->src0->ne[3] == 1\0" as *const u8 as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        14188_i32,
+                        b"node->src0->ne[3] == 1\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
-                if (*(*node).src1).ne[2 as i32 as usize] != 1 as i32 as i64 {
+                if (*(*node).src1).ne[2_i32 as usize] != 1_i32 as i64 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        14189 as i32,
-                        b"node->src1->ne[2] == 1\0" as *const u8 as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        14189_i32,
+                        b"node->src1->ne[2] == 1\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
-                if (*(*node).src1).ne[3 as i32 as usize] != 1 as i32 as i64 {
+                if (*(*node).src1).ne[3_i32 as usize] != 1_i32 as i64 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        14190 as i32,
-                        b"node->src1->ne[3] == 1\0" as *const u8 as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        14190_i32,
+                        b"node->src1->ne[3] == 1\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
-                let mut cur_3: size_t = 0 as i32 as size_t;
-                let nk: i32 = (*(*node).src0).ne[0 as i32 as usize] as i32;
+                let mut cur_3: size_t = 0_i32 as size_t;
+                let nk: i32 = (*(*node).src0).ne[0_i32 as usize] as i32;
                 if (*(*node).src0).type_0 as u32 == GGML_TYPE_F16 as i32 as u32
                     && (*(*node).src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32
                 {
                     cur_3 = (::core::mem::size_of::<ggml_fp16_t>() as u64).wrapping_mul(
-                        ((nk * ggml_up32((*(*node).src0).ne[1 as i32 as usize] as i32)) as i64
-                            * (*(*node).src0).ne[2 as i32 as usize]
-                            + ((2 as i32 * (nk / 2 as i32)) as i64
-                                + (*(*node).src1).ne[0 as i32 as usize])
-                                * (*(*node).src1).ne[1 as i32 as usize])
+                        ((nk * ggml_up32((*(*node).src0).ne[1_i32 as usize] as i32)) as i64
+                            * (*(*node).src0).ne[2_i32 as usize]
+                            + ((2_i32 * (nk / 2_i32)) as i64
+                                + (*(*node).src1).ne[0_i32 as usize])
+                                * (*(*node).src1).ne[1_i32 as usize])
                             as u64,
                     );
                 } else if (*(*node).src0).type_0 as u32 == GGML_TYPE_F32 as i32 as u32
                     && (*(*node).src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32
                 {
                     cur_3 = (::core::mem::size_of::<f32>() as u64).wrapping_mul(
-                        ((nk * ggml_up32((*(*node).src0).ne[1 as i32 as usize] as i32)) as i64
-                            * (*(*node).src0).ne[2 as i32 as usize]
-                            + ((2 as i32 * (nk / 2 as i32)) as i64
-                                + (*(*node).src1).ne[0 as i32 as usize])
-                                * (*(*node).src1).ne[1 as i32 as usize])
+                        ((nk * ggml_up32((*(*node).src0).ne[1_i32 as usize] as i32)) as i64
+                            * (*(*node).src0).ne[2_i32 as usize]
+                            + ((2_i32 * (nk / 2_i32)) as i64
+                                + (*(*node).src1).ne[0_i32 as usize])
+                                * (*(*node).src1).ne[1_i32 as usize])
                             as u64,
                     );
-                } else if 0 as i32 == 0 {
+                } else if 0_i32 == 0 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        14208 as i32,
-                        b"false\0" as *const u8 as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        14208_i32,
+                        b"false\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
@@ -31240,9 +31172,9 @@ pub unsafe extern "C" fn ggml_graph_compute(
             }
             47 => {
                 (*node).n_tasks = n_threads;
-                let mut cur_4: size_t = 0 as i32 as size_t;
+                let mut cur_4: size_t = 0_i32 as size_t;
                 let ne11: int64_t =
-                    ggml_up((*(*node).src1).ne[1 as i32 as usize] as i32, 4 as i32) as int64_t;
+                    ggml_up((*(*node).src1).ne[1_i32 as usize] as i32, 4_i32) as int64_t;
                 if (*(*node).src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32 {
                     cur_4 = (::core::mem::size_of::<f32>() as u64)
                         .wrapping_mul(ne11 as u64)
@@ -31267,43 +31199,43 @@ pub unsafe extern "C" fn ggml_graph_compute(
             }
             48 => {
                 (*node).n_tasks = n_threads;
-                let mut cur_5: size_t = 0 as i32 as size_t;
+                let mut cur_5: size_t = 0_i32 as size_t;
                 if (*(*node).src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32 {
                     cur_5 = (::core::mem::size_of::<f32>() as u64)
-                        .wrapping_mul((*(*node).src1).ne[1 as i32 as usize] as u64)
+                        .wrapping_mul((*(*node).src1).ne[1_i32 as usize] as u64)
                         .wrapping_mul((*node).n_tasks as u64);
                     cur_5 = (cur_5 as u64).wrapping_add(
                         (::core::mem::size_of::<f32>() as u64)
-                            .wrapping_mul((*(*node).src1).ne[1 as i32 as usize] as u64)
+                            .wrapping_mul((*(*node).src1).ne[1_i32 as usize] as u64)
                             .wrapping_mul((*node).n_tasks as u64),
                     ) as size_t as size_t;
                 }
                 if (*(*node).src1).type_0 as u32 == GGML_TYPE_F16 as i32 as u32 {
                     cur_5 = (::core::mem::size_of::<f32>() as u64)
-                        .wrapping_mul((*(*node).src1).ne[1 as i32 as usize] as u64)
+                        .wrapping_mul((*(*node).src1).ne[1_i32 as usize] as u64)
                         .wrapping_mul((*node).n_tasks as u64);
                     cur_5 = (cur_5 as u64).wrapping_add(
                         (::core::mem::size_of::<f32>() as u64)
-                            .wrapping_mul((*(*node).src1).ne[1 as i32 as usize] as u64)
+                            .wrapping_mul((*(*node).src1).ne[1_i32 as usize] as u64)
                             .wrapping_mul((*node).n_tasks as u64),
                     ) as size_t as size_t;
                 }
                 work_size = if work_size > cur_5 { work_size } else { cur_5 };
             }
             49 | 50 => {
-                (*node).n_tasks = 1 as i32;
+                (*node).n_tasks = 1_i32;
             }
             0 => {
-                (*node).n_tasks = 1 as i32;
+                (*node).n_tasks = 1_i32;
             }
             51 => {
-                if 0 as i32 == 0 {
+                if 0_i32 == 0 {
                     fprintf(
                         stderr,
-                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                        b"ggml.c\0" as *const u8 as *const libc::c_char,
-                        14262 as i32,
-                        b"false\0" as *const u8 as *const libc::c_char,
+                        b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                        b"ggml.c\0" as *const u8 as *const i8,
+                        14262_i32,
+                        b"false\0" as *const u8 as *const i8,
                     );
                     abort();
                 }
@@ -31313,36 +31245,36 @@ pub unsafe extern "C" fn ggml_graph_compute(
         i += 1;
         i;
     }
-    if !((*cgraph).work).is_null() && work_size > (*cgraph).work_size && 0 as i32 == 0 {
+    if !((*cgraph).work).is_null() && work_size > (*cgraph).work_size && 0_i32 == 0 {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            14268 as i32,
-            b"false\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            14268_i32,
+            b"false\0" as *const u8 as *const i8,
         );
         abort();
     }
-    if work_size > 0 as i32 as u64 && ((*cgraph).work).is_null() {
-        (*cgraph).work_size = work_size.wrapping_add((64 as i32 * (n_threads - 1 as i32)) as u64);
+    if work_size > 0_i32 as u64 && ((*cgraph).work).is_null() {
+        (*cgraph).work_size = work_size.wrapping_add((64_i32 * (n_threads - 1_i32)) as u64);
         (*cgraph).work = ggml_new_tensor_1d(ctx, GGML_TYPE_I8, (*cgraph).work_size as int64_t);
     }
-    let perf_start_cycles: int64_t = 0 as i32 as int64_t;
-    let perf_start_time_us: int64_t = 0 as i32 as int64_t;
-    let mut i_0: i32 = 0 as i32;
+    let perf_start_cycles: int64_t = 0_i32 as int64_t;
+    let perf_start_time_us: int64_t = 0_i32 as int64_t;
+    let mut i_0: i32 = 0_i32;
     while i_0 < (*cgraph).n_nodes {
         let mut node_0: *mut ggml_tensor = (*cgraph).nodes[i_0 as usize];
-        let perf_node_start_cycles: int64_t = 0 as i32 as int64_t;
-        let perf_node_start_time_us: int64_t = 0 as i32 as int64_t;
+        let perf_node_start_cycles: int64_t = 0_i32 as int64_t;
+        let perf_node_start_time_us: int64_t = 0_i32 as int64_t;
         let mut params: ggml_compute_params = {
             ggml_compute_params {
                 type_0: GGML_TASK_INIT,
-                ith: 0 as i32,
+                ith: 0_i32,
                 nth: (*node_0).n_tasks,
                 wsize: if !((*cgraph).work).is_null() {
                     ggml_nbytes((*cgraph).work)
                 } else {
-                    0 as i32 as u64
+                    0_i32 as u64
                 },
                 wdata: if !((*cgraph).work).is_null() {
                     (*(*cgraph).work).data
@@ -31352,28 +31284,28 @@ pub unsafe extern "C" fn ggml_graph_compute(
             }
         };
         ggml_compute_forward(&mut params, node_0);
-        if (*node_0).n_tasks > 1 as i32 {
-            if atomic_fetch_add(&mut state_shared.n_ready, 1 as i32) == n_threads - 1 as i32 {
+        if (*node_0).n_tasks > 1_i32 {
+            if atomic_fetch_add(&mut state_shared.n_ready, 1_i32) == n_threads - 1_i32 {
                 atomic_store(
                     &mut state_shared.has_work as *mut bool as *mut i32,
-                    0 as i32,
+                    0_i32,
                 );
             }
             while atomic_load(&mut state_shared.has_work as *mut bool as *mut i32) != 0 {
                 let _ = &mut state_shared.spin;
                 let _ = &mut state_shared.spin;
             }
-            let mut j_0: i32 = 0 as i32;
-            while j_0 < n_threads - 1 as i32 {
+            let mut j_0: i32 = 0_i32;
+            while j_0 < n_threads - 1_i32 {
                 (*workers.offset(j_0 as isize)).params = {
                     ggml_compute_params {
                         type_0: GGML_TASK_COMPUTE,
-                        ith: j_0 + 1 as i32,
+                        ith: j_0 + 1_i32,
                         nth: (*node_0).n_tasks,
                         wsize: if !((*cgraph).work).is_null() {
                             ggml_nbytes((*cgraph).work)
                         } else {
-                            0 as i32 as u64
+                            0_i32 as u64
                         },
                         wdata: if !((*cgraph).work).is_null() {
                             (*(*cgraph).work).data
@@ -31387,57 +31319,57 @@ pub unsafe extern "C" fn ggml_graph_compute(
                 j_0 += 1;
                 j_0;
             }
-            atomic_fetch_sub(&mut state_shared.n_ready, 1 as i32);
-            while atomic_load(&mut state_shared.n_ready) > 0 as i32 {
+            atomic_fetch_sub(&mut state_shared.n_ready, 1_i32);
+            while atomic_load(&mut state_shared.n_ready) > 0_i32 {
                 let _ = &mut state_shared.spin;
                 let _ = &mut state_shared.spin;
             }
             atomic_store(
                 &mut state_shared.has_work as *mut bool as *mut i32,
-                1 as i32,
+                1_i32,
             );
         }
         params.type_0 = GGML_TASK_COMPUTE;
         ggml_compute_forward(&mut params, node_0);
-        if (*node_0).n_tasks > 1 as i32 {
-            if atomic_fetch_add(&mut state_shared.n_ready, 1 as i32) == n_threads - 1 as i32 {
+        if (*node_0).n_tasks > 1_i32 {
+            if atomic_fetch_add(&mut state_shared.n_ready, 1_i32) == n_threads - 1_i32 {
                 atomic_store(
                     &mut state_shared.has_work as *mut bool as *mut i32,
-                    0 as i32,
+                    0_i32,
                 );
             }
             while atomic_load(&mut state_shared.has_work as *mut bool as *mut i32) != 0 {
                 let _ = &mut state_shared.spin;
                 let _ = &mut state_shared.spin;
             }
-            atomic_fetch_sub(&mut state_shared.n_ready, 1 as i32);
-            while atomic_load(&mut state_shared.n_ready) != 0 as i32 {
+            atomic_fetch_sub(&mut state_shared.n_ready, 1_i32);
+            while atomic_load(&mut state_shared.n_ready) != 0_i32 {
                 let _ = &mut state_shared.spin;
                 let _ = &mut state_shared.spin;
             }
         }
-        if (*node_0).n_tasks > 1 as i32 {
-            if atomic_fetch_add(&mut state_shared.n_ready, 1 as i32) == n_threads - 1 as i32 {
+        if (*node_0).n_tasks > 1_i32 {
+            if atomic_fetch_add(&mut state_shared.n_ready, 1_i32) == n_threads - 1_i32 {
                 atomic_store(
                     &mut state_shared.has_work as *mut bool as *mut i32,
-                    0 as i32,
+                    0_i32,
                 );
             }
             while atomic_load(&mut state_shared.has_work as *mut bool as *mut i32) != 0 {
                 let _ = &mut state_shared.spin;
                 let _ = &mut state_shared.spin;
             }
-            let mut j_1: i32 = 0 as i32;
-            while j_1 < n_threads - 1 as i32 {
+            let mut j_1: i32 = 0_i32;
+            while j_1 < n_threads - 1_i32 {
                 (*workers.offset(j_1 as isize)).params = {
                     ggml_compute_params {
                         type_0: GGML_TASK_FINALIZE,
-                        ith: j_1 + 1 as i32,
+                        ith: j_1 + 1_i32,
                         nth: (*node_0).n_tasks,
                         wsize: if !((*cgraph).work).is_null() {
                             ggml_nbytes((*cgraph).work)
                         } else {
-                            0 as i32 as u64
+                            0_i32 as u64
                         },
                         wdata: if !((*cgraph).work).is_null() {
                             (*(*cgraph).work).data
@@ -31451,37 +31383,37 @@ pub unsafe extern "C" fn ggml_graph_compute(
                 j_1 += 1;
                 j_1;
             }
-            atomic_fetch_sub(&mut state_shared.n_ready, 1 as i32);
-            while atomic_load(&mut state_shared.n_ready) > 0 as i32 {
+            atomic_fetch_sub(&mut state_shared.n_ready, 1_i32);
+            while atomic_load(&mut state_shared.n_ready) > 0_i32 {
                 let _ = &mut state_shared.spin;
                 let _ = &mut state_shared.spin;
             }
             atomic_store(
                 &mut state_shared.has_work as *mut bool as *mut i32,
-                1 as i32,
+                1_i32,
             );
         }
         params.type_0 = GGML_TASK_FINALIZE;
         ggml_compute_forward(&mut params, node_0);
-        if (*node_0).n_tasks > 1 as i32 {
-            if atomic_fetch_add(&mut state_shared.n_ready, 1 as i32) == n_threads - 1 as i32 {
+        if (*node_0).n_tasks > 1_i32 {
+            if atomic_fetch_add(&mut state_shared.n_ready, 1_i32) == n_threads - 1_i32 {
                 atomic_store(
                     &mut state_shared.has_work as *mut bool as *mut i32,
-                    0 as i32,
+                    0_i32,
                 );
             }
             while atomic_load(&mut state_shared.has_work as *mut bool as *mut i32) != 0 {
                 let _ = &mut state_shared.spin;
                 let _ = &mut state_shared.spin;
             }
-            atomic_fetch_sub(&mut state_shared.n_ready, 1 as i32);
-            while atomic_load(&mut state_shared.n_ready) != 0 as i32 {
+            atomic_fetch_sub(&mut state_shared.n_ready, 1_i32);
+            while atomic_load(&mut state_shared.n_ready) != 0_i32 {
                 let _ = &mut state_shared.spin;
                 let _ = &mut state_shared.spin;
             }
         }
-        let mut perf_cycles_cur: int64_t = 0 as i32 as i64 - perf_node_start_cycles;
-        let mut perf_time_us_cur: int64_t = 0 as i32 as i64 - perf_node_start_time_us;
+        let mut perf_cycles_cur: int64_t = 0_i32 as i64 - perf_node_start_cycles;
+        let mut perf_time_us_cur: int64_t = 0_i32 as i64 - perf_node_start_time_us;
         (*node_0).perf_runs += 1;
         (*node_0).perf_runs;
         (*node_0).perf_cycles += perf_cycles_cur;
@@ -31489,25 +31421,25 @@ pub unsafe extern "C" fn ggml_graph_compute(
         i_0 += 1;
         i_0;
     }
-    if n_threads > 1 as i32 {
-        atomic_store(&mut state_shared.stop as *mut bool as *mut i32, 1 as i32);
+    if n_threads > 1_i32 {
+        atomic_store(&mut state_shared.stop as *mut bool as *mut i32, 1_i32);
         atomic_store(
             &mut state_shared.has_work as *mut bool as *mut i32,
-            1 as i32,
+            1_i32,
         );
-        let mut j_2: i32 = 0 as i32;
-        while j_2 < n_threads - 1 as i32 {
+        let mut j_2: i32 = 0_i32;
+        while j_2 < n_threads - 1_i32 {
             let mut rc_0: i32 = pthread_join(
                 (*workers.offset(j_2 as isize)).thrd,
                 std::ptr::null_mut::<*mut libc::c_void>(),
             );
-            if rc_0 != 0 as i32 {
+            if rc_0 != 0_i32 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    14434 as i32,
-                    b"rc == 0\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    14434_i32,
+                    b"rc == 0\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -31516,8 +31448,8 @@ pub unsafe extern "C" fn ggml_graph_compute(
         }
         let _ = &mut state_shared.spin;
     }
-    let mut perf_cycles_cur_0: int64_t = 0 as i32 as i64 - perf_start_cycles;
-    let mut perf_time_us_cur_0: int64_t = 0 as i32 as i64 - perf_start_time_us;
+    let mut perf_cycles_cur_0: int64_t = 0_i32 as i64 - perf_start_cycles;
+    let mut perf_time_us_cur_0: int64_t = 0_i32 as i64 - perf_start_time_us;
     (*cgraph).perf_runs += 1;
     (*cgraph).perf_runs;
     (*cgraph).perf_cycles += perf_cycles_cur_0;
@@ -31525,7 +31457,7 @@ pub unsafe extern "C" fn ggml_graph_compute(
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_graph_reset(mut cgraph: *mut ggml_cgraph) {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < (*cgraph).n_nodes {
         let mut grad: *mut ggml_tensor = (*cgraph).grads[i as usize];
         if !grad.is_null() {
@@ -31538,7 +31470,7 @@ pub unsafe extern "C" fn ggml_graph_reset(mut cgraph: *mut ggml_cgraph) {
 #[no_mangle]
 pub unsafe extern "C" fn ggml_graph_print(mut cgraph: *const ggml_cgraph) {
     let mut perf_total_per_op_us: [int64_t; 51] = [
-        0 as i32 as int64_t,
+        0_i32 as int64_t,
         0,
         0,
         0,
@@ -31590,33 +31522,33 @@ pub unsafe extern "C" fn ggml_graph_print(mut cgraph: *const ggml_cgraph) {
         0,
         0,
     ];
-    printf(b"=== GRAPH ===\n\0" as *const u8 as *const libc::c_char);
+    printf(b"=== GRAPH ===\n\0" as *const u8 as *const i8);
     printf(
-        b"n_nodes = %d\n\0" as *const u8 as *const libc::c_char,
+        b"n_nodes = %d\n\0" as *const u8 as *const i8,
         (*cgraph).n_nodes,
     );
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < (*cgraph).n_nodes {
         let mut node: *mut ggml_tensor = (*cgraph).nodes[i as usize];
-        perf_total_per_op_us[(*node).op as usize] += if 1 as i32 as i64 > (*node).perf_time_us {
-            1 as i32 as i64
+        perf_total_per_op_us[(*node).op as usize] += if 1_i32 as i64 > (*node).perf_time_us {
+            1_i32 as i64
         } else {
             (*node).perf_time_us
         };
         printf(
             b" - %3d: [ %5ld, %5ld, %5ld] %16s %s (%3d) cpu = %7.3f / %7.3f ms, wall = %7.3f / %7.3f ms\n\0"
-                as *const u8 as *const libc::c_char,
+                as *const u8 as *const i8,
             i,
-            (*node).ne[0 as i32 as usize],
-            (*node).ne[1 as i32 as usize],
-            (*node).ne[2 as i32 as usize],
+            (*node).ne[0_i32 as usize],
+            (*node).ne[1_i32 as usize],
+            (*node).ne[2_i32 as usize],
             GGML_OP_LABEL[(*node).op as usize],
             if (*node).is_param as i32 != 0 {
-                b"x\0" as *const u8 as *const libc::c_char
+                b"x\0" as *const u8 as *const i8
             } else if !((*node).grad).is_null() {
-                b"g\0" as *const u8 as *const libc::c_char
+                b"g\0" as *const u8 as *const i8
             } else {
-                b" \0" as *const u8 as *const libc::c_char
+                b" \0" as *const u8 as *const i8
             },
             (*node).perf_runs,
             (*node).perf_cycles as f64
@@ -31632,27 +31564,27 @@ pub unsafe extern "C" fn ggml_graph_print(mut cgraph: *const ggml_cgraph) {
         i;
     }
     printf(
-        b"n_leafs = %d\n\0" as *const u8 as *const libc::c_char,
+        b"n_leafs = %d\n\0" as *const u8 as *const i8,
         (*cgraph).n_leafs,
     );
-    let mut i_0: i32 = 0 as i32;
+    let mut i_0: i32 = 0_i32;
     while i_0 < (*cgraph).n_leafs {
         let mut node_0: *mut ggml_tensor = (*cgraph).leafs[i_0 as usize];
         printf(
-            b" - %3d: [ %5ld, %5ld] %8s\n\0" as *const u8 as *const libc::c_char,
+            b" - %3d: [ %5ld, %5ld] %8s\n\0" as *const u8 as *const i8,
             i_0,
-            (*node_0).ne[0 as i32 as usize],
-            (*node_0).ne[1 as i32 as usize],
+            (*node_0).ne[0_i32 as usize],
+            (*node_0).ne[1_i32 as usize],
             GGML_OP_LABEL[(*node_0).op as usize],
         );
         i_0 += 1;
         i_0;
     }
-    let mut i_1: i32 = 0 as i32;
+    let mut i_1: i32 = 0_i32;
     while i_1 < GGML_OP_COUNT as i32 {
-        if perf_total_per_op_us[i_1 as usize] != 0 as i32 as i64 {
+        if perf_total_per_op_us[i_1 as usize] != 0_i32 as i64 {
             printf(
-                b"perf_total_per_op_us[%16s] = %7.3f ms\n\0" as *const u8 as *const libc::c_char,
+                b"perf_total_per_op_us[%16s] = %7.3f ms\n\0" as *const u8 as *const i8,
                 GGML_OP_LABEL[i_1 as usize],
                 perf_total_per_op_us[i_1 as usize] as f64 / 1000.0f64,
             );
@@ -31660,30 +31592,30 @@ pub unsafe extern "C" fn ggml_graph_print(mut cgraph: *const ggml_cgraph) {
         i_1 += 1;
         i_1;
     }
-    printf(b"========================================\n\0" as *const u8 as *const libc::c_char);
+    printf(b"========================================\n\0" as *const u8 as *const i8);
 }
 unsafe extern "C" fn ggml_graph_find(
     mut cgraph: *const ggml_cgraph,
     mut node: *const ggml_tensor,
 ) -> bool {
     if cgraph.is_null() {
-        return 1 as i32 != 0;
+        return 1_i32 != 0;
     }
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < (*cgraph).n_nodes {
         if (*cgraph).nodes[i as usize] == node as *mut ggml_tensor {
-            return 1 as i32 != 0;
+            return 1_i32 != 0;
         }
         i += 1;
         i;
     }
-    0 as i32 != 0
+    0_i32 != 0
 }
 unsafe extern "C" fn ggml_graph_get_parent(
     mut cgraph: *const ggml_cgraph,
     mut node: *const ggml_tensor,
 ) -> *mut ggml_tensor {
-    let mut i: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
     while i < (*cgraph).n_nodes {
         let mut parent: *mut ggml_tensor = (*cgraph).nodes[i as usize];
         if (*parent).grad == node as *mut ggml_tensor {
@@ -31698,160 +31630,154 @@ unsafe extern "C" fn ggml_graph_get_parent(
 pub unsafe extern "C" fn ggml_graph_dump_dot(
     mut gb: *const ggml_cgraph,
     mut gf: *const ggml_cgraph,
-    mut filename: *const libc::c_char,
+    mut filename: *const i8,
 ) {
-    let mut color: [libc::c_char; 16] = [0; 16];
-    let mut fp: *mut FILE = fopen(filename, b"w\0" as *const u8 as *const libc::c_char);
+    let mut color: [i8; 16] = [0; 16];
+    let mut fp: *mut FILE = fopen(filename, b"w\0" as *const u8 as *const i8);
     if fp.is_null() {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            14545 as i32,
-            b"fp\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            14545_i32,
+            b"fp\0" as *const u8 as *const i8,
         );
         abort();
     }
-    fprintf(fp, b"digraph G {\n\0" as *const u8 as *const libc::c_char);
-    fprintf(
-        fp,
-        b"  newrank = true;\n\0" as *const u8 as *const libc::c_char,
-    );
-    fprintf(
-        fp,
-        b"  rankdir = LR;\n\0" as *const u8 as *const libc::c_char,
-    );
-    let mut i: i32 = 0 as i32;
+    fprintf(fp, b"digraph G {\n\0" as *const u8 as *const i8);
+    fprintf(fp, b"  newrank = true;\n\0" as *const u8 as *const i8);
+    fprintf(fp, b"  rankdir = LR;\n\0" as *const u8 as *const i8);
+    let mut i: i32 = 0_i32;
     while i < (*gb).n_nodes {
         let mut node: *mut ggml_tensor = (*gb).nodes[i as usize];
         if (ggml_graph_get_parent(gb, node)).is_null() {
             if (*node).is_param {
                 snprintf(
                     color.as_mut_ptr(),
-                    ::core::mem::size_of::<[libc::c_char; 16]>() as u64,
-                    b"yellow\0" as *const u8 as *const libc::c_char,
+                    ::core::mem::size_of::<[i8; 16]>() as u64,
+                    b"yellow\0" as *const u8 as *const i8,
                 );
             } else if !((*node).grad).is_null() {
                 if ggml_graph_find(gf, node) {
                     snprintf(
                         color.as_mut_ptr(),
-                        ::core::mem::size_of::<[libc::c_char; 16]>() as u64,
-                        b"green\0" as *const u8 as *const libc::c_char,
+                        ::core::mem::size_of::<[i8; 16]>() as u64,
+                        b"green\0" as *const u8 as *const i8,
                     );
                 } else {
                     snprintf(
                         color.as_mut_ptr(),
-                        ::core::mem::size_of::<[libc::c_char; 16]>() as u64,
-                        b"lightblue\0" as *const u8 as *const libc::c_char,
+                        ::core::mem::size_of::<[i8; 16]>() as u64,
+                        b"lightblue\0" as *const u8 as *const i8,
                     );
                 }
             } else {
                 snprintf(
                     color.as_mut_ptr(),
-                    ::core::mem::size_of::<[libc::c_char; 16]>() as u64,
-                    b"white\0" as *const u8 as *const libc::c_char,
+                    ::core::mem::size_of::<[i8; 16]>() as u64,
+                    b"white\0" as *const u8 as *const i8,
                 );
             }
             fprintf(
                 fp,
                 b"  \"%p\" [ style = filled; fillcolor = %s; shape = record; label=\"\0"
-                    as *const u8 as *const libc::c_char,
+                    as *const u8 as *const i8,
                 node as *mut libc::c_void,
                 color.as_mut_ptr(),
             );
-            if strlen(((*node).name).as_mut_ptr()) > 0 as i32 as u64 {
+            if strlen(((*node).name).as_mut_ptr()) > 0_i32 as u64 {
                 fprintf(
                     fp,
-                    b"%s |\0" as *const u8 as *const libc::c_char,
+                    b"%s |\0" as *const u8 as *const i8,
                     ((*node).name).as_mut_ptr(),
                 );
             }
-            if (*node).n_dims == 2 as i32 {
+            if (*node).n_dims == 2_i32 {
                 fprintf(
                     fp,
-                    b"%d [%ld, %ld] | <x>%s\0" as *const u8 as *const libc::c_char,
+                    b"%d [%ld, %ld] | <x>%s\0" as *const u8 as *const i8,
                     i,
-                    (*node).ne[0 as i32 as usize],
-                    (*node).ne[1 as i32 as usize],
+                    (*node).ne[0_i32 as usize],
+                    (*node).ne[1_i32 as usize],
                     GGML_OP_SYMBOL[(*node).op as usize],
                 );
             } else {
                 fprintf(
                     fp,
-                    b"%d [%ld, %ld, %ld] | <x>%s\0" as *const u8 as *const libc::c_char,
+                    b"%d [%ld, %ld, %ld] | <x>%s\0" as *const u8 as *const i8,
                     i,
-                    (*node).ne[0 as i32 as usize],
-                    (*node).ne[1 as i32 as usize],
-                    (*node).ne[2 as i32 as usize],
+                    (*node).ne[0_i32 as usize],
+                    (*node).ne[1_i32 as usize],
+                    (*node).ne[2_i32 as usize],
                     GGML_OP_SYMBOL[(*node).op as usize],
                 );
             }
             if !((*node).grad).is_null() {
                 fprintf(
                     fp,
-                    b" | <g>%s\"; ]\n\0" as *const u8 as *const libc::c_char,
+                    b" | <g>%s\"; ]\n\0" as *const u8 as *const i8,
                     GGML_OP_SYMBOL[(*(*node).grad).op as usize],
                 );
             } else {
-                fprintf(fp, b"\"; ]\n\0" as *const u8 as *const libc::c_char);
+                fprintf(fp, b"\"; ]\n\0" as *const u8 as *const i8);
             }
         }
         i += 1;
         i;
     }
-    let mut i_0: i32 = 0 as i32;
+    let mut i_0: i32 = 0_i32;
     while i_0 < (*gb).n_leafs {
         let mut node_0: *mut ggml_tensor = (*gb).leafs[i_0 as usize];
         snprintf(
             color.as_mut_ptr(),
-            ::core::mem::size_of::<[libc::c_char; 16]>() as u64,
-            b"pink\0" as *const u8 as *const libc::c_char,
+            ::core::mem::size_of::<[i8; 16]>() as u64,
+            b"pink\0" as *const u8 as *const i8,
         );
         fprintf(
             fp,
             b"  \"%p\" [ style = filled; fillcolor = %s; shape = record; label=\"<x>\0" as *const u8
-                as *const libc::c_char,
+                as *const i8,
             node_0 as *mut libc::c_void,
             color.as_mut_ptr(),
         );
-        if strlen(((*node_0).name).as_mut_ptr()) > 0 as i32 as u64 {
+        if strlen(((*node_0).name).as_mut_ptr()) > 0_i32 as u64 {
             fprintf(
                 fp,
-                b"%s | \0" as *const u8 as *const libc::c_char,
+                b"%s | \0" as *const u8 as *const i8,
                 ((*node_0).name).as_mut_ptr(),
             );
         }
-        if ggml_nelements(node_0) == 1 as i32 as i64 {
+        if ggml_nelements(node_0) == 1_i32 as i64 {
             if (*node_0).type_0 as u32 == GGML_TYPE_I8 as i32 as u32
                 || (*node_0).type_0 as u32 == GGML_TYPE_I16 as i32 as u32
                 || (*node_0).type_0 as u32 == GGML_TYPE_I32 as i32 as u32
             {
                 fprintf(
                     fp,
-                    b"%d\0" as *const u8 as *const libc::c_char,
-                    ggml_get_i32_1d(node_0, 0 as i32),
+                    b"%d\0" as *const u8 as *const i8,
+                    ggml_get_i32_1d(node_0, 0_i32),
                 );
             } else {
                 fprintf(
                     fp,
-                    b"%.1e\0" as *const u8 as *const libc::c_char,
-                    ggml_get_f32_1d(node_0, 0 as i32) as f64,
+                    b"%.1e\0" as *const u8 as *const i8,
+                    ggml_get_f32_1d(node_0, 0_i32) as f64,
                 );
             }
         } else {
             fprintf(
                 fp,
-                b"CONST %d [%ld, %ld]\0" as *const u8 as *const libc::c_char,
+                b"CONST %d [%ld, %ld]\0" as *const u8 as *const i8,
                 i_0,
-                (*node_0).ne[0 as i32 as usize],
-                (*node_0).ne[1 as i32 as usize],
+                (*node_0).ne[0_i32 as usize],
+                (*node_0).ne[1_i32 as usize],
             );
         }
-        fprintf(fp, b"\"; ]\n\0" as *const u8 as *const libc::c_char);
+        fprintf(fp, b"\"; ]\n\0" as *const u8 as *const i8);
         i_0 += 1;
         i_0;
     }
-    let mut i_1: i32 = 0 as i32;
+    let mut i_1: i32 = 0_i32;
     while i_1 < (*gb).n_nodes {
         let mut node_1: *mut ggml_tensor = (*gb).nodes[i_1 as usize];
         let mut parent: *mut ggml_tensor = ggml_graph_get_parent(gb, node_1);
@@ -31860,16 +31786,16 @@ pub unsafe extern "C" fn ggml_graph_dump_dot(
             fprintf(
                 fp,
                 b"  \"%p\":%s -> \"%p\":%s [ arrowhead = %s; style = %s; label = \"x\"; ]\n\0"
-                    as *const u8 as *const libc::c_char,
+                    as *const u8 as *const i8,
                 if !parent0.is_null() {
                     parent0 as *mut libc::c_void
                 } else {
                     (*node_1).src0 as *mut libc::c_void
                 },
                 if !parent0.is_null() {
-                    b"g\0" as *const u8 as *const libc::c_char
+                    b"g\0" as *const u8 as *const i8
                 } else {
-                    b"x\0" as *const u8 as *const libc::c_char
+                    b"x\0" as *const u8 as *const i8
                 },
                 if !parent.is_null() {
                     parent as *mut libc::c_void
@@ -31877,19 +31803,19 @@ pub unsafe extern "C" fn ggml_graph_dump_dot(
                     node_1 as *mut libc::c_void
                 },
                 if !parent.is_null() {
-                    b"g\0" as *const u8 as *const libc::c_char
+                    b"g\0" as *const u8 as *const i8
                 } else {
-                    b"x\0" as *const u8 as *const libc::c_char
+                    b"x\0" as *const u8 as *const i8
                 },
                 if !parent.is_null() {
-                    b"empty\0" as *const u8 as *const libc::c_char
+                    b"empty\0" as *const u8 as *const i8
                 } else {
-                    b"vee\0" as *const u8 as *const libc::c_char
+                    b"vee\0" as *const u8 as *const i8
                 },
                 if !parent.is_null() {
-                    b"dashed\0" as *const u8 as *const libc::c_char
+                    b"dashed\0" as *const u8 as *const i8
                 } else {
-                    b"solid\0" as *const u8 as *const libc::c_char
+                    b"solid\0" as *const u8 as *const i8
                 },
             );
         }
@@ -31898,16 +31824,16 @@ pub unsafe extern "C" fn ggml_graph_dump_dot(
             fprintf(
                 fp,
                 b"  \"%p\":%s -> \"%p\":%s [ arrowhead = %s; style = %s; label = \"y\"; ]\n\0"
-                    as *const u8 as *const libc::c_char,
+                    as *const u8 as *const i8,
                 if !parent1.is_null() {
                     parent1 as *mut libc::c_void
                 } else {
                     (*node_1).src1 as *mut libc::c_void
                 },
                 if !parent1.is_null() {
-                    b"g\0" as *const u8 as *const libc::c_char
+                    b"g\0" as *const u8 as *const i8
                 } else {
-                    b"x\0" as *const u8 as *const libc::c_char
+                    b"x\0" as *const u8 as *const i8
                 },
                 if !parent.is_null() {
                     parent as *mut libc::c_void
@@ -31915,59 +31841,56 @@ pub unsafe extern "C" fn ggml_graph_dump_dot(
                     node_1 as *mut libc::c_void
                 },
                 if !parent.is_null() {
-                    b"g\0" as *const u8 as *const libc::c_char
+                    b"g\0" as *const u8 as *const i8
                 } else {
-                    b"x\0" as *const u8 as *const libc::c_char
+                    b"x\0" as *const u8 as *const i8
                 },
                 if !parent.is_null() {
-                    b"empty\0" as *const u8 as *const libc::c_char
+                    b"empty\0" as *const u8 as *const i8
                 } else {
-                    b"vee\0" as *const u8 as *const libc::c_char
+                    b"vee\0" as *const u8 as *const i8
                 },
                 if !parent.is_null() {
-                    b"dashed\0" as *const u8 as *const libc::c_char
+                    b"dashed\0" as *const u8 as *const i8
                 } else {
-                    b"solid\0" as *const u8 as *const libc::c_char
+                    b"solid\0" as *const u8 as *const i8
                 },
             );
         }
         i_1 += 1;
         i_1;
     }
-    let mut i_2: i32 = 0 as i32;
+    let mut i_2: i32 = 0_i32;
     while i_2 < (*gb).n_leafs {
         let mut node_2: *mut ggml_tensor = (*gb).leafs[i_2 as usize];
         if !((*node_2).src0).is_null() {
             fprintf(
                 fp,
-                b"  \"%p\":%s -> \"%p\":%s [ label = \"x\"; ]\n\0" as *const u8
-                    as *const libc::c_char,
+                b"  \"%p\":%s -> \"%p\":%s [ label = \"x\"; ]\n\0" as *const u8 as *const i8,
                 (*node_2).src0 as *mut libc::c_void,
-                b"x\0" as *const u8 as *const libc::c_char,
+                b"x\0" as *const u8 as *const i8,
                 node_2 as *mut libc::c_void,
-                b"x\0" as *const u8 as *const libc::c_char,
+                b"x\0" as *const u8 as *const i8,
             );
         }
         if !((*node_2).src1).is_null() {
             fprintf(
                 fp,
-                b"  \"%p\":%s -> \"%p\":%s [ label = \"y\"; ]\n\0" as *const u8
-                    as *const libc::c_char,
+                b"  \"%p\":%s -> \"%p\":%s [ label = \"y\"; ]\n\0" as *const u8 as *const i8,
                 (*node_2).src1 as *mut libc::c_void,
-                b"x\0" as *const u8 as *const libc::c_char,
+                b"x\0" as *const u8 as *const i8,
                 node_2 as *mut libc::c_void,
-                b"x\0" as *const u8 as *const libc::c_char,
+                b"x\0" as *const u8 as *const i8,
             );
         }
         i_2 += 1;
         i_2;
     }
-    fprintf(fp, b"}\n\0" as *const u8 as *const libc::c_char);
+    fprintf(fp, b"}\n\0" as *const u8 as *const i8);
     fclose(fp);
     printf(
-        b"%s: dot -Tpng %s -o %s.png && open %s.png\n\0" as *const u8 as *const libc::c_char,
-        (*::core::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(b"ggml_graph_dump_dot\0"))
-            .as_ptr(),
+        b"%s: dot -Tpng %s -o %s.png && open %s.png\n\0" as *const u8 as *const i8,
+        (*::core::mem::transmute::<&[u8; 20], &[i8; 20]>(b"ggml_graph_dump_dot\0")).as_ptr(),
         filename,
         filename,
         filename,
@@ -31978,11 +31901,11 @@ unsafe extern "C" fn ggml_opt_set_params(
     mut ps: *const *mut ggml_tensor,
     mut x: *const f32,
 ) {
-    let mut i: i32 = 0 as i32;
-    let mut p: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
+    let mut p: i32 = 0_i32;
     while p < np {
         let ne: int64_t = ggml_nelements(*ps.offset(p as isize));
-        let mut j: int64_t = 0 as i32 as int64_t;
+        let mut j: int64_t = 0_i32 as int64_t;
         while j < ne {
             let fresh12 = i;
             i += 1;
@@ -32003,11 +31926,11 @@ unsafe extern "C" fn ggml_opt_get_params(
     mut ps: *const *mut ggml_tensor,
     mut x: *mut f32,
 ) {
-    let mut i: i32 = 0 as i32;
-    let mut p: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
+    let mut p: i32 = 0_i32;
     while p < np {
         let ne: int64_t = ggml_nelements(*ps.offset(p as isize));
-        let mut j: int64_t = 0 as i32 as int64_t;
+        let mut j: int64_t = 0_i32 as int64_t;
         while j < ne {
             let fresh13 = i;
             i += 1;
@@ -32024,11 +31947,11 @@ unsafe extern "C" fn ggml_opt_get_grad(
     mut ps: *const *mut ggml_tensor,
     mut g: *mut f32,
 ) {
-    let mut i: i32 = 0 as i32;
-    let mut p: i32 = 0 as i32;
+    let mut i: i32 = 0_i32;
+    let mut p: i32 = 0_i32;
     while p < np {
         let ne: int64_t = ggml_nelements(*ps.offset(p as isize));
-        let mut j: int64_t = 0 as i32 as int64_t;
+        let mut j: int64_t = 0_i32 as int64_t;
         while j < ne {
             let fresh14 = i;
             i += 1;
@@ -32050,28 +31973,28 @@ unsafe extern "C" fn ggml_opt_adam(
     if !ggml_is_scalar(f) {
         fprintf(
             stderr,
-            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-            b"ggml.c\0" as *const u8 as *const libc::c_char,
-            14720 as i32,
-            b"ggml_is_scalar(f)\0" as *const u8 as *const libc::c_char,
+            b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+            b"ggml.c\0" as *const u8 as *const i8,
+            14720_i32,
+            b"ggml_is_scalar(f)\0" as *const u8 as *const i8,
         );
         abort();
     }
     (*gf).n_threads = params.n_threads;
     (*gb).n_threads = params.n_threads;
     let mut ps: [*mut ggml_tensor; 256] = [std::ptr::null_mut::<ggml_tensor>(); 256];
-    let mut np: i32 = 0 as i32;
-    let mut nx: i32 = 0 as i32;
-    let mut i: i32 = 0 as i32;
+    let mut np: i32 = 0_i32;
+    let mut nx: i32 = 0_i32;
+    let mut i: i32 = 0_i32;
     while i < (*gf).n_nodes {
         if (*(*gf).nodes[i as usize]).is_param {
-            if np >= 256 as i32 {
+            if np >= 256_i32 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    14734 as i32,
-                    b"np < GGML_MAX_PARAMS\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    14734_i32,
+                    b"np < GGML_MAX_PARAMS\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -32098,7 +32021,7 @@ unsafe extern "C" fn ggml_opt_adam(
         (*ggml_new_tensor_1d(ctx, GGML_TYPE_F32, nx as int64_t)).data as *mut f32;
     let mut vh: *mut f32 =
         (*ggml_new_tensor_1d(ctx, GGML_TYPE_F32, nx as int64_t)).data as *mut f32;
-    let mut pf: *mut f32 = (if params.past > 0 as i32 {
+    let mut pf: *mut f32 = (if params.past > 0_i32 {
         (*ggml_new_tensor_1d(ctx, GGML_TYPE_F32, params.past as int64_t)).data
     } else {
         std::ptr::null_mut::<libc::c_void>()
@@ -32109,15 +32032,15 @@ unsafe extern "C" fn ggml_opt_adam(
     ggml_graph_reset(gf);
     ggml_set_f32((*f).grad, 1.0f32);
     ggml_graph_compute(ctx, gb);
-    let mut fx_prev: f32 = ggml_get_f32_1d(f, 0 as i32);
+    let mut fx_prev: f32 = ggml_get_f32_1d(f, 0_i32);
     if !pf.is_null() {
-        *pf.offset(0 as i32 as isize) = fx_prev;
+        *pf.offset(0_i32 as isize) = fx_prev;
     }
-    let mut n_no_improvement: i32 = 0 as i32;
+    let mut n_no_improvement: i32 = 0_i32;
     let mut fx_best: f32 = fx_prev;
-    let mut t: i32 = 0 as i32;
+    let mut t: i32 = 0_i32;
     while t < params.adam.n_iter {
-        let mut i_0: i32 = 0 as i32;
+        let mut i_0: i32 = 0_i32;
         while i_0 < np {
             i_0 += 1;
             i_0;
@@ -32135,12 +32058,12 @@ unsafe extern "C" fn ggml_opt_adam(
         ggml_vec_scale_f32(
             nx,
             mh,
-            alpha / (1.0f32 - powf(beta1, (t + 1 as i32) as f32)),
+            alpha / (1.0f32 - powf(beta1, (t + 1_i32) as f32)),
         );
         ggml_vec_scale_f32(
             nx,
             vh,
-            1.0f32 / (1.0f32 - powf(beta2, (t + 1 as i32) as f32)),
+            1.0f32 / (1.0f32 - powf(beta2, (t + 1_i32) as f32)),
         );
         ggml_vec_sqrt_f32(nx, vh, vh);
         ggml_vec_acc1_f32(nx, vh, eps);
@@ -32150,7 +32073,7 @@ unsafe extern "C" fn ggml_opt_adam(
         ggml_graph_reset(gf);
         ggml_set_f32((*f).grad, 1.0f32);
         ggml_graph_compute(ctx, gb);
-        let fx: f32 = ggml_get_f32_1d(f, 0 as i32);
+        let fx: f32 = ggml_get_f32_1d(f, 0_i32);
         if fabsf(fx - fx_prev) / fx < params.adam.eps_f {
             return GGML_OPT_OK;
         }
@@ -32163,10 +32086,10 @@ unsafe extern "C" fn ggml_opt_adam(
             }
             *pf.offset((t % params.past) as isize) = fx;
         }
-        if params.max_no_improvement > 0 as i32 {
+        if params.max_no_improvement > 0_i32 {
             if fx_best > fx {
                 fx_best = fx;
-                n_no_improvement = 0 as i32;
+                n_no_improvement = 0_i32;
             } else {
                 n_no_improvement += 1;
                 n_no_improvement;
@@ -32199,7 +32122,7 @@ unsafe extern "C" fn linesearch_backtracking(
     np: i32,
     mut ps: *mut *mut ggml_tensor,
 ) -> ggml_opt_result {
-    let mut count: i32 = 0 as i32;
+    let mut count: i32 = 0_i32;
     let mut width: f32 = 0.0f32;
     let mut dg: f32 = 0.0f32;
     let mut finit: f32 = 0.0f32;
@@ -32211,7 +32134,7 @@ unsafe extern "C" fn linesearch_backtracking(
         return GGML_LINESEARCH_INVALID_PARAMETERS;
     }
     ggml_vec_dot_f32(nx, &mut dginit, g, d);
-    if (0 as i32 as f32) < dginit {
+    if (0_i32 as f32) < dginit {
         return GGML_LINESEARCH_FAIL;
     }
     finit = *fx;
@@ -32224,7 +32147,7 @@ unsafe extern "C" fn linesearch_backtracking(
         ggml_set_f32((*f).grad, 1.0f32);
         ggml_graph_compute(ctx, gb);
         ggml_opt_get_grad(np, ps as *const *mut ggml_tensor, g);
-        *fx = ggml_get_f32_1d(f, 0 as i32);
+        *fx = ggml_get_f32_1d(f, 0_i32);
         count += 1;
         count;
         if *fx > finit + *step * dgtest {
@@ -32282,18 +32205,18 @@ unsafe extern "C" fn ggml_opt_lbfgs(
     (*gb).n_threads = params.n_threads;
     let m: i32 = params.lbfgs.m;
     let mut ps: [*mut ggml_tensor; 256] = [std::ptr::null_mut::<ggml_tensor>(); 256];
-    let mut np: i32 = 0 as i32;
-    let mut nx: i32 = 0 as i32;
-    let mut i: i32 = 0 as i32;
+    let mut np: i32 = 0_i32;
+    let mut nx: i32 = 0_i32;
+    let mut i: i32 = 0_i32;
     while i < (*gf).n_nodes {
         if (*(*gf).nodes[i as usize]).is_param {
-            if np >= 256 as i32 {
+            if np >= 256_i32 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    15034 as i32,
-                    b"np < GGML_MAX_PARAMS\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    15034_i32,
+                    b"np < GGML_MAX_PARAMS\0" as *const u8 as *const i8,
                 );
                 abort();
             }
@@ -32312,7 +32235,7 @@ unsafe extern "C" fn ggml_opt_lbfgs(
     let mut gp: *mut f32 =
         (*ggml_new_tensor_1d(ctx, GGML_TYPE_F32, nx as int64_t)).data as *mut f32;
     let mut d: *mut f32 = (*ggml_new_tensor_1d(ctx, GGML_TYPE_F32, nx as int64_t)).data as *mut f32;
-    let mut pf: *mut f32 = (if params.past > 0 as i32 {
+    let mut pf: *mut f32 = (if params.past > 0_i32 {
         (*ggml_new_tensor_1d(ctx, GGML_TYPE_F32, params.past as int64_t)).data
     } else {
         std::ptr::null_mut::<libc::c_void>()
@@ -32329,7 +32252,7 @@ unsafe extern "C" fn ggml_opt_lbfgs(
     );
     let mut lm: *mut ggml_lbfgs_iteration_data =
         fresh17.as_mut_ptr() as *mut ggml_lbfgs_iteration_data;
-    let mut i_0: i32 = 0 as i32;
+    let mut i_0: i32 = 0_i32;
     while i_0 < m {
         (*lm.offset(i_0 as isize)).alpha = 0.0f32;
         (*lm.offset(i_0 as isize)).ys = 0.0f32;
@@ -32345,9 +32268,9 @@ unsafe extern "C" fn ggml_opt_lbfgs(
     ggml_set_f32((*f).grad, 1.0f32);
     ggml_graph_compute(ctx, gb);
     ggml_opt_get_grad(np, ps.as_mut_ptr() as *const *mut ggml_tensor, g);
-    fx = ggml_get_f32_1d(f, 0 as i32);
+    fx = ggml_get_f32_1d(f, 0_i32);
     if !pf.is_null() {
-        *pf.offset(0 as i32 as isize) = fx;
+        *pf.offset(0_i32 as isize) = fx;
     }
     let mut fx_best: f32 = fx;
     ggml_vec_neg_f32(nx, d, g);
@@ -32360,12 +32283,12 @@ unsafe extern "C" fn ggml_opt_lbfgs(
         return GGML_OPT_OK;
     }
     ggml_vec_norm_inv_f32(nx, &mut step, d);
-    let mut j: i32 = 0 as i32;
-    let mut k: i32 = 1 as i32;
-    let mut ls: i32 = 0 as i32;
-    let mut end: i32 = 0 as i32;
-    let mut bound: i32 = 0 as i32;
-    let mut n_no_improvement: i32 = 0 as i32;
+    let mut j: i32 = 0_i32;
+    let mut k: i32 = 1_i32;
+    let mut ls: i32 = 0_i32;
+    let mut end: i32 = 0_i32;
+    let mut bound: i32 = 0_i32;
+    let mut n_no_improvement: i32 = 0_i32;
     let mut ys: f32 = 0.0f32;
     let mut yy: f32 = 0.0f32;
     let mut beta: f32 = 0.0f32;
@@ -32388,7 +32311,7 @@ unsafe extern "C" fn ggml_opt_lbfgs(
             np,
             ps.as_mut_ptr(),
         ) as i32;
-        if ls < 0 as i32 {
+        if ls < 0_i32 {
             ggml_vec_cpy_f32(nx, x, xp);
             ggml_vec_cpy_f32(nx, g, gp);
             return ls as ggml_opt_result;
@@ -32410,10 +32333,10 @@ unsafe extern "C" fn ggml_opt_lbfgs(
             }
             *pf.offset((k % params.past) as isize) = fx;
         }
-        if params.max_no_improvement > 0 as i32 {
+        if params.max_no_improvement > 0_i32 {
             if fx < fx_best {
                 fx_best = fx;
-                n_no_improvement = 0 as i32;
+                n_no_improvement = 0_i32;
             } else {
                 n_no_improvement += 1;
                 n_no_improvement;
@@ -32422,7 +32345,7 @@ unsafe extern "C" fn ggml_opt_lbfgs(
                 }
             }
         }
-        if params.lbfgs.n_iter != 0 as i32 && params.lbfgs.n_iter < k + 1 as i32 {
+        if params.lbfgs.n_iter != 0_i32 && params.lbfgs.n_iter < k + 1_i32 {
             return GGML_OPT_DID_NOT_CONVERGE;
         }
         ggml_vec_sub_f32(nx, (*lm.offset(end as isize)).s, x, xp);
@@ -32443,12 +32366,12 @@ unsafe extern "C" fn ggml_opt_lbfgs(
         bound = if m <= k { m } else { k };
         k += 1;
         k;
-        end = (end + 1 as i32) % m;
+        end = (end + 1_i32) % m;
         ggml_vec_neg_f32(nx, d, g);
         j = end;
-        let mut i_1: i32 = 0 as i32;
+        let mut i_1: i32 = 0_i32;
         while i_1 < bound {
-            j = (j + m - 1 as i32) % m;
+            j = (j + m - 1_i32) % m;
             ggml_vec_dot_f32(
                 nx,
                 &mut (*lm.offset(j as isize)).alpha,
@@ -32466,7 +32389,7 @@ unsafe extern "C" fn ggml_opt_lbfgs(
             i_1;
         }
         ggml_vec_scale_f32(nx, d, ys / yy);
-        let mut i_2: i32 = 0 as i32;
+        let mut i_2: i32 = 0_i32;
         while i_2 < bound {
             ggml_vec_dot_f32(nx, &mut beta, (*lm.offset(j as isize)).y, d);
             beta /= (*lm.offset(j as isize)).ys;
@@ -32476,7 +32399,7 @@ unsafe extern "C" fn ggml_opt_lbfgs(
                 (*lm.offset(j as isize)).s,
                 (*lm.offset(j as isize)).alpha - beta,
             );
-            j = (j + 1 as i32) % m;
+            j = (j + 1_i32) % m;
             i_2 += 1;
             i_2;
         }
@@ -32519,15 +32442,15 @@ pub unsafe extern "C" fn ggml_opt_default_params(mut type_0: ggml_opt_type) -> g
             result = {
                 ggml_opt_params {
                     type_0: GGML_OPT_ADAM,
-                    n_threads: 1 as i32,
-                    past: 0 as i32,
+                    n_threads: 1_i32,
+                    past: 0_i32,
                     delta: 1e-5f32,
-                    max_no_improvement: 100 as i32,
-                    print_forward_graph: 1 as i32 != 0,
-                    print_backward_graph: 1 as i32 != 0,
+                    max_no_improvement: 100_i32,
+                    print_forward_graph: 1_i32 != 0,
+                    print_backward_graph: 1_i32 != 0,
                     adam: {
                         C2RustUnnamed_0 {
-                            n_iter: 10000 as i32,
+                            n_iter: 10000_i32,
                             alpha: 0.001f32,
                             beta1: 0.9f32,
                             beta2: 0.999f32,
@@ -32554,12 +32477,12 @@ pub unsafe extern "C" fn ggml_opt_default_params(mut type_0: ggml_opt_type) -> g
             result = {
                 ggml_opt_params {
                     type_0: GGML_OPT_LBFGS,
-                    n_threads: 1 as i32,
-                    past: 0 as i32,
+                    n_threads: 1_i32,
+                    past: 0_i32,
                     delta: 1e-5f32,
-                    max_no_improvement: 0 as i32,
-                    print_forward_graph: 1 as i32 != 0,
-                    print_backward_graph: 1 as i32 != 0,
+                    max_no_improvement: 0_i32,
+                    print_forward_graph: 1_i32 != 0,
+                    print_backward_graph: 1_i32 != 0,
                     adam: C2RustUnnamed_0 {
                         n_iter: 0,
                         alpha: 0.,
@@ -32571,9 +32494,9 @@ pub unsafe extern "C" fn ggml_opt_default_params(mut type_0: ggml_opt_type) -> g
                     },
                     lbfgs: {
                         C2RustUnnamed {
-                            m: 6 as i32,
-                            n_iter: 100 as i32,
-                            max_linesearch: 20 as i32,
+                            m: 6_i32,
+                            n_iter: 100_i32,
+                            max_linesearch: 20_i32,
                             eps: 1e-5f32,
                             ftol: 1e-4f32,
                             wolfe: 0.9f32,
@@ -32595,24 +32518,24 @@ pub unsafe extern "C" fn ggml_opt(
     mut params: ggml_opt_params,
     mut f: *mut ggml_tensor,
 ) -> ggml_opt_result {
-    let mut free_ctx: bool = 0 as i32 != 0;
+    let mut free_ctx: bool = 0_i32 != 0;
     if ctx.is_null() {
         let mut params_ctx: ggml_init_params = {
             ggml_init_params {
-                mem_size: (16 as i32 * 1024 as i32 * 1024 as i32) as size_t,
+                mem_size: (16_i32 * 1024_i32 * 1024_i32) as size_t,
                 mem_buffer: std::ptr::null_mut::<libc::c_void>(),
-                no_alloc: 0 as i32 != 0,
+                no_alloc: 0_i32 != 0,
             }
         };
         ctx = ggml_init(params_ctx);
         if ctx.is_null() {
             return GGML_OPT_NO_CONTEXT;
         }
-        free_ctx = 1 as i32 != 0;
+        free_ctx = 1_i32 != 0;
     }
     let mut result: ggml_opt_result = GGML_OPT_OK;
     let mut gf: ggml_cgraph = ggml_build_forward(f);
-    let mut gb: ggml_cgraph = ggml_build_backward(ctx, &mut gf, 1 as i32 != 0);
+    let mut gb: ggml_cgraph = ggml_build_backward(ctx, &mut gf, 1_i32 != 0);
     match params.type_0 as u32 {
         0 => {
             result = ggml_opt_adam(ctx, params, f, &mut gf, &mut gb);
@@ -32627,7 +32550,7 @@ pub unsafe extern "C" fn ggml_opt(
         ggml_graph_dump_dot(
             &mut gf,
             std::ptr::null::<ggml_cgraph>(),
-            b"opt-forward.dot\0" as *const u8 as *const libc::c_char,
+            b"opt-forward.dot\0" as *const u8 as *const i8,
         );
     }
     if params.print_backward_graph {
@@ -32635,7 +32558,7 @@ pub unsafe extern "C" fn ggml_opt(
         ggml_graph_dump_dot(
             &mut gb,
             &mut gf,
-            b"opt-backward.dot\0" as *const u8 as *const libc::c_char,
+            b"opt-backward.dot\0" as *const u8 as *const i8,
         );
     }
     if free_ctx {
@@ -32651,33 +32574,33 @@ pub unsafe extern "C" fn ggml_quantize_q4_0(
     mut k: i32,
     mut hist: *mut int64_t,
 ) -> size_t {
-    let nb: i32 = k / 32 as i32;
-    let mut b: i32 = 0 as i32;
+    let nb: i32 = k / 32_i32;
+    let mut b: i32 = 0_i32;
     while b < n {
-        let mut y: *mut block_q4_0 = (dst as *mut block_q4_0).offset((b / 32 as i32) as isize);
+        let mut y: *mut block_q4_0 = (dst as *mut block_q4_0).offset((b / 32_i32) as isize);
         quantize_row_q4_0_reference(src.offset(b as isize), y, k);
-        let mut i: i32 = 0 as i32;
+        let mut i: i32 = 0_i32;
         while i < nb {
-            let mut j: i32 = 0 as i32;
-            while j < 32 as i32 {
-                let vi0: uint8_t = ((*y.offset(i as isize)).qs[(j / 2 as i32) as usize] as i32
-                    & 0xf as i32) as uint8_t;
-                let vi1: uint8_t = ((*y.offset(i as isize)).qs[(j / 2 as i32) as usize] as i32
-                    >> 4 as i32) as uint8_t;
+            let mut j: i32 = 0_i32;
+            while j < 32_i32 {
+                let vi0: uint8_t = ((*y.offset(i as isize)).qs[(j / 2_i32) as usize] as i32
+                    & 0xf_i32) as uint8_t;
+                let vi1: uint8_t = ((*y.offset(i as isize)).qs[(j / 2_i32) as usize] as i32
+                    >> 4_i32) as uint8_t;
                 let fresh20 = &mut (*hist.offset(vi0 as isize));
                 *fresh20 += 1;
                 let _ = *fresh20;
                 let fresh21 = &mut (*hist.offset(vi1 as isize));
                 *fresh21 += 1;
                 let _ = *fresh21;
-                j += 2 as i32;
+                j += 2_i32;
             }
             i += 1;
             i;
         }
         b += k;
     }
-    ((n / 32 as i32) as u64).wrapping_mul(::core::mem::size_of::<block_q4_0>() as u64)
+    ((n / 32_i32) as u64).wrapping_mul(::core::mem::size_of::<block_q4_0>() as u64)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_quantize_q4_1(
@@ -32687,33 +32610,33 @@ pub unsafe extern "C" fn ggml_quantize_q4_1(
     mut k: i32,
     mut hist: *mut int64_t,
 ) -> size_t {
-    let nb: i32 = k / 32 as i32;
-    let mut b: i32 = 0 as i32;
+    let nb: i32 = k / 32_i32;
+    let mut b: i32 = 0_i32;
     while b < n {
-        let mut y: *mut block_q4_1 = (dst as *mut block_q4_1).offset((b / 32 as i32) as isize);
+        let mut y: *mut block_q4_1 = (dst as *mut block_q4_1).offset((b / 32_i32) as isize);
         quantize_row_q4_1_reference(src.offset(b as isize), y, k);
-        let mut i: i32 = 0 as i32;
+        let mut i: i32 = 0_i32;
         while i < nb {
-            let mut j: i32 = 0 as i32;
-            while j < 32 as i32 {
-                let vi0: uint8_t = ((*y.offset(i as isize)).qs[(j / 2 as i32) as usize] as i32
-                    & 0xf as i32) as uint8_t;
-                let vi1: uint8_t = ((*y.offset(i as isize)).qs[(j / 2 as i32) as usize] as i32
-                    >> 4 as i32) as uint8_t;
+            let mut j: i32 = 0_i32;
+            while j < 32_i32 {
+                let vi0: uint8_t = ((*y.offset(i as isize)).qs[(j / 2_i32) as usize] as i32
+                    & 0xf_i32) as uint8_t;
+                let vi1: uint8_t = ((*y.offset(i as isize)).qs[(j / 2_i32) as usize] as i32
+                    >> 4_i32) as uint8_t;
                 let fresh22 = &mut (*hist.offset(vi0 as isize));
                 *fresh22 += 1;
                 let _ = *fresh22;
                 let fresh23 = &mut (*hist.offset(vi1 as isize));
                 *fresh23 += 1;
                 let _ = *fresh23;
-                j += 2 as i32;
+                j += 2_i32;
             }
             i += 1;
             i;
         }
         b += k;
     }
-    ((n / 32 as i32) as u64).wrapping_mul(::core::mem::size_of::<block_q4_1>() as u64)
+    ((n / 32_i32) as u64).wrapping_mul(::core::mem::size_of::<block_q4_1>() as u64)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_quantize_q5_0(
@@ -32723,12 +32646,12 @@ pub unsafe extern "C" fn ggml_quantize_q5_0(
     mut k: i32,
     mut hist: *mut int64_t,
 ) -> size_t {
-    let nb: i32 = k / 32 as i32;
-    let mut b: i32 = 0 as i32;
+    let nb: i32 = k / 32_i32;
+    let mut b: i32 = 0_i32;
     while b < n {
-        let mut y: *mut block_q5_0 = (dst as *mut block_q5_0).offset((b / 32 as i32) as isize);
+        let mut y: *mut block_q5_0 = (dst as *mut block_q5_0).offset((b / 32_i32) as isize);
         quantize_row_q5_0_reference(src.offset(b as isize), y, k);
-        let mut i: i32 = 0 as i32;
+        let mut i: i32 = 0_i32;
         while i < nb {
             let mut qh: uint32_t = 0;
             memcpy(
@@ -32736,34 +32659,34 @@ pub unsafe extern "C" fn ggml_quantize_q5_0(
                 &mut (*y.offset(i as isize)).qh as *mut [uint8_t; 4] as *const libc::c_void,
                 ::core::mem::size_of::<uint32_t>() as u64,
             );
-            let mut j: i32 = 0 as i32;
-            while j < 32 as i32 {
-                let vh0: uint8_t = (((qh & (1 as u32) << (j + 0 as i32)) >> (j + 0 as i32))
-                    << 4 as i32) as uint8_t;
+            let mut j: i32 = 0_i32;
+            while j < 32_i32 {
+                let vh0: uint8_t = (((qh & 1_u32 << (j + 0_i32)) >> (j + 0_i32))
+                    << 4_i32) as uint8_t;
                 let vh1: uint8_t =
-                    ((qh & (1 as u32) << (j + 16 as i32)) >> (j + 12 as i32)) as uint8_t;
-                let vi0: uint8_t = (((*y.offset(i as isize)).qs[(j / 2 as i32) as usize] as i32
-                    & 0xf as i32
+                    ((qh & 1_u32 << (j + 16_i32)) >> (j + 12_i32)) as uint8_t;
+                let vi0: uint8_t = (((*y.offset(i as isize)).qs[(j / 2_i32) as usize] as i32
+                    & 0xf_i32
                     | vh0 as i32)
-                    / 2 as i32) as uint8_t;
-                let vi1: uint8_t = (((*y.offset(i as isize)).qs[(j / 2 as i32) as usize] as i32
-                    >> 4 as i32
+                    / 2_i32) as uint8_t;
+                let vi1: uint8_t = (((*y.offset(i as isize)).qs[(j / 2_i32) as usize] as i32
+                    >> 4_i32
                     | vh1 as i32)
-                    / 2 as i32) as uint8_t;
+                    / 2_i32) as uint8_t;
                 let fresh24 = &mut (*hist.offset(vi0 as isize));
                 *fresh24 += 1;
                 let _ = *fresh24;
                 let fresh25 = &mut (*hist.offset(vi1 as isize));
                 *fresh25 += 1;
                 let _ = *fresh25;
-                j += 2 as i32;
+                j += 2_i32;
             }
             i += 1;
             i;
         }
         b += k;
     }
-    ((n / 32 as i32) as u64).wrapping_mul(::core::mem::size_of::<block_q5_0>() as u64)
+    ((n / 32_i32) as u64).wrapping_mul(::core::mem::size_of::<block_q5_0>() as u64)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_quantize_q5_1(
@@ -32773,12 +32696,12 @@ pub unsafe extern "C" fn ggml_quantize_q5_1(
     mut k: i32,
     mut hist: *mut int64_t,
 ) -> size_t {
-    let nb: i32 = k / 32 as i32;
-    let mut b: i32 = 0 as i32;
+    let nb: i32 = k / 32_i32;
+    let mut b: i32 = 0_i32;
     while b < n {
-        let mut y: *mut block_q5_1 = (dst as *mut block_q5_1).offset((b / 32 as i32) as isize);
+        let mut y: *mut block_q5_1 = (dst as *mut block_q5_1).offset((b / 32_i32) as isize);
         quantize_row_q5_1_reference(src.offset(b as isize), y, k);
-        let mut i: i32 = 0 as i32;
+        let mut i: i32 = 0_i32;
         while i < nb {
             let mut qh: uint32_t = 0;
             memcpy(
@@ -32786,34 +32709,34 @@ pub unsafe extern "C" fn ggml_quantize_q5_1(
                 &mut (*y.offset(i as isize)).qh as *mut [uint8_t; 4] as *const libc::c_void,
                 ::core::mem::size_of::<uint32_t>() as u64,
             );
-            let mut j: i32 = 0 as i32;
-            while j < 32 as i32 {
-                let vh0: uint8_t = (((qh & (1 as u32) << (j + 0 as i32)) >> (j + 0 as i32))
-                    << 4 as i32) as uint8_t;
+            let mut j: i32 = 0_i32;
+            while j < 32_i32 {
+                let vh0: uint8_t = (((qh & 1_u32 << (j + 0_i32)) >> (j + 0_i32))
+                    << 4_i32) as uint8_t;
                 let vh1: uint8_t =
-                    ((qh & (1 as u32) << (j + 16 as i32)) >> (j + 12 as i32)) as uint8_t;
-                let vi0: uint8_t = (((*y.offset(i as isize)).qs[(j / 2 as i32) as usize] as i32
-                    & 0xf as i32
+                    ((qh & 1_u32 << (j + 16_i32)) >> (j + 12_i32)) as uint8_t;
+                let vi0: uint8_t = (((*y.offset(i as isize)).qs[(j / 2_i32) as usize] as i32
+                    & 0xf_i32
                     | vh0 as i32)
-                    / 2 as i32) as uint8_t;
-                let vi1: uint8_t = (((*y.offset(i as isize)).qs[(j / 2 as i32) as usize] as i32
-                    >> 4 as i32
+                    / 2_i32) as uint8_t;
+                let vi1: uint8_t = (((*y.offset(i as isize)).qs[(j / 2_i32) as usize] as i32
+                    >> 4_i32
                     | vh1 as i32)
-                    / 2 as i32) as uint8_t;
+                    / 2_i32) as uint8_t;
                 let fresh26 = &mut (*hist.offset(vi0 as isize));
                 *fresh26 += 1;
                 let _ = *fresh26;
                 let fresh27 = &mut (*hist.offset(vi1 as isize));
                 *fresh27 += 1;
                 let _ = *fresh27;
-                j += 2 as i32;
+                j += 2_i32;
             }
             i += 1;
             i;
         }
         b += k;
     }
-    ((n / 32 as i32) as u64).wrapping_mul(::core::mem::size_of::<block_q5_1>() as u64)
+    ((n / 32_i32) as u64).wrapping_mul(::core::mem::size_of::<block_q5_1>() as u64)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_quantize_q8_0(
@@ -32823,17 +32746,17 @@ pub unsafe extern "C" fn ggml_quantize_q8_0(
     mut k: i32,
     mut hist: *mut int64_t,
 ) -> size_t {
-    let nb: i32 = k / 32 as i32;
-    let mut b: i32 = 0 as i32;
+    let nb: i32 = k / 32_i32;
+    let mut b: i32 = 0_i32;
     while b < n {
-        let mut y: *mut block_q8_0 = (dst as *mut block_q8_0).offset((b / 32 as i32) as isize);
+        let mut y: *mut block_q8_0 = (dst as *mut block_q8_0).offset((b / 32_i32) as isize);
         quantize_row_q8_0_reference(src.offset(b as isize), y, k);
-        let mut i: i32 = 0 as i32;
+        let mut i: i32 = 0_i32;
         while i < nb {
-            let mut j: i32 = 0 as i32;
-            while j < 32 as i32 {
+            let mut j: i32 = 0_i32;
+            while j < 32_i32 {
                 let vi: int8_t = (*y.offset(i as isize)).qs[j as usize];
-                let fresh28 = &mut (*hist.offset((vi as i32 / 16 as i32 + 8 as i32) as isize));
+                let fresh28 = &mut (*hist.offset((vi as i32 / 16_i32 + 8_i32) as isize));
                 *fresh28 += 1;
                 let _ = *fresh28;
                 j += 1;
@@ -32844,7 +32767,7 @@ pub unsafe extern "C" fn ggml_quantize_q8_0(
         }
         b += k;
     }
-    ((n / 32 as i32) as u64).wrapping_mul(::core::mem::size_of::<block_q8_0>() as u64)
+    ((n / 32_i32) as u64).wrapping_mul(::core::mem::size_of::<block_q8_0>() as u64)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_quantize_chunk(
@@ -32855,21 +32778,21 @@ pub unsafe extern "C" fn ggml_quantize_chunk(
     mut n: i32,
     mut hist: *mut int64_t,
 ) -> size_t {
-    let mut result: size_t = 0 as i32 as size_t;
+    let mut result: size_t = 0_i32 as size_t;
     match type_0 as u32 {
         2 => {
-            if start % 32 as i32 != 0 as i32 {
+            if start % 32_i32 != 0_i32 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    15479 as i32,
-                    b"start % QK4_0 == 0\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    15479_i32,
+                    b"start % QK4_0 == 0\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             let mut block: *mut block_q4_0 =
-                (dst as *mut block_q4_0).offset((start / 32 as i32) as isize);
+                (dst as *mut block_q4_0).offset((start / 32_i32) as isize);
             result = ggml_quantize_q4_0(
                 src.offset(start as isize),
                 block as *mut libc::c_void,
@@ -32879,18 +32802,18 @@ pub unsafe extern "C" fn ggml_quantize_chunk(
             );
         }
         3 => {
-            if start % 32 as i32 != 0 as i32 {
+            if start % 32_i32 != 0_i32 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    15485 as i32,
-                    b"start % QK4_1 == 0\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    15485_i32,
+                    b"start % QK4_1 == 0\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             let mut block_0: *mut block_q4_1 =
-                (dst as *mut block_q4_1).offset((start / 32 as i32) as isize);
+                (dst as *mut block_q4_1).offset((start / 32_i32) as isize);
             result = ggml_quantize_q4_1(
                 src.offset(start as isize),
                 block_0 as *mut libc::c_void,
@@ -32900,18 +32823,18 @@ pub unsafe extern "C" fn ggml_quantize_chunk(
             );
         }
         6 => {
-            if start % 32 as i32 != 0 as i32 {
+            if start % 32_i32 != 0_i32 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    15491 as i32,
-                    b"start % QK5_0 == 0\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    15491_i32,
+                    b"start % QK5_0 == 0\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             let mut block_1: *mut block_q5_0 =
-                (dst as *mut block_q5_0).offset((start / 32 as i32) as isize);
+                (dst as *mut block_q5_0).offset((start / 32_i32) as isize);
             result = ggml_quantize_q5_0(
                 src.offset(start as isize),
                 block_1 as *mut libc::c_void,
@@ -32921,18 +32844,18 @@ pub unsafe extern "C" fn ggml_quantize_chunk(
             );
         }
         7 => {
-            if start % 32 as i32 != 0 as i32 {
+            if start % 32_i32 != 0_i32 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    15497 as i32,
-                    b"start % QK5_1 == 0\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    15497_i32,
+                    b"start % QK5_1 == 0\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             let mut block_2: *mut block_q5_1 =
-                (dst as *mut block_q5_1).offset((start / 32 as i32) as isize);
+                (dst as *mut block_q5_1).offset((start / 32_i32) as isize);
             result = ggml_quantize_q5_1(
                 src.offset(start as isize),
                 block_2 as *mut libc::c_void,
@@ -32942,18 +32865,18 @@ pub unsafe extern "C" fn ggml_quantize_chunk(
             );
         }
         8 => {
-            if start % 32 as i32 != 0 as i32 {
+            if start % 32_i32 != 0_i32 {
                 fprintf(
                     stderr,
-                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
-                    b"ggml.c\0" as *const u8 as *const libc::c_char,
-                    15503 as i32,
-                    b"start % QK8_0 == 0\0" as *const u8 as *const libc::c_char,
+                    b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const i8,
+                    b"ggml.c\0" as *const u8 as *const i8,
+                    15503_i32,
+                    b"start % QK8_0 == 0\0" as *const u8 as *const i8,
                 );
                 abort();
             }
             let mut block_3: *mut block_q8_0 =
-                (dst as *mut block_q8_0).offset((start / 32 as i32) as isize);
+                (dst as *mut block_q8_0).offset((start / 32_i32) as isize);
             result = ggml_quantize_q8_0(
                 src.offset(start as isize),
                 block_3 as *mut libc::c_void,
@@ -32968,59 +32891,59 @@ pub unsafe extern "C" fn ggml_quantize_chunk(
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_avx() -> i32 {
-    1 as i32
+    1_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_avx2() -> i32 {
-    1 as i32
+    1_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_avx512() -> i32 {
-    1 as i32
+    1_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_avx512_vbmi() -> i32 {
-    1 as i32
+    1_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_avx512_vnni() -> i32 {
-    1 as i32
+    1_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_fma() -> i32 {
-    1 as i32
+    1_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_neon() -> i32 {
-    0 as i32
+    0_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_arm_fma() -> i32 {
-    0 as i32
+    0_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_f16c() -> i32 {
-    1 as i32
+    1_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_fp16_va() -> i32 {
-    0 as i32
+    0_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_wasm_simd() -> i32 {
-    0 as i32
+    0_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_blas() -> i32 {
-    0 as i32
+    0_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_cublas() -> i32 {
-    0 as i32
+    0_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_clblast() -> i32 {
-    0 as i32
+    0_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_gpublas() -> i32 {
@@ -33028,14 +32951,14 @@ pub unsafe extern "C" fn ggml_cpu_has_gpublas() -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_sse3() -> i32 {
-    1 as i32
+    1_i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cpu_has_vsx() -> i32 {
-    0 as i32
+    0_i32
 }
 unsafe extern "C" fn run_static_initializers() {
-    CACHE_LINE_SIZE_F32 = (64 as i32 as u64).wrapping_div(::core::mem::size_of::<f32>() as u64);
+    CACHE_LINE_SIZE_F32 = (64_i32 as u64).wrapping_div(::core::mem::size_of::<f32>() as u64);
 }
 #[used]
 #[cfg_attr(target_os = "linux", link_section = ".init_array")]
