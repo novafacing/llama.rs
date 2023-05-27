@@ -86,7 +86,7 @@ extern "C" {
 pub type __int8_t = libc::c_schar;
 pub type __uint8_t = libc::c_uchar;
 pub type __int16_t = i16;
-pub type __uint16_t = libc::c_ushort;
+pub type __uint16_t = u16;
 pub type __int32_t = i32;
 pub type __uint32_t = u32;
 pub type __int64_t = i64;
@@ -350,7 +350,7 @@ pub struct _IO_FILE {
     pub _fileno: i32,
     pub _flags2: i32,
     pub _old_offset: __off_t,
-    pub _cur_column: libc::c_ushort,
+    pub _cur_column: u16,
     pub _vtable_offset: libc::c_schar,
     pub _shortbuf: [libc::c_char; 1],
     pub _lock: *mut libc::c_void,
@@ -549,7 +549,7 @@ pub unsafe extern "C" fn atomic_exchange(mut ptr: *mut i32, mut val: i32) -> i32
     ::core::intrinsics::atomic_xchg_acquire(ptr, val)
 }
 #[inline(always)]
-unsafe extern "C" fn _cvtsh_ss(mut __a: libc::c_ushort) -> f32 {
+unsafe extern "C" fn _cvtsh_ss(mut __a: u16) -> f32 {
     let mut __v: __v8hi = _mm_setr_epi16(
         __a as i16,
         0 as i32 as i16,
@@ -593,7 +593,7 @@ pub unsafe extern "C" fn ggml_fp32_to_fp16(mut x: f32) -> ggml_fp16_t {
         >(_mm_cvtps_ph(
             _mm_setr_ps(x, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
             0 as i32,
-        ))[0 as i32 as usize] as libc::c_ushort
+        ))[0 as i32 as usize] as u16
     }
 }
 #[no_mangle]
@@ -641,7 +641,7 @@ pub unsafe extern "C" fn ggml_fp32_to_fp16_row(
                     0 as i32 as f32,
                 ),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         i = i.wrapping_add(1);
         i;
@@ -771,7 +771,7 @@ unsafe extern "C" fn quantize_row_q4_0_reference(
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         let mut j_0: i32 = 0 as i32;
         while j_0 < qk / 2 as i32 {
@@ -832,7 +832,7 @@ unsafe extern "C" fn quantize_row_q4_1_reference(
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         (*y.offset(i as isize)).m = {
             ::core::mem::transmute::<
@@ -841,7 +841,7 @@ unsafe extern "C" fn quantize_row_q4_1_reference(
             >(_mm_cvtps_ph(
                 _mm_setr_ps(min, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         let mut j_0: i32 = 0 as i32;
         while j_0 < qk / 2 as i32 {
@@ -900,7 +900,7 @@ unsafe extern "C" fn quantize_row_q5_0_reference(
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         let mut qh: uint32_t = 0 as i32 as uint32_t;
         let mut j_0: i32 = 0 as i32;
@@ -968,7 +968,7 @@ unsafe extern "C" fn quantize_row_q5_1_reference(
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         (*y.offset(i as isize)).m = {
             ::core::mem::transmute::<
@@ -977,7 +977,7 @@ unsafe extern "C" fn quantize_row_q5_1_reference(
             >(_mm_cvtps_ph(
                 _mm_setr_ps(min, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         let mut qh: uint32_t = 0 as i32 as uint32_t;
         let mut j_0: i32 = 0 as i32;
@@ -1030,7 +1030,7 @@ unsafe extern "C" fn quantize_row_q8_0_reference(
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         let mut j_0: i32 = 0 as i32;
         while j_0 < 32 as i32 {
@@ -1073,7 +1073,7 @@ unsafe extern "C" fn quantize_row_q8_0(mut x: *const f32, mut vy: *mut libc::c_v
             >(_mm_cvtps_ph(
                 _mm_setr_ps(d, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         let id: f32 = if maxScalar != 0.0f32 {
             127.0f32 / maxScalar
@@ -2317,7 +2317,7 @@ unsafe extern "C" fn ggml_vec_gelu_f32(n: i32, mut y: *mut f32, mut x: *const f3
                     0 as i32 as f32,
                 ),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         memcpy(
             &mut t as *mut uint16_t as *mut libc::c_void,
@@ -2350,7 +2350,7 @@ unsafe extern "C" fn ggml_vec_silu_f32(n: i32, mut y: *mut f32, mut x: *const f3
                     0 as i32 as f32,
                 ),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         memcpy(
             &mut t as *mut uint16_t as *mut libc::c_void,
@@ -2388,7 +2388,7 @@ unsafe extern "C" fn ggml_vec_silu_backward_f32(
                     0 as i32 as f32,
                 ),
                 0 as i32,
-            ))[0 as i32 as usize] as libc::c_ushort
+            ))[0 as i32 as usize] as u16
         };
         let mut usedx: f32 = ggml_lookup_fp16_to_fp32(fp16);
         *dx.offset(i as isize) = ggml_silu_backward_f32(usedx, *dy.offset(i as isize));
@@ -2879,7 +2879,7 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
                         0 as i32 as f32,
                     ),
                     0 as i32,
-                ))[0 as i32 as usize] as libc::c_ushort
+                ))[0 as i32 as usize] as u16
             };
             table_silu_f16[i as usize] = {
                 ::core::mem::transmute::<
@@ -2893,7 +2893,7 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
                         0 as i32 as f32,
                     ),
                     0 as i32,
-                ))[0 as i32 as usize] as libc::c_ushort
+                ))[0 as i32 as usize] as u16
             };
             table_exp_f16[i as usize] = {
                 ::core::mem::transmute::<
@@ -2902,7 +2902,7 @@ pub unsafe extern "C" fn ggml_init(mut params: ggml_init_params) -> *mut ggml_co
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(expf(f), 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                     0 as i32,
-                ))[0 as i32 as usize] as libc::c_ushort
+                ))[0 as i32 as usize] as u16
             };
             i += 1;
             i;
@@ -5129,7 +5129,7 @@ pub unsafe extern "C" fn ggml_set_i32_1d(
                         0 as i32 as f32,
                     ),
                     0 as i32,
-                ))[0 as i32 as usize] as libc::c_ushort
+                ))[0 as i32 as usize] as u16
             };
         }
         0 => {
@@ -5308,7 +5308,7 @@ pub unsafe extern "C" fn ggml_set_f32_1d(
                 >(_mm_cvtps_ph(
                     _mm_setr_ps(value, 0 as i32 as f32, 0 as i32 as f32, 0 as i32 as f32),
                     0 as i32,
-                ))[0 as i32 as usize] as libc::c_ushort
+                ))[0 as i32 as usize] as u16
             };
         }
         0 => {
@@ -8964,8 +8964,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                                             0 as i32 as f32,
                                         ),
                                         0 as i32,
-                                    ))[0 as i32 as usize]
-                                        as libc::c_ushort
+                                    ))[0 as i32 as usize] as u16
                                 };
                                 id_0 = id_0.wrapping_add(1);
                                 id_0;
@@ -9099,8 +9098,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                                         0 as i32 as f32,
                                     ),
                                     0 as i32,
-                                ))[0 as i32 as usize]
-                                    as libc::c_ushort
+                                ))[0 as i32 as usize] as u16
                             };
                             id_3 = id_3.wrapping_add(1);
                             id_3;
@@ -9268,7 +9266,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                                     0 as i32 as f32,
                                 ),
                                 0 as i32,
-                            ))[0 as i32 as usize] as libc::c_ushort
+                            ))[0 as i32 as usize] as u16
                         };
                         i10 += 1;
                         if i10 == ne0 {
@@ -9609,7 +9607,7 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f32(
                             0 as i32 as f32,
                         ),
                         0 as i32,
-                    ))[0 as i32 as usize] as libc::c_ushort
+                    ))[0 as i32 as usize] as u16
                 };
                 i += 1;
                 i;
@@ -9758,7 +9756,7 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f16(
                             0 as i32 as f32,
                         ),
                         0 as i32,
-                    ))[0 as i32 as usize] as libc::c_ushort
+                    ))[0 as i32 as usize] as u16
                 };
                 i += 1;
                 i;
@@ -10205,7 +10203,7 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f32(
                         0 as i32 as f32,
                     ),
                     0 as i32,
-                ))[0 as i32 as usize] as libc::c_ushort
+                ))[0 as i32 as usize] as u16
             };
             i += 1;
             i;
@@ -10342,7 +10340,7 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f16(
                         0 as i32 as f32,
                     ),
                     0 as i32,
-                ))[0 as i32 as usize] as libc::c_ushort
+                ))[0 as i32 as usize] as u16
             };
             i += 1;
             i;
@@ -12970,7 +12968,7 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f16_f32(
                                     0 as i32 as f32,
                                 ),
                                 0 as i32,
-                            ))[0 as i32 as usize] as libc::c_ushort
+                            ))[0 as i32 as usize] as u16
                         };
                         i10 += 1;
                         i10;
@@ -14337,7 +14335,7 @@ unsafe extern "C" fn ggml_compute_forward_soft_max_f32(
                             0 as i32 as f32,
                         ),
                         0 as i32,
-                    ))[0 as i32 as usize] as libc::c_ushort
+                    ))[0 as i32 as usize] as u16
                 };
                 memcpy(
                     &mut scvt as *mut uint16_t as *mut libc::c_void,
@@ -14934,8 +14932,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                         0 as i32 as f32,
                                     ),
                                     0 as i32,
-                                ))[0 as i32 as usize]
-                                    as libc::c_ushort
+                                ))[0 as i32 as usize] as u16
                             };
                             *dst_data.offset(1 as i32 as isize) = {
                                 ::core::mem::transmute::<
@@ -14950,8 +14947,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                         0 as i32 as f32,
                                     ),
                                     0 as i32,
-                                ))[0 as i32 as usize]
-                                    as libc::c_ushort
+                                ))[0 as i32 as usize] as u16
                             };
                             i0 += 2 as i32 as i64;
                         }
@@ -14995,8 +14991,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                             0 as i32 as f32,
                                         ),
                                         0 as i32,
-                                    ))[0 as i32 as usize]
-                                        as libc::c_ushort
+                                    ))[0 as i32 as usize] as u16
                                 };
                                 *dst_data_0.offset((n_dims / 2 as i32) as isize) = {
                                     ::core::mem::transmute::<
@@ -15011,8 +15006,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                             0 as i32 as f32,
                                         ),
                                         0 as i32,
-                                    ))[0 as i32 as usize]
-                                        as libc::c_ushort
+                                    ))[0 as i32 as usize] as u16
                                 };
                                 ic += 2 as i32 as i64;
                             }
@@ -15273,8 +15267,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                         0 as i32 as f32,
                                     ),
                                     0 as i32,
-                                ))[0 as i32 as usize]
-                                    as libc::c_ushort
+                                ))[0 as i32 as usize] as u16
                             };
                             *dx.offset(1 as i32 as isize) = {
                                 ::core::mem::transmute::<
@@ -15289,8 +15282,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                         0 as i32 as f32,
                                     ),
                                     0 as i32,
-                                ))[0 as i32 as usize]
-                                    as libc::c_ushort
+                                ))[0 as i32 as usize] as u16
                             };
                             i0 += 2 as i32 as i64;
                         }
@@ -15333,8 +15325,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                             0 as i32 as f32,
                                         ),
                                         0 as i32,
-                                    ))[0 as i32 as usize]
-                                        as libc::c_ushort
+                                    ))[0 as i32 as usize] as u16
                                 };
                                 *dx_0.offset((n_dims / 2 as i32) as isize) = {
                                     ::core::mem::transmute::<
@@ -15349,8 +15340,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                             0 as i32 as f32,
                                         ),
                                         0 as i32,
-                                    ))[0 as i32 as usize]
-                                        as libc::c_ushort
+                                    ))[0 as i32 as usize] as u16
                                 };
                                 ic += 2 as i32 as i64;
                             }
@@ -15527,7 +15517,7 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f16_f32(
                             0 as i32 as f32,
                         ),
                         0 as i32,
-                    ))[0 as i32 as usize] as libc::c_ushort
+                    ))[0 as i32 as usize] as u16
                 };
                 i10 += 1;
                 i10;
@@ -15898,7 +15888,7 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
                             0 as i32 as f32,
                         ),
                         0 as i32,
-                    ))[0 as i32 as usize] as libc::c_ushort
+                    ))[0 as i32 as usize] as u16
                 };
                 i10 += 1;
                 i10;
@@ -16417,7 +16407,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
                                 0 as i32 as f32,
                             ),
                             0 as i32,
-                        ))[0 as i32 as usize] as libc::c_ushort
+                        ))[0 as i32 as usize] as u16
                     };
                     memcpy(
                         &mut *scvt.as_mut_ptr().offset(j as isize) as *mut uint16_t
@@ -16772,7 +16762,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                                 0 as i32 as f32,
                             ),
                             0 as i32,
-                        ))[0 as i32 as usize] as libc::c_ushort
+                        ))[0 as i32 as usize] as u16
                     };
                     memcpy(
                         &mut *scvt.as_mut_ptr().offset(j as isize) as *mut uint16_t
@@ -16819,7 +16809,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                         0 as i32 as f32,
                     ),
                     0 as i32,
-                ))[0 as i32 as usize] as libc::c_ushort
+                ))[0 as i32 as usize] as u16
             };
             i_3 += 1;
             i_3;
@@ -17210,7 +17200,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
                         0 as i32 as f32,
                     ),
                     0 as i32,
-                ))[0 as i32 as usize] as libc::c_ushort
+                ))[0 as i32 as usize] as u16
             };
             i += 1;
             i;
