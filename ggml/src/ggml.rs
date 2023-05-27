@@ -89,14 +89,14 @@ pub type __int16_t = libc::c_short;
 pub type __uint16_t = libc::c_ushort;
 pub type __int32_t = i32;
 pub type __uint32_t = u32;
-pub type __int64_t = libc::c_long;
+pub type __int64_t = i64;
 pub type __uint64_t = u64;
-pub type __off_t = libc::c_long;
-pub type __off64_t = libc::c_long;
-pub type __clock_t = libc::c_long;
-pub type __time_t = libc::c_long;
+pub type __off_t = i64;
+pub type __off64_t = i64;
+pub type __clock_t = i64;
+pub type __time_t = i64;
 pub type __clockid_t = i32;
-pub type __syscall_slong_t = libc::c_long;
+pub type __syscall_slong_t = i64;
 pub type int8_t = __int8_t;
 pub type int16_t = __int16_t;
 pub type int32_t = __int32_t;
@@ -452,7 +452,7 @@ pub type thread_ret_t = *mut libc::c_void;
 #[repr(C)]
 pub union pthread_attr_t {
     pub __size: [libc::c_char; 56],
-    pub __align: libc::c_long,
+    pub __align: i64,
 }
 pub type ggml_opt_type = u32;
 pub const GGML_OPT_LBFGS: ggml_opt_type = 1;
@@ -658,7 +658,7 @@ pub unsafe extern "C" fn ggml_time_ms() -> int64_t {
         tv_nsec: 0,
     };
     clock_gettime(1 as i32, &mut ts);
-    ts.tv_sec * 1000 as i32 as libc::c_long + ts.tv_nsec / 1000000 as i32 as libc::c_long
+    ts.tv_sec * 1000 as i32 as i64 + ts.tv_nsec / 1000000 as i32 as i64
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_time_us() -> int64_t {
@@ -667,7 +667,7 @@ pub unsafe extern "C" fn ggml_time_us() -> int64_t {
         tv_nsec: 0,
     };
     clock_gettime(1 as i32, &mut ts);
-    ts.tv_sec * 1000000 as i32 as libc::c_long + ts.tv_nsec / 1000 as i32 as libc::c_long
+    ts.tv_sec * 1000000 as i32 as i64 + ts.tv_nsec / 1000 as i32 as i64
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cycles() -> int64_t {
@@ -675,7 +675,7 @@ pub unsafe extern "C" fn ggml_cycles() -> int64_t {
 }
 #[no_mangle]
 pub unsafe extern "C" fn ggml_cycles_per_ms() -> int64_t {
-    1000000 as i32 as __clock_t / 1000 as i32 as libc::c_long
+    1000000 as i32 as __clock_t / 1000 as i32 as i64
 }
 static mut CACHE_LINE_SIZE_F32: size_t = 0;
 #[inline]
@@ -709,13 +709,13 @@ unsafe extern "C" fn bytes_from_bits_32(mut x: *const uint8_t) -> __m256i {
         ::core::mem::size_of::<uint32_t>() as u64,
     );
     let shuf_mask: __m256i = _mm256_set_epi64x(
-        0x303030303030303 as libc::c_long as i64,
-        0x202020202020202 as libc::c_long as i64,
-        0x101010101010101 as libc::c_long as i64,
+        0x303030303030303 as i64 as i64,
+        0x202020202020202 as i64 as i64,
+        0x101010101010101 as i64 as i64,
         0 as i32 as i64,
     );
     let mut bytes: __m256i = _mm256_shuffle_epi8(_mm256_set1_epi32(x32 as i32), shuf_mask);
-    let bit_mask: __m256i = _mm256_set1_epi64x(0x7fbfdfeff7fbfdfe as libc::c_long as i64);
+    let bit_mask: __m256i = _mm256_set1_epi64x(0x7fbfdfeff7fbfdfe as i64 as i64);
     bytes = _mm256_or_si256(bytes, bit_mask);
     _mm256_cmpeq_epi8(bytes, _mm256_set1_epi64x(-(1 as i32) as i64))
 }
@@ -2714,21 +2714,21 @@ pub unsafe extern "C" fn ggml_element_size(mut tensor: *const ggml_tensor) -> si
 }
 #[inline]
 unsafe extern "C" fn ggml_is_scalar(mut tensor: *const ggml_tensor) -> bool {
-    (*tensor).ne[0 as i32 as usize] == 1 as i32 as libc::c_long
-        && (*tensor).ne[1 as i32 as usize] == 1 as i32 as libc::c_long
-        && (*tensor).ne[2 as i32 as usize] == 1 as i32 as libc::c_long
-        && (*tensor).ne[3 as i32 as usize] == 1 as i32 as libc::c_long
+    (*tensor).ne[0 as i32 as usize] == 1 as i32 as i64
+        && (*tensor).ne[1 as i32 as usize] == 1 as i32 as i64
+        && (*tensor).ne[2 as i32 as usize] == 1 as i32 as i64
+        && (*tensor).ne[3 as i32 as usize] == 1 as i32 as i64
 }
 #[inline]
 unsafe extern "C" fn ggml_is_vector(mut tensor: *const ggml_tensor) -> bool {
-    (*tensor).ne[1 as i32 as usize] == 1 as i32 as libc::c_long
-        && (*tensor).ne[2 as i32 as usize] == 1 as i32 as libc::c_long
-        && (*tensor).ne[3 as i32 as usize] == 1 as i32 as libc::c_long
+    (*tensor).ne[1 as i32 as usize] == 1 as i32 as i64
+        && (*tensor).ne[2 as i32 as usize] == 1 as i32 as i64
+        && (*tensor).ne[3 as i32 as usize] == 1 as i32 as i64
 }
 #[inline]
 unsafe extern "C" fn ggml_is_matrix(mut tensor: *const ggml_tensor) -> bool {
-    (*tensor).ne[2 as i32 as usize] == 1 as i32 as libc::c_long
-        && (*tensor).ne[3 as i32 as usize] == 1 as i32 as libc::c_long
+    (*tensor).ne[2 as i32 as usize] == 1 as i32 as i64
+        && (*tensor).ne[3 as i32 as usize] == 1 as i32 as i64
 }
 #[inline]
 unsafe extern "C" fn ggml_can_mul_mat(
@@ -2831,10 +2831,10 @@ unsafe extern "C" fn ggml_can_repeat(
     mut t0: *const ggml_tensor,
     mut t1: *const ggml_tensor,
 ) -> bool {
-    (*t1).ne[0 as i32 as usize] % (*t0).ne[0 as i32 as usize] == 0 as i32 as libc::c_long
-        && (*t1).ne[1 as i32 as usize] % (*t0).ne[1 as i32 as usize] == 0 as i32 as libc::c_long
-        && (*t1).ne[2 as i32 as usize] % (*t0).ne[2 as i32 as usize] == 0 as i32 as libc::c_long
-        && (*t1).ne[3 as i32 as usize] % (*t0).ne[3 as i32 as usize] == 0 as i32 as libc::c_long
+    (*t1).ne[0 as i32 as usize] % (*t0).ne[0 as i32 as usize] == 0 as i32 as i64
+        && (*t1).ne[1 as i32 as usize] % (*t0).ne[1 as i32 as usize] == 0 as i32 as i64
+        && (*t1).ne[2 as i32 as usize] % (*t0).ne[2 as i32 as usize] == 0 as i32 as i64
+        && (*t1).ne[3 as i32 as usize] % (*t0).ne[3 as i32 as usize] == 0 as i32 as i64
 }
 #[inline]
 unsafe extern "C" fn ggml_can_repeat_rows(
@@ -4504,8 +4504,7 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
     if data.is_null() && !(*ctx).no_alloc {
         size_needed =
             (size_needed as u64).wrapping_add((GGML_TYPE_SIZE[type_0 as usize]).wrapping_mul(
-                (*ne.offset(0 as i32 as isize) / GGML_BLCK_SIZE[type_0 as usize] as libc::c_long)
-                    as u64,
+                (*ne.offset(0 as i32 as isize) / GGML_BLCK_SIZE[type_0 as usize] as i64) as u64,
             )) as size_t as size_t;
         let mut i: i32 = 1 as i32;
         while i < n_dims {
@@ -4713,7 +4712,7 @@ pub unsafe extern "C" fn ggml_new_tensor_impl(
     }
     (*result).nb[0 as i32 as usize] = GGML_TYPE_SIZE[type_0 as usize];
     (*result).nb[1 as i32 as usize] = ((*result).nb[0 as i32 as usize]).wrapping_mul(
-        ((*result).ne[0 as i32 as usize] / GGML_BLCK_SIZE[type_0 as usize] as libc::c_long) as u64,
+        ((*result).ne[0 as i32 as usize] / GGML_BLCK_SIZE[type_0 as usize] as i64) as u64,
     );
     let mut i_1: i32 = 2 as i32;
     while i_1 < 4 as i32 {
@@ -7517,7 +7516,7 @@ pub unsafe extern "C" fn ggml_diag(
     mut ctx: *mut ggml_context,
     mut a: *mut ggml_tensor,
 ) -> *mut ggml_tensor {
-    if (*a).ne[1 as i32 as usize] != 1 as i32 as libc::c_long {
+    if (*a).ne[1 as i32 as usize] != 1 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -7938,7 +7937,7 @@ pub unsafe extern "C" fn ggml_conv_1d_1s(
         );
         abort();
     }
-    if (*a).ne[3 as i32 as usize] != 1 as i32 as libc::c_long {
+    if (*a).ne[3 as i32 as usize] != 1 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -8005,7 +8004,7 @@ pub unsafe extern "C" fn ggml_conv_1d_2s(
         );
         abort();
     }
-    if (*a).ne[3 as i32 as usize] != 1 as i32 as libc::c_long {
+    if (*a).ne[3 as i32 as usize] != 1 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -8030,7 +8029,7 @@ pub unsafe extern "C" fn ggml_conv_1d_2s(
         is_node = 1 as i32 != 0;
     }
     let ne: [int64_t; 4] = [
-        (*b).ne[0 as i32 as usize] / 2 as i32 as libc::c_long,
+        (*b).ne[0 as i32 as usize] / 2 as i32 as i64,
         (*a).ne[2 as i32 as usize],
         1 as i32 as int64_t,
         1 as i32 as int64_t,
@@ -8402,7 +8401,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
             let mut i02: int64_t = 0 as i32 as int64_t;
             while i02 < ne02 {
                 let mut i01: int64_t = ir0 as int64_t;
-                while i01 < ir1 as libc::c_long {
+                while i01 < ir1 as i64 {
                     memcpy(
                         ((*dst).data as *mut libc::c_char)
                             .offset((i01 as u64).wrapping_mul(nb1) as isize)
@@ -8434,9 +8433,9 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                 let rs_0: size_t = (ne00 as u64).wrapping_mul(nb00);
                 let mut dst_ptr: *mut libc::c_char = (*dst).data as *mut libc::c_char;
                 let mut i03_0: i32 = 0 as i32;
-                while (i03_0 as libc::c_long) < ne03 {
+                while (i03_0 as i64) < ne03 {
                     let mut i02_0: i32 = 0 as i32;
-                    while (i02_0 as libc::c_long) < ne02 {
+                    while (i02_0 as i64) < ne02 {
                         id = (id as u64).wrapping_add(rs_0.wrapping_mul(ir0 as u64)) as size_t
                             as size_t;
                         let mut i01_0: i32 = ir0;
@@ -8455,8 +8454,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                             i01_0 += 1;
                             i01_0;
                         }
-                        id = (id as u64)
-                            .wrapping_add(rs_0.wrapping_mul((ne01 - ir1 as libc::c_long) as u64))
+                        id = (id as u64).wrapping_add(rs_0.wrapping_mul((ne01 - ir1 as i64) as u64))
                             as size_t as size_t;
                         i02_0 += 1;
                         i02_0;
@@ -8468,11 +8466,11 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                 let mut id_0: size_t = 0 as i32 as size_t;
                 let mut dst_ptr_0: *mut f32 = (*dst).data as *mut f32;
                 let mut i03_1: i32 = 0 as i32;
-                while (i03_1 as libc::c_long) < ne03 {
+                while (i03_1 as i64) < ne03 {
                     let mut i02_1: i32 = 0 as i32;
-                    while (i02_1 as libc::c_long) < ne02 {
-                        id_0 = (id_0 as u64).wrapping_add((ne00 * ir0 as libc::c_long) as u64)
-                            as size_t as size_t;
+                    while (i02_1 as i64) < ne02 {
+                        id_0 = (id_0 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t
+                            as size_t;
                         let mut i01_1: i32 = ir0;
                         while i01_1 < ir1 {
                             let mut src0_ptr_0: *const ggml_fp16_t = ((*src0).data
@@ -8482,7 +8480,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                                 .offset((i03_1 as u64).wrapping_mul(nb03) as isize)
                                 as *mut ggml_fp16_t;
                             let mut i00: i32 = 0 as i32;
-                            while (i00 as libc::c_long) < ne00 {
+                            while (i00 as i64) < ne00 {
                                 *dst_ptr_0.offset(id_0 as isize) =
                                     ggml_lookup_fp16_to_fp32(*src0_ptr_0.offset(i00 as isize));
                                 id_0 = id_0.wrapping_add(1);
@@ -8493,8 +8491,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                             i01_1 += 1;
                             i01_1;
                         }
-                        id_0 = (id_0 as u64)
-                            .wrapping_add((ne00 * (ne01 - ir1 as libc::c_long)) as u64)
+                        id_0 = (id_0 as u64).wrapping_add((ne00 * (ne01 - ir1 as i64)) as u64)
                             as size_t as size_t;
                         i02_1 += 1;
                         i02_1;
@@ -8511,14 +8508,13 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                         .wrapping_mul(ith as u64) as isize,
                 );
                 let mut id_1: size_t = 0 as i32 as size_t;
-                let mut rs_1: size_t = nb0.wrapping_mul(
-                    (ne00 / GGML_BLCK_SIZE[(*dst).type_0 as usize] as libc::c_long) as u64,
-                );
+                let mut rs_1: size_t =
+                    nb0.wrapping_mul((ne00 / GGML_BLCK_SIZE[(*dst).type_0 as usize] as i64) as u64);
                 let mut dst_ptr_1: *mut libc::c_char = (*dst).data as *mut libc::c_char;
                 let mut i03_2: i32 = 0 as i32;
-                while (i03_2 as libc::c_long) < ne03 {
+                while (i03_2 as i64) < ne03 {
                     let mut i02_2: i32 = 0 as i32;
-                    while (i02_2 as libc::c_long) < ne02 {
+                    while (i02_2 as i64) < ne02 {
                         id_1 = (id_1 as u64).wrapping_add(rs_1.wrapping_mul(ir0 as u64)) as size_t
                             as size_t;
                         let mut i01_2: i32 = ir0;
@@ -8530,7 +8526,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                                 .offset((i03_2 as u64).wrapping_mul(nb03) as isize)
                                 as *mut ggml_fp16_t;
                             let mut i00_0: i32 = 0 as i32;
-                            while (i00_0 as libc::c_long) < ne00 {
+                            while (i00_0 as i64) < ne00 {
                                 *src0_f32.offset(i00_0 as isize) =
                                     ggml_lookup_fp16_to_fp32(*src0_ptr_1.offset(i00_0 as isize));
                                 i00_0 += 1;
@@ -8546,7 +8542,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                             i01_2;
                         }
                         id_1 = (id_1 as u64)
-                            .wrapping_add(rs_1.wrapping_mul((ne01 - ir1 as libc::c_long) as u64))
+                            .wrapping_add(rs_1.wrapping_mul((ne01 - ir1 as i64) as u64))
                             as size_t as size_t;
                         i02_2 += 1;
                         i02_2;
@@ -8568,15 +8564,15 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
             let mut id_2: size_t = 0 as i32 as size_t;
             let mut dst_ptr_2: *mut f32 = (*dst).data as *mut f32;
             let mut i03_3: i32 = 0 as i32;
-            while (i03_3 as libc::c_long) < ne03 {
+            while (i03_3 as i64) < ne03 {
                 let mut i02_3: i32 = 0 as i32;
-                while (i02_3 as libc::c_long) < ne02 {
-                    id_2 = (id_2 as u64).wrapping_add((ne00 * ir0 as libc::c_long) as u64) as size_t
-                        as size_t;
+                while (i02_3 as i64) < ne02 {
+                    id_2 =
+                        (id_2 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t as size_t;
                     let mut i01_3: i32 = ir0;
                     while i01_3 < ir1 {
                         let mut i00_1: i32 = 0 as i32;
-                        while (i00_1 as libc::c_long) < ne00 {
+                        while (i00_1 as i64) < ne00 {
                             let mut src0_ptr_2: *const ggml_fp16_t = ((*src0).data
                                 as *mut libc::c_char)
                                 .offset((i00_1 as u64).wrapping_mul(nb00) as isize)
@@ -8594,8 +8590,8 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                         i01_3 += 1;
                         i01_3;
                     }
-                    id_2 = (id_2 as u64).wrapping_add((ne00 * (ne01 - ir1 as libc::c_long)) as u64)
-                        as size_t as size_t;
+                    id_2 = (id_2 as u64).wrapping_add((ne00 * (ne01 - ir1 as i64)) as u64) as size_t
+                        as size_t;
                     i02_3 += 1;
                     i02_3;
                 }
@@ -8606,15 +8602,15 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
             let mut id_3: size_t = 0 as i32 as size_t;
             let mut dst_ptr_3: *mut ggml_fp16_t = (*dst).data as *mut ggml_fp16_t;
             let mut i03_4: i32 = 0 as i32;
-            while (i03_4 as libc::c_long) < ne03 {
+            while (i03_4 as i64) < ne03 {
                 let mut i02_4: i32 = 0 as i32;
-                while (i02_4 as libc::c_long) < ne02 {
-                    id_3 = (id_3 as u64).wrapping_add((ne00 * ir0 as libc::c_long) as u64) as size_t
-                        as size_t;
+                while (i02_4 as i64) < ne02 {
+                    id_3 =
+                        (id_3 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t as size_t;
                     let mut i01_4: i32 = ir0;
                     while i01_4 < ir1 {
                         let mut i00_2: i32 = 0 as i32;
-                        while (i00_2 as libc::c_long) < ne00 {
+                        while (i00_2 as i64) < ne00 {
                             let mut src0_ptr_3: *const ggml_fp16_t = ((*src0).data
                                 as *mut libc::c_char)
                                 .offset((i00_2 as u64).wrapping_mul(nb00) as isize)
@@ -8631,8 +8627,8 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                         i01_4 += 1;
                         i01_4;
                     }
-                    id_3 = (id_3 as u64).wrapping_add((ne00 * (ne01 - ir1 as libc::c_long)) as u64)
-                        as size_t as size_t;
+                    id_3 = (id_3 as u64).wrapping_add((ne00 * (ne01 - ir1 as i64)) as u64) as size_t
+                        as size_t;
                     i02_4 += 1;
                     i02_4;
                 }
@@ -8660,7 +8656,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
         while i03_5 < ne03 {
             let mut i02_5: int64_t = 0 as i32 as int64_t;
             while i02_5 < ne02 {
-                i10 += ne00 * ir0 as libc::c_long;
+                i10 += ne00 * ir0 as i64;
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
@@ -8677,7 +8673,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                     }
                 }
                 let mut i01_5: int64_t = ir0 as int64_t;
-                while i01_5 < ir1 as libc::c_long {
+                while i01_5 < ir1 as i64 {
                     let mut i00_3: int64_t = 0 as i32 as int64_t;
                     while i00_3 < ne00 {
                         let mut src0_ptr_4: *const libc::c_char = ((*src0).data
@@ -8718,7 +8714,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                     i01_5 += 1;
                     i01_5;
                 }
-                i10 += ne00 * (ne01 - ir1 as libc::c_long);
+                i10 += ne00 * (ne01 - ir1 as i64);
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
@@ -8745,7 +8741,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
         while i03_6 < ne03 {
             let mut i02_6: int64_t = 0 as i32 as int64_t;
             while i02_6 < ne02 {
-                i10 += ne00 * ir0 as libc::c_long;
+                i10 += ne00 * ir0 as i64;
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
@@ -8762,7 +8758,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                     }
                 }
                 let mut i01_6: int64_t = ir0 as int64_t;
-                while i01_6 < ir1 as libc::c_long {
+                while i01_6 < ir1 as i64 {
                     let mut i00_4: int64_t = 0 as i32 as int64_t;
                     while i00_4 < ne00 {
                         let mut src0_ptr_5: *const libc::c_char = ((*src0).data
@@ -8800,7 +8796,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f16(
                     i01_6 += 1;
                     i01_6;
                 }
-                i10 += ne00 * (ne01 - ir1 as libc::c_long);
+                i10 += ne00 * (ne01 - ir1 as i64);
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
@@ -8893,7 +8889,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
             let mut i02: int64_t = 0 as i32 as int64_t;
             while i02 < ne02 {
                 let mut i01: int64_t = ir0 as int64_t;
-                while i01 < ir1 as libc::c_long {
+                while i01 < ir1 as i64 {
                     memcpy(
                         ((*dst).data as *mut libc::c_char)
                             .offset((i01 as u64).wrapping_mul(nb1) as isize)
@@ -8925,9 +8921,9 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                 let rs_0: size_t = (ne00 as u64).wrapping_mul(nb00);
                 let mut dst_ptr: *mut libc::c_char = (*dst).data as *mut libc::c_char;
                 let mut i03_0: i32 = 0 as i32;
-                while (i03_0 as libc::c_long) < ne03 {
+                while (i03_0 as i64) < ne03 {
                     let mut i02_0: i32 = 0 as i32;
-                    while (i02_0 as libc::c_long) < ne02 {
+                    while (i02_0 as i64) < ne02 {
                         id = (id as u64).wrapping_add(rs_0.wrapping_mul(ir0 as u64)) as size_t
                             as size_t;
                         let mut i01_0: i32 = ir0;
@@ -8946,8 +8942,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                             i01_0 += 1;
                             i01_0;
                         }
-                        id = (id as u64)
-                            .wrapping_add(rs_0.wrapping_mul((ne01 - ir1 as libc::c_long) as u64))
+                        id = (id as u64).wrapping_add(rs_0.wrapping_mul((ne01 - ir1 as i64) as u64))
                             as size_t as size_t;
                         i02_0 += 1;
                         i02_0;
@@ -8959,15 +8954,15 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                 let mut id_0: size_t = 0 as i32 as size_t;
                 let mut dst_ptr_0: *mut ggml_fp16_t = (*dst).data as *mut ggml_fp16_t;
                 let mut i03_1: i32 = 0 as i32;
-                while (i03_1 as libc::c_long) < ne03 {
+                while (i03_1 as i64) < ne03 {
                     let mut i02_1: i32 = 0 as i32;
-                    while (i02_1 as libc::c_long) < ne02 {
-                        id_0 = (id_0 as u64).wrapping_add((ne00 * ir0 as libc::c_long) as u64)
-                            as size_t as size_t;
+                    while (i02_1 as i64) < ne02 {
+                        id_0 = (id_0 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t
+                            as size_t;
                         let mut i01_1: i32 = ir0;
                         while i01_1 < ir1 {
                             let mut i00: i32 = 0 as i32;
-                            while (i00 as libc::c_long) < ne00 {
+                            while (i00 as i64) < ne00 {
                                 let mut src0_ptr_0: *const f32 = ((*src0).data as *mut libc::c_char)
                                     .offset((i00 as u64).wrapping_mul(nb00) as isize)
                                     .offset((i01_1 as u64).wrapping_mul(nb01) as isize)
@@ -8999,8 +8994,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                             i01_1 += 1;
                             i01_1;
                         }
-                        id_0 = (id_0 as u64)
-                            .wrapping_add((ne00 * (ne01 - ir1 as libc::c_long)) as u64)
+                        id_0 = (id_0 as u64).wrapping_add((ne00 * (ne01 - ir1 as i64)) as u64)
                             as size_t as size_t;
                         i02_1 += 1;
                         i02_1;
@@ -9012,14 +9006,13 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                 let quantize_row_q: quantize_row_q_t =
                     quantize_fns[(*dst).type_0 as usize].quantize_row_q;
                 let mut id_1: size_t = 0 as i32 as size_t;
-                let mut rs_1: size_t = nb0.wrapping_mul(
-                    (ne00 / GGML_BLCK_SIZE[(*dst).type_0 as usize] as libc::c_long) as u64,
-                );
+                let mut rs_1: size_t =
+                    nb0.wrapping_mul((ne00 / GGML_BLCK_SIZE[(*dst).type_0 as usize] as i64) as u64);
                 let mut dst_ptr_1: *mut libc::c_char = (*dst).data as *mut libc::c_char;
                 let mut i03_2: i32 = 0 as i32;
-                while (i03_2 as libc::c_long) < ne03 {
+                while (i03_2 as i64) < ne03 {
                     let mut i02_2: i32 = 0 as i32;
-                    while (i02_2 as libc::c_long) < ne02 {
+                    while (i02_2 as i64) < ne02 {
                         id_1 = (id_1 as u64).wrapping_add(rs_1.wrapping_mul(ir0 as u64)) as size_t
                             as size_t;
                         let mut i01_2: i32 = ir0;
@@ -9039,7 +9032,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                             i01_2;
                         }
                         id_1 = (id_1 as u64)
-                            .wrapping_add(rs_1.wrapping_mul((ne01 - ir1 as libc::c_long) as u64))
+                            .wrapping_add(rs_1.wrapping_mul((ne01 - ir1 as i64) as u64))
                             as size_t as size_t;
                         i02_2 += 1;
                         i02_2;
@@ -9061,15 +9054,15 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
             let mut id_2: size_t = 0 as i32 as size_t;
             let mut dst_ptr_2: *mut f32 = (*dst).data as *mut f32;
             let mut i03_3: i32 = 0 as i32;
-            while (i03_3 as libc::c_long) < ne03 {
+            while (i03_3 as i64) < ne03 {
                 let mut i02_3: i32 = 0 as i32;
-                while (i02_3 as libc::c_long) < ne02 {
-                    id_2 = (id_2 as u64).wrapping_add((ne00 * ir0 as libc::c_long) as u64) as size_t
-                        as size_t;
+                while (i02_3 as i64) < ne02 {
+                    id_2 =
+                        (id_2 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t as size_t;
                     let mut i01_3: i32 = ir0;
                     while i01_3 < ir1 {
                         let mut i00_0: i32 = 0 as i32;
-                        while (i00_0 as libc::c_long) < ne00 {
+                        while (i00_0 as i64) < ne00 {
                             let mut src0_ptr_2: *const f32 = ((*src0).data as *mut libc::c_char)
                                 .offset((i00_0 as u64).wrapping_mul(nb00) as isize)
                                 .offset((i01_3 as u64).wrapping_mul(nb01) as isize)
@@ -9085,8 +9078,8 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                         i01_3 += 1;
                         i01_3;
                     }
-                    id_2 = (id_2 as u64).wrapping_add((ne00 * (ne01 - ir1 as libc::c_long)) as u64)
-                        as size_t as size_t;
+                    id_2 = (id_2 as u64).wrapping_add((ne00 * (ne01 - ir1 as i64)) as u64) as size_t
+                        as size_t;
                     i02_3 += 1;
                     i02_3;
                 }
@@ -9097,15 +9090,15 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
             let mut id_3: size_t = 0 as i32 as size_t;
             let mut dst_ptr_3: *mut ggml_fp16_t = (*dst).data as *mut ggml_fp16_t;
             let mut i03_4: i32 = 0 as i32;
-            while (i03_4 as libc::c_long) < ne03 {
+            while (i03_4 as i64) < ne03 {
                 let mut i02_4: i32 = 0 as i32;
-                while (i02_4 as libc::c_long) < ne02 {
-                    id_3 = (id_3 as u64).wrapping_add((ne00 * ir0 as libc::c_long) as u64) as size_t
-                        as size_t;
+                while (i02_4 as i64) < ne02 {
+                    id_3 =
+                        (id_3 as u64).wrapping_add((ne00 * ir0 as i64) as u64) as size_t as size_t;
                     let mut i01_4: i32 = ir0;
                     while i01_4 < ir1 {
                         let mut i00_1: i32 = 0 as i32;
-                        while (i00_1 as libc::c_long) < ne00 {
+                        while (i00_1 as i64) < ne00 {
                             let mut src0_ptr_3: *const f32 = ((*src0).data as *mut libc::c_char)
                                 .offset((i00_1 as u64).wrapping_mul(nb00) as isize)
                                 .offset((i01_4 as u64).wrapping_mul(nb01) as isize)
@@ -9137,8 +9130,8 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                         i01_4 += 1;
                         i01_4;
                     }
-                    id_3 = (id_3 as u64).wrapping_add((ne00 * (ne01 - ir1 as libc::c_long)) as u64)
-                        as size_t as size_t;
+                    id_3 = (id_3 as u64).wrapping_add((ne00 * (ne01 - ir1 as i64)) as u64) as size_t
+                        as size_t;
                     i02_4 += 1;
                     i02_4;
                 }
@@ -9166,7 +9159,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
         while i03_5 < ne03 {
             let mut i02_5: int64_t = 0 as i32 as int64_t;
             while i02_5 < ne02 {
-                i10 += ne00 * ir0 as libc::c_long;
+                i10 += ne00 * ir0 as i64;
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
@@ -9183,7 +9176,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                     }
                 }
                 let mut i01_5: int64_t = ir0 as int64_t;
-                while i01_5 < ir1 as libc::c_long {
+                while i01_5 < ir1 as i64 {
                     let mut i00_2: int64_t = 0 as i32 as int64_t;
                     while i00_2 < ne00 {
                         let mut src0_ptr_4: *const libc::c_char = ((*src0).data
@@ -9224,7 +9217,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                     i01_5 += 1;
                     i01_5;
                 }
-                i10 += ne00 * (ne01 - ir1 as libc::c_long);
+                i10 += ne00 * (ne01 - ir1 as i64);
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
@@ -9251,7 +9244,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
         while i03_6 < ne03 {
             let mut i02_6: int64_t = 0 as i32 as int64_t;
             while i02_6 < ne02 {
-                i10 += ne00 * ir0 as libc::c_long;
+                i10 += ne00 * ir0 as i64;
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
@@ -9268,7 +9261,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                     }
                 }
                 let mut i01_6: int64_t = ir0 as int64_t;
-                while i01_6 < ir1 as libc::c_long {
+                while i01_6 < ir1 as i64 {
                     let mut i00_3: int64_t = 0 as i32 as int64_t;
                     while i00_3 < ne00 {
                         let mut src0_ptr_5: *const libc::c_char = ((*src0).data
@@ -9320,7 +9313,7 @@ unsafe extern "C" fn ggml_compute_forward_dup_f32(
                     i01_6 += 1;
                     i01_6;
                 }
-                i10 += ne00 * (ne01 - ir1 as libc::c_long);
+                i10 += ne00 * (ne01 - ir1 as i64);
                 while i10 >= ne0 {
                     i10 -= ne0;
                     i11 += 1;
@@ -9453,11 +9446,9 @@ unsafe extern "C" fn ggml_compute_forward_add_f32(
     if nb10 == ::core::mem::size_of::<f32>() as u64 {
         let mut ir: i32 = ir0;
         while ir < ir1 {
-            let i3: i32 = (ir as libc::c_long / (ne2 * ne1)) as i32;
-            let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne2 * ne1) / ne1) as i32;
-            let i1: i32 = (ir as libc::c_long
-                - i3 as libc::c_long * ne2 * ne1
-                - i2 as libc::c_long * ne1) as i32;
+            let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
+            let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
+            let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
             ggml_vec_add_f32(
                 ne0 as i32,
                 ((*dst).data as *mut libc::c_char)
@@ -9479,12 +9470,9 @@ unsafe extern "C" fn ggml_compute_forward_add_f32(
     } else {
         let mut ir_0: i32 = ir0;
         while ir_0 < ir1 {
-            let i3_0: i32 = (ir_0 as libc::c_long / (ne2 * ne1)) as i32;
-            let i2_0: i32 =
-                ((ir_0 as libc::c_long - i3_0 as libc::c_long * ne2 * ne1) / ne1) as i32;
-            let i1_0: i32 = (ir_0 as libc::c_long
-                - i3_0 as libc::c_long * ne2 * ne1
-                - i2_0 as libc::c_long * ne1) as i32;
+            let i3_0: i32 = (ir_0 as i64 / (ne2 * ne1)) as i32;
+            let i2_0: i32 = ((ir_0 as i64 - i3_0 as i64 * ne2 * ne1) / ne1) as i32;
+            let i1_0: i32 = (ir_0 as i64 - i3_0 as i64 * ne2 * ne1 - i2_0 as i64 * ne1) as i32;
             let mut dst_ptr: *mut f32 = ((*dst).data as *mut libc::c_char)
                 .offset((i3_0 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2_0 as u64).wrapping_mul(nb2) as isize)
@@ -9496,7 +9484,7 @@ unsafe extern "C" fn ggml_compute_forward_add_f32(
                 .offset((i1_0 as u64).wrapping_mul(nb01) as isize)
                 as *mut f32;
             let mut i0: i32 = 0 as i32;
-            while (i0 as libc::c_long) < ne0 {
+            while (i0 as i64) < ne0 {
                 let mut src1_ptr: *mut f32 = ((*src1).data as *mut libc::c_char)
                     .offset((i3_0 as u64).wrapping_mul(nb13) as isize)
                     .offset((i2_0 as u64).wrapping_mul(nb12) as isize)
@@ -9609,11 +9597,9 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f32(
     if nb10 == ::core::mem::size_of::<f32>() as u64 {
         let mut ir: i32 = ir0;
         while ir < ir1 {
-            let i3: i32 = (ir as libc::c_long / (ne2 * ne1)) as i32;
-            let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne2 * ne1) / ne1) as i32;
-            let i1: i32 = (ir as libc::c_long
-                - i3 as libc::c_long * ne2 * ne1
-                - i2 as libc::c_long * ne1) as i32;
+            let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
+            let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
+            let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
             let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
@@ -9630,7 +9616,7 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f32(
                 .offset((i1 as u64).wrapping_mul(nb11) as isize)
                 as *mut f32;
             let mut i: i32 = 0 as i32;
-            while (i as libc::c_long) < ne0 {
+            while (i as i64) < ne0 {
                 *dst_ptr.offset(i as isize) = {
                     ::core::mem::transmute::<
                         _,
@@ -9762,11 +9748,9 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f16(
     if nb10 == ::core::mem::size_of::<ggml_fp16_t>() as u64 {
         let mut ir: i32 = ir0;
         while ir < ir1 {
-            let i3: i32 = (ir as libc::c_long / (ne2 * ne1)) as i32;
-            let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne2 * ne1) / ne1) as i32;
-            let i1: i32 = (ir as libc::c_long
-                - i3 as libc::c_long * ne2 * ne1
-                - i2 as libc::c_long * ne1) as i32;
+            let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
+            let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
+            let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
             let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
                 .offset((i3 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2 as u64).wrapping_mul(nb2) as isize)
@@ -9783,7 +9767,7 @@ unsafe extern "C" fn ggml_compute_forward_add_f16_f16(
                 .offset((i1 as u64).wrapping_mul(nb11) as isize)
                 as *mut ggml_fp16_t;
             let mut i: i32 = 0 as i32;
-            while (i as libc::c_long) < ne0 {
+            while (i as i64) < ne0 {
                 *dst_ptr.offset(i as isize) = {
                     ::core::mem::transmute::<
                         _,
@@ -9952,11 +9936,9 @@ unsafe extern "C" fn ggml_compute_forward_add_q_f32(
     );
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let i03: i32 = (ir as libc::c_long / (ne02 * ne01)) as i32;
-        let i02: i32 = ((ir as libc::c_long - i03 as libc::c_long * ne02 * ne01) / ne01) as i32;
-        let i01: i32 = (ir as libc::c_long
-            - i03 as libc::c_long * ne02 * ne01
-            - i02 as libc::c_long * ne01) as i32;
+        let i03: i32 = (ir as i64 / (ne02 * ne01)) as i32;
+        let i02: i32 = ((ir as i64 - i03 as i64 * ne02 * ne01) / ne01) as i32;
+        let i01: i32 = (ir as i64 - i03 as i64 * ne02 * ne01 - i02 as i64 * ne01) as i32;
         let i13: i32 = i03;
         let i12: i32 = i02;
         let i11: i32 = i01;
@@ -10101,10 +10083,9 @@ unsafe extern "C" fn ggml_compute_forward_add1_f32(
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let i3: i32 = (ir as libc::c_long / (ne2 * ne1)) as i32;
-        let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne2 * ne1) / ne1) as i32;
-        let i1: i32 =
-            (ir as libc::c_long - i3 as libc::c_long * ne2 * ne1 - i2 as libc::c_long * ne1) as i32;
+        let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
+        let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
+        let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
         ggml_vec_add1_f32(
             ne0 as i32,
             ((*dst).data as *mut libc::c_char)
@@ -10222,10 +10203,9 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f32(
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let i3: i32 = (ir as libc::c_long / (ne2 * ne1)) as i32;
-        let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne2 * ne1) / ne1) as i32;
-        let i1: i32 =
-            (ir as libc::c_long - i3 as libc::c_long * ne2 * ne1 - i2 as libc::c_long * ne1) as i32;
+        let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
+        let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
+        let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
         let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
             .offset((i3 as u64).wrapping_mul(nb3) as isize)
             .offset((i2 as u64).wrapping_mul(nb2) as isize)
@@ -10237,7 +10217,7 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f32(
             .offset((i1 as u64).wrapping_mul(nb01) as isize)
             as *mut ggml_fp16_t;
         let mut i: i32 = 0 as i32;
-        while (i as libc::c_long) < ne0 {
+        while (i as i64) < ne0 {
             *dst_ptr.offset(i as isize) = {
                 ::core::mem::transmute::<
                     _,
@@ -10361,10 +10341,9 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f16(
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let i3: i32 = (ir as libc::c_long / (ne2 * ne1)) as i32;
-        let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne2 * ne1) / ne1) as i32;
-        let i1: i32 =
-            (ir as libc::c_long - i3 as libc::c_long * ne2 * ne1 - i2 as libc::c_long * ne1) as i32;
+        let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
+        let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
+        let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
         let mut dst_ptr: *mut ggml_fp16_t = ((*dst).data as *mut libc::c_char)
             .offset((i3 as u64).wrapping_mul(nb3) as isize)
             .offset((i2 as u64).wrapping_mul(nb2) as isize)
@@ -10376,7 +10355,7 @@ unsafe extern "C" fn ggml_compute_forward_add1_f16_f16(
             .offset((i1 as u64).wrapping_mul(nb01) as isize)
             as *mut ggml_fp16_t;
         let mut i: i32 = 0 as i32;
-        while (i as libc::c_long) < ne0 {
+        while (i as i64) < ne0 {
             *dst_ptr.offset(i as isize) = {
                 ::core::mem::transmute::<
                     _,
@@ -10528,10 +10507,9 @@ unsafe extern "C" fn ggml_compute_forward_add1_q_f32(
     );
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let i3: i32 = (ir as libc::c_long / (ne2 * ne1)) as i32;
-        let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne2 * ne1) / ne1) as i32;
-        let i1: i32 =
-            (ir as libc::c_long - i3 as libc::c_long * ne2 * ne1 - i2 as libc::c_long * ne1) as i32;
+        let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
+        let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
+        let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
         let mut src0_row: *mut libc::c_void = ((*src0).data as *mut libc::c_char).offset(
             (i1 as u64)
                 .wrapping_mul(nb01)
@@ -10632,7 +10610,7 @@ unsafe extern "C" fn ggml_compute_forward_acc_f32(
         );
         abort();
     }
-    if ggml_nelements(opt0) != 5 as i32 as libc::c_long {
+    if ggml_nelements(opt0) != 5 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -10678,34 +10656,34 @@ unsafe extern "C" fn ggml_compute_forward_acc_f32(
     let nb03: size_t = nb3;
     if offset
         .wrapping_add(
-            ((if ne10 == 0 as i32 as libc::c_long {
-                0 as i32 as libc::c_long
+            ((if ne10 == 0 as i32 as i64 {
+                0 as i32 as i64
             } else {
-                ne10 - 1 as i32 as libc::c_long
+                ne10 - 1 as i32 as i64
             }) as u64)
                 .wrapping_mul(nb0),
         )
         .wrapping_add(
-            ((if ne11 == 0 as i32 as libc::c_long {
-                0 as i32 as libc::c_long
+            ((if ne11 == 0 as i32 as i64 {
+                0 as i32 as i64
             } else {
-                ne11 - 1 as i32 as libc::c_long
+                ne11 - 1 as i32 as i64
             }) as u64)
                 .wrapping_mul(nb1),
         )
         .wrapping_add(
-            ((if ne12 == 0 as i32 as libc::c_long {
-                0 as i32 as libc::c_long
+            ((if ne12 == 0 as i32 as i64 {
+                0 as i32 as i64
             } else {
-                ne12 - 1 as i32 as libc::c_long
+                ne12 - 1 as i32 as i64
             }) as u64)
                 .wrapping_mul(nb2),
         )
         .wrapping_add(
-            ((if ne13 == 0 as i32 as libc::c_long {
-                0 as i32 as libc::c_long
+            ((if ne13 == 0 as i32 as i64 {
+                0 as i32 as i64
             } else {
-                ne13 - 1 as i32 as libc::c_long
+                ne13 - 1 as i32 as i64
             }) as u64)
                 .wrapping_mul(nb3),
         )
@@ -10723,34 +10701,34 @@ unsafe extern "C" fn ggml_compute_forward_acc_f32(
     }
     if offset
         .wrapping_add(
-            ((if ne10 == 0 as i32 as libc::c_long {
-                0 as i32 as libc::c_long
+            ((if ne10 == 0 as i32 as i64 {
+                0 as i32 as i64
             } else {
-                ne10 - 1 as i32 as libc::c_long
+                ne10 - 1 as i32 as i64
             }) as u64)
                 .wrapping_mul(nb00),
         )
         .wrapping_add(
-            ((if ne11 == 0 as i32 as libc::c_long {
-                0 as i32 as libc::c_long
+            ((if ne11 == 0 as i32 as i64 {
+                0 as i32 as i64
             } else {
-                ne11 - 1 as i32 as libc::c_long
+                ne11 - 1 as i32 as i64
             }) as u64)
                 .wrapping_mul(nb01),
         )
         .wrapping_add(
-            ((if ne12 == 0 as i32 as libc::c_long {
-                0 as i32 as libc::c_long
+            ((if ne12 == 0 as i32 as i64 {
+                0 as i32 as i64
             } else {
-                ne12 - 1 as i32 as libc::c_long
+                ne12 - 1 as i32 as i64
             }) as u64)
                 .wrapping_mul(nb02),
         )
         .wrapping_add(
-            ((if ne13 == 0 as i32 as libc::c_long {
-                0 as i32 as libc::c_long
+            ((if ne13 == 0 as i32 as i64 {
+                0 as i32 as i64
             } else {
-                ne13 - 1 as i32 as libc::c_long
+                ne13 - 1 as i32 as i64
             }) as u64)
                 .wrapping_mul(nb03),
         )
@@ -10781,11 +10759,9 @@ unsafe extern "C" fn ggml_compute_forward_acc_f32(
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let i3: i32 = (ir as libc::c_long / (ne12 * ne11)) as i32;
-        let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne12 * ne11) / ne11) as i32;
-        let i1: i32 = (ir as libc::c_long
-            - i3 as libc::c_long * ne12 * ne11
-            - i2 as libc::c_long * ne11) as i32;
+        let i3: i32 = (ir as i64 / (ne12 * ne11)) as i32;
+        let i2: i32 = ((ir as i64 - i3 as i64 * ne12 * ne11) / ne11) as i32;
+        let i1: i32 = (ir as i64 - i3 as i64 * ne12 * ne11 - i2 as i64 * ne11) as i32;
         ggml_vec_add_f32(
             nc,
             ((*dst).data as *mut libc::c_char)
@@ -10882,11 +10858,9 @@ unsafe extern "C" fn ggml_compute_forward_sub_f32(
     if nb10 == ::core::mem::size_of::<f32>() as u64 {
         let mut ir: i32 = 0 as i32;
         while ir < nr {
-            let i3: i32 = (ir as libc::c_long / (ne2 * ne1)) as i32;
-            let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne2 * ne1) / ne1) as i32;
-            let i1: i32 = (ir as libc::c_long
-                - i3 as libc::c_long * ne2 * ne1
-                - i2 as libc::c_long * ne1) as i32;
+            let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
+            let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
+            let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
             ggml_vec_sub_f32(
                 ne0 as i32,
                 ((*dst).data as *mut libc::c_char)
@@ -10908,12 +10882,9 @@ unsafe extern "C" fn ggml_compute_forward_sub_f32(
     } else {
         let mut ir_0: i32 = 0 as i32;
         while ir_0 < nr {
-            let i3_0: i32 = (ir_0 as libc::c_long / (ne2 * ne1)) as i32;
-            let i2_0: i32 =
-                ((ir_0 as libc::c_long - i3_0 as libc::c_long * ne2 * ne1) / ne1) as i32;
-            let i1_0: i32 = (ir_0 as libc::c_long
-                - i3_0 as libc::c_long * ne2 * ne1
-                - i2_0 as libc::c_long * ne1) as i32;
+            let i3_0: i32 = (ir_0 as i64 / (ne2 * ne1)) as i32;
+            let i2_0: i32 = ((ir_0 as i64 - i3_0 as i64 * ne2 * ne1) / ne1) as i32;
+            let i1_0: i32 = (ir_0 as i64 - i3_0 as i64 * ne2 * ne1 - i2_0 as i64 * ne1) as i32;
             let mut dst_ptr: *mut f32 = ((*dst).data as *mut libc::c_char)
                 .offset((i3_0 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2_0 as u64).wrapping_mul(nb2) as isize)
@@ -10925,7 +10896,7 @@ unsafe extern "C" fn ggml_compute_forward_sub_f32(
                 .offset((i1_0 as u64).wrapping_mul(nb01) as isize)
                 as *mut f32;
             let mut i0: i32 = 0 as i32;
-            while (i0 as libc::c_long) < ne0 {
+            while (i0 as i64) < ne0 {
                 let mut src1_ptr: *mut f32 = ((*src1).data as *mut libc::c_char)
                     .offset((i3_0 as u64).wrapping_mul(nb13) as isize)
                     .offset((i2_0 as u64).wrapping_mul(nb12) as isize)
@@ -11065,7 +11036,7 @@ unsafe extern "C" fn ggml_compute_forward_mul_f32(
                 .offset((i11 as u64).wrapping_mul(nb11) as isize)
                 as *mut f32;
             ggml_vec_mul_f32(ne00 as i32, dst_ptr, src0_ptr, src1_ptr);
-            ir += nth as libc::c_long;
+            ir += nth as i64;
         }
     } else {
         let mut ir_0: int64_t = ith as int64_t;
@@ -11098,7 +11069,7 @@ unsafe extern "C" fn ggml_compute_forward_mul_f32(
                 i0 += 1;
                 i0;
             }
-            ir_0 += nth as libc::c_long;
+            ir_0 += nth as i64;
         }
     };
 }
@@ -11176,11 +11147,9 @@ unsafe extern "C" fn ggml_compute_forward_div_f32(
     if nb10 == ::core::mem::size_of::<f32>() as u64 {
         let mut ir: i32 = 0 as i32;
         while ir < nr {
-            let i3: i32 = (ir as libc::c_long / (ne2 * ne1)) as i32;
-            let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne2 * ne1) / ne1) as i32;
-            let i1: i32 = (ir as libc::c_long
-                - i3 as libc::c_long * ne2 * ne1
-                - i2 as libc::c_long * ne1) as i32;
+            let i3: i32 = (ir as i64 / (ne2 * ne1)) as i32;
+            let i2: i32 = ((ir as i64 - i3 as i64 * ne2 * ne1) / ne1) as i32;
+            let i1: i32 = (ir as i64 - i3 as i64 * ne2 * ne1 - i2 as i64 * ne1) as i32;
             ggml_vec_div_f32(
                 ne0 as i32,
                 ((*dst).data as *mut libc::c_char)
@@ -11202,12 +11171,9 @@ unsafe extern "C" fn ggml_compute_forward_div_f32(
     } else {
         let mut ir_0: i32 = 0 as i32;
         while ir_0 < nr {
-            let i3_0: i32 = (ir_0 as libc::c_long / (ne2 * ne1)) as i32;
-            let i2_0: i32 =
-                ((ir_0 as libc::c_long - i3_0 as libc::c_long * ne2 * ne1) / ne1) as i32;
-            let i1_0: i32 = (ir_0 as libc::c_long
-                - i3_0 as libc::c_long * ne2 * ne1
-                - i2_0 as libc::c_long * ne1) as i32;
+            let i3_0: i32 = (ir_0 as i64 / (ne2 * ne1)) as i32;
+            let i2_0: i32 = ((ir_0 as i64 - i3_0 as i64 * ne2 * ne1) / ne1) as i32;
+            let i1_0: i32 = (ir_0 as i64 - i3_0 as i64 * ne2 * ne1 - i2_0 as i64 * ne1) as i32;
             let mut dst_ptr: *mut f32 = ((*dst).data as *mut libc::c_char)
                 .offset((i3_0 as u64).wrapping_mul(nb3) as isize)
                 .offset((i2_0 as u64).wrapping_mul(nb2) as isize)
@@ -11219,7 +11185,7 @@ unsafe extern "C" fn ggml_compute_forward_div_f32(
                 .offset((i1_0 as u64).wrapping_mul(nb01) as isize)
                 as *mut f32;
             let mut i0: i32 = 0 as i32;
-            while (i0 as libc::c_long) < ne0 {
+            while (i0 as i64) < ne0 {
                 let mut src1_ptr: *mut f32 = ((*src1).data as *mut libc::c_char)
                     .offset((i3_0 as u64).wrapping_mul(nb13) as isize)
                     .offset((i2_0 as u64).wrapping_mul(nb12) as isize)
@@ -11566,7 +11532,7 @@ unsafe extern "C" fn ggml_compute_forward_sum_rows_f32(
     let ne1: int64_t = (*dst).ne[1 as i32 as usize];
     let ne2: int64_t = (*dst).ne[2 as i32 as usize];
     let ne3: int64_t = (*dst).ne[3 as i32 as usize];
-    if ne0 != 1 as i32 as libc::c_long {
+    if ne0 != 1 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -11818,41 +11784,37 @@ unsafe extern "C" fn ggml_compute_forward_repeat_f32(
     let mut i3: i32 = 0 as i32;
     while i3 < nr3 {
         let mut k3: i32 = 0 as i32;
-        while (k3 as libc::c_long) < ne03 {
+        while (k3 as i64) < ne03 {
             let mut i2: i32 = 0 as i32;
             while i2 < nr2 {
                 let mut k2: i32 = 0 as i32;
-                while (k2 as libc::c_long) < ne02 {
+                while (k2 as i64) < ne02 {
                     let mut i1: i32 = 0 as i32;
                     while i1 < nr1 {
                         let mut k1: i32 = 0 as i32;
-                        while (k1 as libc::c_long) < ne01 {
+                        while (k1 as i64) < ne01 {
                             let mut i0: i32 = 0 as i32;
                             while i0 < nr0 {
                                 ggml_vec_cpy_f32(
                                     ne00 as i32,
                                     ((*dst).data as *mut libc::c_char)
                                         .offset(
-                                            ((i3 as libc::c_long * ne03 + k3 as libc::c_long)
-                                                as u64)
+                                            ((i3 as i64 * ne03 + k3 as i64) as u64)
                                                 .wrapping_mul(nb3)
                                                 as isize,
                                         )
                                         .offset(
-                                            ((i2 as libc::c_long * ne02 + k2 as libc::c_long)
-                                                as u64)
+                                            ((i2 as i64 * ne02 + k2 as i64) as u64)
                                                 .wrapping_mul(nb2)
                                                 as isize,
                                         )
                                         .offset(
-                                            ((i1 as libc::c_long * ne01 + k1 as libc::c_long)
-                                                as u64)
+                                            ((i1 as i64 * ne01 + k1 as i64) as u64)
                                                 .wrapping_mul(nb1)
                                                 as isize,
                                         )
                                         .offset(
-                                            ((i0 as libc::c_long * ne00) as u64).wrapping_mul(nb0)
-                                                as isize,
+                                            ((i0 as i64 * ne00) as u64).wrapping_mul(nb0) as isize
                                         ) as *mut f32,
                                     ((*src0).data as *mut libc::c_char)
                                         .offset((k3 as u64).wrapping_mul(nb03) as isize)
@@ -12514,7 +12476,7 @@ unsafe extern "C" fn ggml_compute_forward_norm_f32(
                 let mut variance: f32 = (sum2 / ne00 as f64) as f32;
                 let scale: f32 = 1.0f32 / sqrtf(variance + eps);
                 ggml_vec_scale_f32(ne00 as i32, y, scale);
-                i01 += nth as libc::c_long;
+                i01 += nth as i64;
             }
             i02 += 1;
             i02;
@@ -12620,7 +12582,7 @@ unsafe extern "C" fn ggml_compute_forward_rms_norm_f32(
                 );
                 let scale: f32 = 1.0f32 / sqrtf(mean + eps);
                 ggml_vec_scale_f32(ne00 as i32, y, scale);
-                i01 += nth as libc::c_long;
+                i01 += nth as i64;
             }
             i02 += 1;
             i02;
@@ -12741,7 +12703,7 @@ unsafe extern "C" fn ggml_compute_forward_rms_norm_back_f32(
                 ggml_vec_scale_f32(ne00 as i32, dx, -sum_xdz as f32 / sum_eps);
                 ggml_vec_acc_f32(ne00 as i32, dx, dz);
                 ggml_vec_scale_f32(ne00 as i32, dx, rrms);
-                i01 += nth as libc::c_long;
+                i01 += nth as i64;
             }
             i02 += 1;
             i02;
@@ -12810,11 +12772,9 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f32(
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let i03: i32 = (ir as libc::c_long / (ne02 * ne01)) as i32;
-        let i02: i32 = ((ir as libc::c_long - i03 as libc::c_long * ne02 * ne01) / ne01) as i32;
-        let i01: i32 = (ir as libc::c_long
-            - i03 as libc::c_long * ne02 * ne01
-            - i02 as libc::c_long * ne01) as i32;
+        let i03: i32 = (ir as i64 / (ne02 * ne01)) as i32;
+        let i02: i32 = ((ir as i64 - i03 as i64 * ne02 * ne01) / ne01) as i32;
+        let i01: i32 = (ir as i64 - i03 as i64 * ne02 * ne01 - i02 as i64 * ne01) as i32;
         let mut ic: int64_t = 0 as i32 as int64_t;
         while ic < ne11 {
             let i13: i32 = i03;
@@ -13028,10 +12988,10 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f16_f32(
                             >(_mm_cvtps_ph(
                                 _mm_setr_ps(
                                     *(((*src1).data as *mut libc::c_char)
-                                        .offset((i13 * nb13 as libc::c_long) as isize)
-                                        .offset((i12 * nb12 as libc::c_long) as isize)
-                                        .offset((i11 * nb11 as libc::c_long) as isize)
-                                        .offset((i10 * nb10 as libc::c_long) as isize)
+                                        .offset((i13 * nb13 as i64) as isize)
+                                        .offset((i12 * nb12 as i64) as isize)
+                                        .offset((i11 * nb11 as i64) as isize)
+                                        .offset((i10 * nb10 as i64) as isize)
                                         as *mut f32),
                                     0 as i32 as f32,
                                     0 as i32 as f32,
@@ -13074,11 +13034,9 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f16_f32(
     let mut wdata_0: *mut ggml_fp16_t = (*params).wdata as *mut ggml_fp16_t;
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let i03: i32 = (ir as libc::c_long / (ne02 * ne01)) as i32;
-        let i02: i32 = ((ir as libc::c_long - i03 as libc::c_long * ne02 * ne01) / ne01) as i32;
-        let i01: i32 = (ir as libc::c_long
-            - i03 as libc::c_long * ne02 * ne01
-            - i02 as libc::c_long * ne01) as i32;
+        let i03: i32 = (ir as i64 / (ne02 * ne01)) as i32;
+        let i02: i32 = ((ir as i64 - i03 as i64 * ne02 * ne01) / ne01) as i32;
+        let i01: i32 = (ir as i64 - i03 as i64 * ne02 * ne01 - i02 as i64 * ne01) as i32;
         let i13_0: i32 = i03;
         let i12_0: i32 = i02;
         let i0: i32 = i01;
@@ -13088,10 +13046,7 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_f16_f32(
             .offset((i01 * nb01 + i02 * nb02 + i03 * nb03) as isize)
             as *mut ggml_fp16_t;
         let mut src1_col: *mut ggml_fp16_t = wdata_0.offset(
-            ((0 as i32 as libc::c_long
-                + i12_0 as libc::c_long * ne11
-                + i13_0 as libc::c_long * ne12 * ne11)
-                * ne00) as isize,
+            ((0 as i32 as i64 + i12_0 as i64 * ne11 + i13_0 as i64 * ne12 * ne11) * ne00) as isize,
         );
         let mut dst_col: *mut f32 = ((*dst).data as *mut libc::c_char)
             .offset((i0 * nb0 + 0 as i32 * nb1 + i2 * nb2 + i3 * nb3) as isize)
@@ -13301,9 +13256,9 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_q_f32(
                 while i11 < ne11 {
                     quantize_row_q_dot.expect("non-null function pointer")(
                         ((*src1).data as *mut libc::c_char)
-                            .offset((i13 * nb13 as libc::c_long) as isize)
-                            .offset((i12 * nb12 as libc::c_long) as isize)
-                            .offset((i11 * nb11 as libc::c_long) as isize)
+                            .offset((i13 * nb13 as i64) as isize)
+                            .offset((i12 * nb12 as i64) as isize)
+                            .offset((i11 * nb11 as i64) as isize)
                             as *mut f32,
                         wdata as *mut libc::c_void,
                         ne10 as i32,
@@ -13333,11 +13288,9 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_q_f32(
         .wrapping_div(GGML_BLCK_SIZE[vec_dot_type as usize] as u64);
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let i03: i32 = (ir as libc::c_long / (ne02 * ne01)) as i32;
-        let i02: i32 = ((ir as libc::c_long - i03 as libc::c_long * ne02 * ne01) / ne01) as i32;
-        let i01: i32 = (ir as libc::c_long
-            - i03 as libc::c_long * ne02 * ne01
-            - i02 as libc::c_long * ne01) as i32;
+        let i03: i32 = (ir as i64 / (ne02 * ne01)) as i32;
+        let i02: i32 = ((ir as i64 - i03 as i64 * ne02 * ne01) / ne01) as i32;
+        let i01: i32 = (ir as i64 - i03 as i64 * ne02 * ne01 - i02 as i64 * ne01) as i32;
         let i13_0: i32 = i03;
         let i12_0: i32 = i02;
         let i0: i32 = i01;
@@ -13347,9 +13300,7 @@ unsafe extern "C" fn ggml_compute_forward_mul_mat_q_f32(
             .offset((i01 * nb01 + i02 * nb02 + i03 * nb03) as isize)
             as *mut libc::c_void;
         let mut src1_col: *mut libc::c_char = (wdata_0 as *mut libc::c_char).offset(
-            ((0 as i32 as libc::c_long
-                + i12_0 as libc::c_long * ne11
-                + i13_0 as libc::c_long * ne12 * ne11) as u64)
+            ((0 as i32 as i64 + i12_0 as i64 * ne11 + i13_0 as i64 * ne12 * ne11) as u64)
                 .wrapping_mul(row_size_0) as isize,
         );
         let mut dst_col: *mut f32 = ((*dst).data as *mut libc::c_char)
@@ -13544,7 +13495,7 @@ unsafe extern "C" fn ggml_compute_forward_set_f32(
         );
         abort();
     }
-    if ggml_nelements(opt0) != 5 as i32 as libc::c_long {
+    if ggml_nelements(opt0) != 5 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -13584,25 +13535,25 @@ unsafe extern "C" fn ggml_compute_forward_set_f32(
     let nb12: size_t = (*src1).nb[2 as i32 as usize];
     let nb13: size_t = (*src1).nb[3 as i32 as usize];
     let nb0: size_t = ggml_element_size(src0);
-    let im0: i32 = (if ne10 == 0 as i32 as libc::c_long {
-        0 as i32 as libc::c_long
+    let im0: i32 = (if ne10 == 0 as i32 as i64 {
+        0 as i32 as i64
     } else {
-        ne10 - 1 as i32 as libc::c_long
+        ne10 - 1 as i32 as i64
     }) as i32;
-    let im1: i32 = (if ne11 == 0 as i32 as libc::c_long {
-        0 as i32 as libc::c_long
+    let im1: i32 = (if ne11 == 0 as i32 as i64 {
+        0 as i32 as i64
     } else {
-        ne11 - 1 as i32 as libc::c_long
+        ne11 - 1 as i32 as i64
     }) as i32;
-    let im2: i32 = (if ne12 == 0 as i32 as libc::c_long {
-        0 as i32 as libc::c_long
+    let im2: i32 = (if ne12 == 0 as i32 as i64 {
+        0 as i32 as i64
     } else {
-        ne12 - 1 as i32 as libc::c_long
+        ne12 - 1 as i32 as i64
     }) as i32;
-    let im3: i32 = (if ne13 == 0 as i32 as libc::c_long {
-        0 as i32 as libc::c_long
+    let im3: i32 = (if ne13 == 0 as i32 as i64 {
+        0 as i32 as i64
     } else {
-        ne13 - 1 as i32 as libc::c_long
+        ne13 - 1 as i32 as i64
     }) as i32;
     if offset
         .wrapping_add((im0 as u64).wrapping_mul(nb0))
@@ -13636,11 +13587,9 @@ unsafe extern "C" fn ggml_compute_forward_set_f32(
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let i3: i32 = (ir as libc::c_long / (ne12 * ne11)) as i32;
-        let i2: i32 = ((ir as libc::c_long - i3 as libc::c_long * ne12 * ne11) / ne11) as i32;
-        let i1: i32 = (ir as libc::c_long
-            - i3 as libc::c_long * ne12 * ne11
-            - i2 as libc::c_long * ne11) as i32;
+        let i3: i32 = (ir as i64 / (ne12 * ne11)) as i32;
+        let i2: i32 = ((ir as i64 - i3 as i64 * ne12 * ne11) / ne11) as i32;
+        let i1: i32 = (ir as i64 - i3 as i64 * ne12 * ne11 - i2 as i64 * ne11) as i32;
         ggml_vec_cpy_f32(
             nc,
             ((*dst).data as *mut libc::c_char)
@@ -13895,7 +13844,7 @@ unsafe extern "C" fn ggml_compute_forward_get_rows_back_f32_f16(
     }
     let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
     let nr: i32 = ggml_nelements(src1) as i32;
-    if (*dst).ne[0 as i32 as usize] != nc as libc::c_long {
+    if (*dst).ne[0 as i32 as usize] != nc as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -13990,7 +13939,7 @@ unsafe extern "C" fn ggml_compute_forward_get_rows_back_f32(
     }
     let nc: i32 = (*src0).ne[0 as i32 as usize] as i32;
     let nr: i32 = ggml_nelements(src1) as i32;
-    if (*dst).ne[0 as i32 as usize] != nc as libc::c_long {
+    if (*dst).ne[0 as i32 as usize] != nc as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -14716,7 +14665,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f32(
         );
         abort();
     }
-    if ggml_nelements(src1) != 3 as i32 as libc::c_long {
+    if ggml_nelements(src1) != 3 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -14759,7 +14708,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f32(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(dst);
-    if n_dims as libc::c_long > ne0 {
+    if n_dims as i64 > ne0 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -14794,7 +14743,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f32(
         }) as int64_t;
         while i2 < ne2 {
             let p: int64_t = if mode & 1 as i32 == 0 as i32 {
-                n_past as libc::c_long + i2
+                n_past as i64 + i2
             } else {
                 i2
             };
@@ -14829,18 +14778,17 @@ unsafe extern "C" fn ggml_compute_forward_rope_f32(
                             let x1: f32 = *src.offset(1 as i32 as isize);
                             *dst_data.offset(0 as i32 as isize) = x0 * cos_theta - x1 * sin_theta;
                             *dst_data.offset(1 as i32 as isize) = x0 * sin_theta + x1 * cos_theta;
-                            i0 += 2 as i32 as libc::c_long;
+                            i0 += 2 as i32 as i64;
                         }
                     } else {
                         let mut ib: int64_t = 0 as i32 as int64_t;
-                        while ib < ne0 / n_dims as libc::c_long {
+                        while ib < ne0 / n_dims as i64 {
                             let mut ic: int64_t = 0 as i32 as int64_t;
-                            while ic < n_dims as libc::c_long {
+                            while ic < n_dims as i64 {
                                 let cos_theta_0: f32 = cosf(theta);
                                 let sin_theta_0: f32 = sinf(theta);
                                 theta *= theta_scale;
-                                let i0_0: int64_t =
-                                    ib * n_dims as libc::c_long + ic / 2 as i32 as libc::c_long;
+                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2 as i32 as i64;
                                 let src_0: *const f32 = ((*src0).data as *mut libc::c_char)
                                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
@@ -14859,7 +14807,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f32(
                                     x0_0 * cos_theta_0 - x1_0 * sin_theta_0;
                                 *dst_data_0.offset((n_dims / 2 as i32) as isize) =
                                     x0_0 * sin_theta_0 + x1_0 * cos_theta_0;
-                                ic += 2 as i32 as libc::c_long;
+                                ic += 2 as i32 as i64;
                             }
                             ib += 1;
                             ib;
@@ -14892,7 +14840,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
         );
         abort();
     }
-    if ggml_nelements(src1) != 3 as i32 as libc::c_long {
+    if ggml_nelements(src1) != 3 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -14935,7 +14883,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
     let ith: i32 = (*params).ith;
     let nth: i32 = (*params).nth;
     let nr: i32 = ggml_nrows(dst);
-    if n_dims as libc::c_long > ne0 {
+    if n_dims as i64 > ne0 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -14970,7 +14918,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
         }) as int64_t;
         while i2 < ne2 {
             let p: int64_t = if mode & 1 as i32 == 0 as i32 {
-                n_past as libc::c_long + i2
+                n_past as i64 + i2
             } else {
                 i2
             };
@@ -15037,18 +14985,17 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                 ))[0 as i32 as usize]
                                     as libc::c_ushort
                             };
-                            i0 += 2 as i32 as libc::c_long;
+                            i0 += 2 as i32 as i64;
                         }
                     } else {
                         let mut ib: int64_t = 0 as i32 as int64_t;
-                        while ib < ne0 / n_dims as libc::c_long {
+                        while ib < ne0 / n_dims as i64 {
                             let mut ic: int64_t = 0 as i32 as int64_t;
-                            while ic < n_dims as libc::c_long {
+                            while ic < n_dims as i64 {
                                 let cos_theta_0: f32 = cosf(theta);
                                 let sin_theta_0: f32 = sinf(theta);
                                 theta *= theta_scale;
-                                let i0_0: int64_t =
-                                    ib * n_dims as libc::c_long + ic / 2 as i32 as libc::c_long;
+                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2 as i32 as i64;
                                 let src_0: *const ggml_fp16_t = ((*src0).data as *mut libc::c_char)
                                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
@@ -15101,7 +15048,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_f16(
                                     ))[0 as i32 as usize]
                                         as libc::c_ushort
                                 };
-                                ic += 2 as i32 as libc::c_long;
+                                ic += 2 as i32 as i64;
                             }
                             ib += 1;
                             ib;
@@ -15189,7 +15136,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f32(
         }) as int64_t;
         while i2 < ne2 {
             let p: int64_t = if mode & 1 as i32 == 0 as i32 {
-                n_past as libc::c_long + i2
+                n_past as i64 + i2
             } else {
                 i2
             };
@@ -15224,18 +15171,17 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f32(
                             let dy1: f32 = *dy.offset(1 as i32 as isize);
                             *dx.offset(0 as i32 as isize) = dy0 * cos_theta + dy1 * sin_theta;
                             *dx.offset(1 as i32 as isize) = -dy0 * sin_theta + dy1 * cos_theta;
-                            i0 += 2 as i32 as libc::c_long;
+                            i0 += 2 as i32 as i64;
                         }
                     } else {
                         let mut ib: int64_t = 0 as i32 as int64_t;
-                        while ib < ne0 / n_dims as libc::c_long {
+                        while ib < ne0 / n_dims as i64 {
                             let mut ic: int64_t = 0 as i32 as int64_t;
-                            while ic < n_dims as libc::c_long {
+                            while ic < n_dims as i64 {
                                 let cos_theta_0: f32 = cosf(theta);
                                 let sin_theta_0: f32 = sinf(theta);
                                 theta *= theta_scale;
-                                let i0_0: int64_t =
-                                    ib * n_dims as libc::c_long + ic / 2 as i32 as libc::c_long;
+                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2 as i32 as i64;
                                 let dy_0: *const f32 = ((*src0).data as *mut libc::c_char)
                                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
@@ -15254,7 +15200,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f32(
                                     dy0_0 * cos_theta_0 + dy1_0 * sin_theta_0;
                                 *dx_0.offset((n_dims / 2 as i32) as isize) =
                                     -dy0_0 * sin_theta_0 + dy1_0 * cos_theta_0;
-                                ic += 2 as i32 as libc::c_long;
+                                ic += 2 as i32 as i64;
                             }
                             ib += 1;
                             ib;
@@ -15315,7 +15261,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
         }) as int64_t;
         while i2 < ne2 {
             let p: int64_t = if mode & 1 as i32 == 0 as i32 {
-                n_past as libc::c_long + i2
+                n_past as i64 + i2
             } else {
                 i2
             };
@@ -15382,18 +15328,17 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                 ))[0 as i32 as usize]
                                     as libc::c_ushort
                             };
-                            i0 += 2 as i32 as libc::c_long;
+                            i0 += 2 as i32 as i64;
                         }
                     } else {
                         let mut ib: int64_t = 0 as i32 as int64_t;
-                        while ib < ne0 / n_dims as libc::c_long {
+                        while ib < ne0 / n_dims as i64 {
                             let mut ic: int64_t = 0 as i32 as int64_t;
-                            while ic < n_dims as libc::c_long {
+                            while ic < n_dims as i64 {
                                 let cos_theta_0: f32 = cosf(theta);
                                 let sin_theta_0: f32 = sinf(theta);
                                 theta *= theta_scale;
-                                let i0_0: int64_t =
-                                    ib * n_dims as libc::c_long + ic / 2 as i32 as libc::c_long;
+                                let i0_0: int64_t = ib * n_dims as i64 + ic / 2 as i32 as i64;
                                 let dy_0: *const ggml_fp16_t = ((*src0).data as *mut libc::c_char)
                                     .offset((i3 as u64).wrapping_mul(nb03) as isize)
                                     .offset((i2 as u64).wrapping_mul(nb02) as isize)
@@ -15445,7 +15390,7 @@ unsafe extern "C" fn ggml_compute_forward_rope_back_f16(
                                     ))[0 as i32 as usize]
                                         as libc::c_ushort
                                 };
-                                ic += 2 as i32 as libc::c_long;
+                                ic += 2 as i32 as i64;
                             }
                             ib += 1;
                             ib;
@@ -15542,7 +15487,7 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f16_f32(
     let nk: i32 = ne00 as i32;
     let nh: i32 = nk / 2 as i32;
     let ew0: i32 = ggml_up32(ne01 as i32);
-    if ne00 % 2 as i32 as libc::c_long != 1 as i32 as libc::c_long {
+    if ne00 % 2 as i32 as i64 != 1 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -15581,15 +15526,14 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f16_f32(
             let mut i01: int64_t = 0 as i32 as int64_t;
             while i01 < ne01 {
                 let src: *const ggml_fp16_t = ((*src0).data as *mut libc::c_char)
-                    .offset((i02 * nb02 as libc::c_long) as isize)
-                    .offset((i01 * nb01 as libc::c_long) as isize)
+                    .offset((i02 * nb02 as i64) as isize)
+                    .offset((i01 * nb01 as i64) as isize)
                     as *mut ggml_fp16_t;
                 let mut dst_data: *mut ggml_fp16_t =
-                    wdata.offset((i02 * ew0 as libc::c_long * ne00) as isize);
+                    wdata.offset((i02 * ew0 as i64 * ne00) as isize);
                 let mut i00: int64_t = 0 as i32 as int64_t;
                 while i00 < ne00 {
-                    *dst_data.offset((i00 * ew0 as libc::c_long + i01) as isize) =
-                        *src.offset(i00 as isize);
+                    *dst_data.offset((i00 * ew0 as i64 + i01) as isize) = *src.offset(i00 as isize);
                     i00 += 1;
                     i00;
                 }
@@ -15599,18 +15543,17 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f16_f32(
             i02 += 1;
             i02;
         }
-        let wdata_0: *mut ggml_fp16_t = ((*params).wdata as *mut ggml_fp16_t)
-            .offset((ne02 * ew0 as libc::c_long * ne00) as isize);
+        let wdata_0: *mut ggml_fp16_t =
+            ((*params).wdata as *mut ggml_fp16_t).offset((ne02 * ew0 as i64 * ne00) as isize);
         let mut i11: int64_t = 0 as i32 as int64_t;
         while i11 < ne11 {
             let src_0: *const f32 = ((*src1).data as *mut libc::c_char)
-                .offset((i11 * nb11 as libc::c_long) as isize)
+                .offset((i11 * nb11 as i64) as isize)
                 as *mut f32;
             let mut dst_data_0: *mut ggml_fp16_t = wdata_0;
             let mut i10: int64_t = 0 as i32 as int64_t;
             while i10 < ne10 {
-                *dst_data_0
-                    .offset(((i10 + nh as libc::c_long) * ew0 as libc::c_long + i11) as isize) = {
+                *dst_data_0.offset(((i10 + nh as i64) * ew0 as i64 + i11) as isize) = {
                     ::core::mem::transmute::<
                         _,
                         [libc::c_short;
@@ -15655,14 +15598,11 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f16_f32(
                     ew0,
                     &mut v,
                     ((*params).wdata as *mut ggml_fp16_t)
-                        .offset(((i1 * ew0) as libc::c_long * ne00) as isize)
+                        .offset(((i1 * ew0) as i64 * ne00) as isize)
                         .offset(((nh + k) * ew0) as isize),
                     ((*params).wdata as *mut ggml_fp16_t)
-                        .offset((ne02 * ew0 as libc::c_long * ne00) as isize)
-                        .offset(
-                            ((i0 + nh as libc::c_long + k as libc::c_long) * ew0 as libc::c_long)
-                                as isize,
-                        ),
+                        .offset((ne02 * ew0 as i64 * ne00) as isize)
+                        .offset(((i0 + nh as i64 + k as i64) * ew0 as i64) as isize),
                 );
                 *dst_data_1.offset(i0 as isize) += v;
                 k += 1;
@@ -15728,7 +15668,7 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f32(
     let nk: i32 = ne00 as i32;
     let nh: i32 = nk / 2 as i32;
     let ew0: i32 = ggml_up32(ne01 as i32);
-    if ne00 % 2 as i32 as libc::c_long != 1 as i32 as libc::c_long {
+    if ne00 % 2 as i32 as i64 != 1 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -15766,15 +15706,13 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f32(
             let mut i01: int64_t = 0 as i32 as int64_t;
             while i01 < ne01 {
                 let src: *const f32 = ((*src0).data as *mut libc::c_char)
-                    .offset((i02 * nb02 as libc::c_long) as isize)
-                    .offset((i01 * nb01 as libc::c_long) as isize)
+                    .offset((i02 * nb02 as i64) as isize)
+                    .offset((i01 * nb01 as i64) as isize)
                     as *mut f32;
-                let mut dst_data: *mut f32 =
-                    wdata.offset((i02 * ew0 as libc::c_long * ne00) as isize);
+                let mut dst_data: *mut f32 = wdata.offset((i02 * ew0 as i64 * ne00) as isize);
                 let mut i00: int64_t = 0 as i32 as int64_t;
                 while i00 < ne00 {
-                    *dst_data.offset((i00 * ew0 as libc::c_long + i01) as isize) =
-                        *src.offset(i00 as isize);
+                    *dst_data.offset((i00 * ew0 as i64 + i01) as isize) = *src.offset(i00 as isize);
                     i00 += 1;
                     i00;
                 }
@@ -15785,17 +15723,16 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f32(
             i02;
         }
         let wdata_0: *mut f32 =
-            ((*params).wdata as *mut f32).offset((ne02 * ew0 as libc::c_long * ne00) as isize);
+            ((*params).wdata as *mut f32).offset((ne02 * ew0 as i64 * ne00) as isize);
         let mut i11: int64_t = 0 as i32 as int64_t;
         while i11 < ne11 {
             let src_0: *const f32 = ((*src1).data as *mut libc::c_char)
-                .offset((i11 * nb11 as libc::c_long) as isize)
+                .offset((i11 * nb11 as i64) as isize)
                 as *mut f32;
             let mut dst_data_0: *mut f32 = wdata_0;
             let mut i10: int64_t = 0 as i32 as int64_t;
             while i10 < ne10 {
-                *dst_data_0
-                    .offset(((i10 + nh as libc::c_long) * ew0 as libc::c_long + i11) as isize) =
+                *dst_data_0.offset(((i10 + nh as i64) * ew0 as i64 + i11) as isize) =
                     *src_0.offset(i10 as isize);
                 i10 += 1;
                 i10;
@@ -15826,14 +15763,11 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_1s_f32(
                     ew0,
                     &mut v,
                     ((*params).wdata as *mut f32)
-                        .offset(((i1 * ew0) as libc::c_long * ne00) as isize)
+                        .offset(((i1 * ew0) as i64 * ne00) as isize)
                         .offset(((nh + k) * ew0) as isize),
                     ((*params).wdata as *mut f32)
-                        .offset((ne02 * ew0 as libc::c_long * ne00) as isize)
-                        .offset(
-                            ((i0 + nh as libc::c_long + k as libc::c_long) * ew0 as libc::c_long)
-                                as isize,
-                        ),
+                        .offset((ne02 * ew0 as i64 * ne00) as isize)
+                        .offset(((i0 + nh as i64 + k as i64) * ew0 as i64) as isize),
                 );
                 *dst_data_1.offset(i0 as isize) += v;
                 k += 1;
@@ -15926,7 +15860,7 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
     let nk: i32 = ne00 as i32;
     let nh: i32 = nk / 2 as i32;
     let ew0: i32 = ggml_up32(ne01 as i32);
-    if ne00 % 2 as i32 as libc::c_long != 1 as i32 as libc::c_long {
+    if ne00 % 2 as i32 as i64 != 1 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -15965,15 +15899,14 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
             let mut i01: int64_t = 0 as i32 as int64_t;
             while i01 < ne01 {
                 let src: *const ggml_fp16_t = ((*src0).data as *mut libc::c_char)
-                    .offset((i02 * nb02 as libc::c_long) as isize)
-                    .offset((i01 * nb01 as libc::c_long) as isize)
+                    .offset((i02 * nb02 as i64) as isize)
+                    .offset((i01 * nb01 as i64) as isize)
                     as *mut ggml_fp16_t;
                 let mut dst_data: *mut ggml_fp16_t =
-                    wdata.offset((i02 * ew0 as libc::c_long * ne00) as isize);
+                    wdata.offset((i02 * ew0 as i64 * ne00) as isize);
                 let mut i00: int64_t = 0 as i32 as int64_t;
                 while i00 < ne00 {
-                    *dst_data.offset((i00 * ew0 as libc::c_long + i01) as isize) =
-                        *src.offset(i00 as isize);
+                    *dst_data.offset((i00 * ew0 as i64 + i01) as isize) = *src.offset(i00 as isize);
                     i00 += 1;
                     i00;
                 }
@@ -15983,18 +15916,17 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
             i02 += 1;
             i02;
         }
-        let wdata_0: *mut ggml_fp16_t = ((*params).wdata as *mut ggml_fp16_t)
-            .offset((ne02 * ew0 as libc::c_long * ne00) as isize);
+        let wdata_0: *mut ggml_fp16_t =
+            ((*params).wdata as *mut ggml_fp16_t).offset((ne02 * ew0 as i64 * ne00) as isize);
         let mut i11: int64_t = 0 as i32 as int64_t;
         while i11 < ne11 {
             let src_0: *const f32 = ((*src1).data as *mut libc::c_char)
-                .offset((i11 * nb11 as libc::c_long) as isize)
+                .offset((i11 * nb11 as i64) as isize)
                 as *mut f32;
             let mut dst_data_0: *mut ggml_fp16_t = wdata_0;
             let mut i10: int64_t = 0 as i32 as int64_t;
             while i10 < ne10 {
-                *dst_data_0
-                    .offset(((i10 + nh as libc::c_long) * ew0 as libc::c_long + i11) as isize) = {
+                *dst_data_0.offset(((i10 + nh as i64) * ew0 as i64 + i11) as isize) = {
                     ::core::mem::transmute::<
                         _,
                         [libc::c_short;
@@ -16031,7 +15963,7 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
             ((*dst).data as *mut libc::c_char).offset((i1 * nb1) as isize) as *mut f32;
         let mut i0: int64_t = 0 as i32 as int64_t;
         while i0 < ne10 {
-            *dst_data_1.offset((i0 / 2 as i32 as libc::c_long) as isize) = 0 as i32 as f32;
+            *dst_data_1.offset((i0 / 2 as i32 as i64) as isize) = 0 as i32 as f32;
             let mut k: i32 = -nh;
             while k <= nh {
                 let mut v: f32 = 0.0f32;
@@ -16039,20 +15971,17 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f16_f32(
                     ew0,
                     &mut v,
                     ((*params).wdata as *mut ggml_fp16_t)
-                        .offset(((i1 * ew0) as libc::c_long * ne00) as isize)
+                        .offset(((i1 * ew0) as i64 * ne00) as isize)
                         .offset(((nh + k) * ew0) as isize),
                     ((*params).wdata as *mut ggml_fp16_t)
-                        .offset((ne02 * ew0 as libc::c_long * ne00) as isize)
-                        .offset(
-                            ((i0 + nh as libc::c_long + k as libc::c_long) * ew0 as libc::c_long)
-                                as isize,
-                        ),
+                        .offset((ne02 * ew0 as i64 * ne00) as isize)
+                        .offset(((i0 + nh as i64 + k as i64) * ew0 as i64) as isize),
                 );
-                *dst_data_1.offset((i0 / 2 as i32 as libc::c_long) as isize) += v;
+                *dst_data_1.offset((i0 / 2 as i32 as i64) as isize) += v;
                 k += 1;
                 k;
             }
-            i0 += 2 as i32 as libc::c_long;
+            i0 += 2 as i32 as i64;
         }
         i1 += 1;
         i1;
@@ -16111,7 +16040,7 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f32(
     let nk: i32 = ne00 as i32;
     let nh: i32 = nk / 2 as i32;
     let ew0: i32 = ggml_up32(ne01 as i32);
-    if ne00 % 2 as i32 as libc::c_long != 1 as i32 as libc::c_long {
+    if ne00 % 2 as i32 as i64 != 1 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -16149,15 +16078,13 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f32(
             let mut i01: int64_t = 0 as i32 as int64_t;
             while i01 < ne01 {
                 let src: *const f32 = ((*src0).data as *mut libc::c_char)
-                    .offset((i02 * nb02 as libc::c_long) as isize)
-                    .offset((i01 * nb01 as libc::c_long) as isize)
+                    .offset((i02 * nb02 as i64) as isize)
+                    .offset((i01 * nb01 as i64) as isize)
                     as *mut f32;
-                let mut dst_data: *mut f32 =
-                    wdata.offset((i02 * ew0 as libc::c_long * ne00) as isize);
+                let mut dst_data: *mut f32 = wdata.offset((i02 * ew0 as i64 * ne00) as isize);
                 let mut i00: int64_t = 0 as i32 as int64_t;
                 while i00 < ne00 {
-                    *dst_data.offset((i00 * ew0 as libc::c_long + i01) as isize) =
-                        *src.offset(i00 as isize);
+                    *dst_data.offset((i00 * ew0 as i64 + i01) as isize) = *src.offset(i00 as isize);
                     i00 += 1;
                     i00;
                 }
@@ -16168,17 +16095,16 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f32(
             i02;
         }
         let wdata_0: *mut f32 =
-            ((*params).wdata as *mut f32).offset((ne02 * ew0 as libc::c_long * ne00) as isize);
+            ((*params).wdata as *mut f32).offset((ne02 * ew0 as i64 * ne00) as isize);
         let mut i11: int64_t = 0 as i32 as int64_t;
         while i11 < ne11 {
             let src_0: *const f32 = ((*src1).data as *mut libc::c_char)
-                .offset((i11 * nb11 as libc::c_long) as isize)
+                .offset((i11 * nb11 as i64) as isize)
                 as *mut f32;
             let mut dst_data_0: *mut f32 = wdata_0;
             let mut i10: int64_t = 0 as i32 as int64_t;
             while i10 < ne10 {
-                *dst_data_0
-                    .offset(((i10 + nh as libc::c_long) * ew0 as libc::c_long + i11) as isize) =
+                *dst_data_0.offset(((i10 + nh as i64) * ew0 as i64 + i11) as isize) =
                     *src_0.offset(i10 as isize);
                 i10 += 1;
                 i10;
@@ -16201,7 +16127,7 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f32(
             ((*dst).data as *mut libc::c_char).offset((i1 * nb1) as isize) as *mut f32;
         let mut i0: int64_t = 0 as i32 as int64_t;
         while i0 < ne10 {
-            *dst_data_1.offset((i0 / 2 as i32 as libc::c_long) as isize) = 0 as i32 as f32;
+            *dst_data_1.offset((i0 / 2 as i32 as i64) as isize) = 0 as i32 as f32;
             let mut k: i32 = -nh;
             while k <= nh {
                 let mut v: f32 = 0.0f32;
@@ -16209,20 +16135,17 @@ unsafe extern "C" fn ggml_compute_forward_conv_1d_2s_f32(
                     ew0,
                     &mut v,
                     ((*params).wdata as *mut f32)
-                        .offset(((i1 * ew0) as libc::c_long * ne00) as isize)
+                        .offset(((i1 * ew0) as i64 * ne00) as isize)
                         .offset(((nh + k) * ew0) as isize),
                     ((*params).wdata as *mut f32)
-                        .offset((ne02 * ew0 as libc::c_long * ne00) as isize)
-                        .offset(
-                            ((i0 + nh as libc::c_long + k as libc::c_long) * ew0 as libc::c_long)
-                                as isize,
-                        ),
+                        .offset((ne02 * ew0 as i64 * ne00) as isize)
+                        .offset(((i0 + nh as i64 + k as i64) * ew0 as i64) as isize),
                 );
-                *dst_data_1.offset((i0 / 2 as i32 as libc::c_long) as isize) += v;
+                *dst_data_1.offset((i0 / 2 as i32 as i64) as isize) += v;
                 k += 1;
                 k;
             }
-            i0 += 2 as i32 as libc::c_long;
+            i0 += 2 as i32 as i64;
         }
         i1 += 1;
         i1;
@@ -16316,7 +16239,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
         );
         abort();
     }
-    if P < 0 as i32 as libc::c_long {
+    if P < 0 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -16469,11 +16392,9 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
     let scale: f32 = 1.0f32 / sqrtf(D as f32);
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let iq3: i32 = (ir as libc::c_long / (neq2 * neq1)) as i32;
-        let iq2: i32 = ((ir as libc::c_long - iq3 as libc::c_long * neq2 * neq1) / neq1) as i32;
-        let iq1: i32 = (ir as libc::c_long
-            - iq3 as libc::c_long * neq2 * neq1
-            - iq2 as libc::c_long * neq1) as i32;
+        let iq3: i32 = (ir as i64 / (neq2 * neq1)) as i32;
+        let iq2: i32 = ((ir as i64 - iq3 as i64 * neq2 * neq1) / neq1) as i32;
+        let iq1: i32 = (ir as i64 - iq3 as i64 * neq2 * neq1 - iq2 as i64 * neq1) as i32;
         let mut S: *mut f32 = ((*params).wdata as *mut f32).offset(
             (ith as u64).wrapping_mul((Mup as u64).wrapping_add(CACHE_LINE_SIZE_F32)) as isize,
         );
@@ -16506,7 +16427,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
         if masked {
             let mut i_0: int64_t = P;
             while i_0 < M {
-                if i_0 > P + iq1 as libc::c_long {
+                if i_0 > P + iq1 as i64 {
                     *S.offset(i_0 as isize) = -::core::f32::INFINITY;
                 }
                 i_0 += 1;
@@ -16574,16 +16495,14 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f32(
             ggml_vec_dot_f32(
                 nek1 as i32,
                 ((*dst).data as *mut libc::c_char).offset(
-                    (ic_0 * nb0 as libc::c_long
-                        + (i1_0 * nb1) as libc::c_long
-                        + (i2 * nb2) as libc::c_long
-                        + (i3 * nb3) as libc::c_long) as isize,
+                    (ic_0 * nb0 as i64
+                        + (i1_0 * nb1) as i64
+                        + (i2 * nb2) as i64
+                        + (i3 * nb3) as i64) as isize,
                 ) as *mut f32,
-                ((*v).data as *mut libc::c_char).offset(
-                    (ic_0 * nbv1 as libc::c_long
-                        + (i2 * nbv2) as libc::c_long
-                        + (i3 * nbv3) as libc::c_long) as isize,
-                ) as *mut f32,
+                ((*v).data as *mut libc::c_char)
+                    .offset((ic_0 * nbv1 as i64 + (i2 * nbv2) as i64 + (i3 * nbv3) as i64) as isize)
+                    as *mut f32,
                 S,
             );
             ic_0 += 1;
@@ -16654,7 +16573,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
         );
         abort();
     }
-    if P < 0 as i32 as libc::c_long {
+    if P < 0 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -16807,11 +16726,9 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
     let scale: f32 = 1.0f32 / sqrtf(D as f32);
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let iq3: i32 = (ir as libc::c_long / (neq2 * neq1)) as i32;
-        let iq2: i32 = ((ir as libc::c_long - iq3 as libc::c_long * neq2 * neq1) / neq1) as i32;
-        let iq1: i32 = (ir as libc::c_long
-            - iq3 as libc::c_long * neq2 * neq1
-            - iq2 as libc::c_long * neq1) as i32;
+        let iq3: i32 = (ir as i64 / (neq2 * neq1)) as i32;
+        let iq2: i32 = ((ir as i64 - iq3 as i64 * neq2 * neq1) / neq1) as i32;
+        let iq1: i32 = (ir as i64 - iq3 as i64 * neq2 * neq1 - iq2 as i64 * neq1) as i32;
         let mut S: *mut f32 = ((*params).wdata as *mut f32).offset(
             (ith as u64).wrapping_mul(((2 as i32 * Mup) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
                 as isize,
@@ -16822,7 +16739,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
             i += 1;
             i;
         }
-        if 2 as i32 > 2 as i32 || nek1 % 2 as i32 as libc::c_long != 0 as i32 as libc::c_long {
+        if 2 as i32 > 2 as i32 || nek1 % 2 as i32 as i64 != 0 as i32 as i64 {
             let mut ic: int64_t = 0 as i32 as int64_t;
             while ic < nek1 {
                 let ik3: i32 = iq3;
@@ -16860,14 +16777,14 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                         .offset((iq1 * nbq1 + iq2 * nbq2 + iq3 * nbq3) as isize)
                         as *mut ggml_fp16_t,
                 );
-                ic_0 += 2 as i32 as libc::c_long;
+                ic_0 += 2 as i32 as i64;
             }
         }
         ggml_vec_scale_f32(nek1 as i32, S, scale);
         if masked {
             let mut i_0: int64_t = P;
             while i_0 < M {
-                if i_0 > P + iq1 as libc::c_long {
+                if i_0 > P + iq1 as i64 {
                     *S.offset(i_0 as isize) = -::core::f32::INFINITY;
                 }
                 i_0 += 1;
@@ -16954,7 +16871,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
             i_3 += 1;
             i_3;
         }
-        if 2 as i32 == 1 as i32 || nev1 % 2 as i32 as libc::c_long != 0 as i32 as libc::c_long {
+        if 2 as i32 == 1 as i32 || nev1 % 2 as i32 as i64 != 0 as i32 as i64 {
             let mut ic_1: int64_t = 0 as i32 as int64_t;
             while ic_1 < nev1 {
                 let i1_1: i32 = iq1;
@@ -16963,15 +16880,13 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                 ggml_vec_dot_f16(
                     nek1 as i32,
                     ((*dst).data as *mut libc::c_char).offset(
-                        (ic_1 * nb0 as libc::c_long
-                            + (i1_1 * nb1) as libc::c_long
-                            + (i2 * nb2) as libc::c_long
-                            + (i3 * nb3) as libc::c_long) as isize,
+                        (ic_1 * nb0 as i64
+                            + (i1_1 * nb1) as i64
+                            + (i2 * nb2) as i64
+                            + (i3 * nb3) as i64) as isize,
                     ) as *mut f32,
                     ((*v).data as *mut libc::c_char).offset(
-                        (ic_1 * nbv1 as libc::c_long
-                            + (i2 * nbv2) as libc::c_long
-                            + (i3 * nbv3) as libc::c_long) as isize,
+                        (ic_1 * nbv1 as i64 + (i2 * nbv2) as i64 + (i3 * nbv3) as i64) as isize,
                     ) as *mut ggml_fp16_t,
                     S16,
                 );
@@ -16988,19 +16903,17 @@ unsafe extern "C" fn ggml_compute_forward_flash_attn_f16(
                     nek1 as i32,
                     nbv1,
                     ((*dst).data as *mut libc::c_char).offset(
-                        (ic_2 * nb0 as libc::c_long
-                            + (i1_2 * nb1) as libc::c_long
-                            + (i2_0 * nb2) as libc::c_long
-                            + (i3_0 * nb3) as libc::c_long) as isize,
+                        (ic_2 * nb0 as i64
+                            + (i1_2 * nb1) as i64
+                            + (i2_0 * nb2) as i64
+                            + (i3_0 * nb3) as i64) as isize,
                     ) as *mut f32,
                     ((*v).data as *mut libc::c_char).offset(
-                        (ic_2 * nbv1 as libc::c_long
-                            + (i2_0 * nbv2) as libc::c_long
-                            + (i3_0 * nbv3) as libc::c_long) as isize,
+                        (ic_2 * nbv1 as i64 + (i2_0 * nbv2) as i64 + (i3_0 * nbv3) as i64) as isize,
                     ) as *mut libc::c_void,
                     S16,
                 );
-                ic_2 += 2 as i32 as libc::c_long;
+                ic_2 += 2 as i32 as i64;
             }
         }
         ir += 1;
@@ -17193,7 +17106,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
         );
         abort();
     }
-    if neb11 != 1 as i32 as libc::c_long {
+    if neb11 != 1 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -17233,7 +17146,7 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
         );
         abort();
     }
-    if nec11 != 1 as i32 as libc::c_long {
+    if nec11 != 1 as i32 as i64 {
         fprintf(
             stderr,
             b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -17295,15 +17208,14 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
     let ir1: i32 = if ir0 + dr < nr { ir0 + dr } else { nr };
     let mut ir: i32 = ir0;
     while ir < ir1 {
-        let ia3: i32 = (ir as libc::c_long / (nea2 * nea1)) as i32;
-        let ia2: i32 = ((ir as libc::c_long - ia3 as libc::c_long * nea2 * nea1) / nea1) as i32;
-        let ia1: i32 = (ir as libc::c_long
-            - ia3 as libc::c_long * nea2 * nea1
-            - ia2 as libc::c_long * nea1) as i32;
-        let mut S: *mut f32 =
-            ((*params).wdata as *mut f32).offset((ith as u64).wrapping_mul(
-                ((2 as i32 as libc::c_long * M) as u64).wrapping_add(CACHE_LINE_SIZE_F32),
-            ) as isize);
+        let ia3: i32 = (ir as i64 / (nea2 * nea1)) as i32;
+        let ia2: i32 = ((ir as i64 - ia3 as i64 * nea2 * nea1) / nea1) as i32;
+        let ia1: i32 = (ir as i64 - ia3 as i64 * nea2 * nea1 - ia2 as i64 * nea1) as i32;
+        let mut S: *mut f32 = ((*params).wdata as *mut f32).offset(
+            (ith as u64)
+                .wrapping_mul(((2 as i32 as i64 * M) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
+                as isize,
+        );
         let mut ic: int64_t = 0 as i32 as int64_t;
         while ic < neb01 {
             let ib03: i32 = ia3;
@@ -17325,9 +17237,11 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
         }
         ggml_vec_add_f32(neb01 as i32, S, S, (*b1).data as *mut f32);
         let mut S16: *mut ggml_fp16_t = ((*params).wdata as *mut f32)
-            .offset((ith as u64).wrapping_mul(
-                ((2 as i32 as libc::c_long * M) as u64).wrapping_add(CACHE_LINE_SIZE_F32),
-            ) as isize)
+            .offset(
+                (ith as u64)
+                    .wrapping_mul(((2 as i32 as i64 * M) as u64).wrapping_add(CACHE_LINE_SIZE_F32))
+                    as isize,
+            )
             .offset(M as isize) as *mut ggml_fp16_t;
         let mut i: int64_t = 0 as i32 as int64_t;
         while i < M {
@@ -17358,15 +17272,13 @@ unsafe extern "C" fn ggml_compute_forward_flash_ff_f16(
             ggml_vec_dot_f16(
                 neb01 as i32,
                 ((*dst).data as *mut libc::c_char).offset(
-                    (ic_0 * nb0 as libc::c_long
-                        + (i1_0 * nb1) as libc::c_long
-                        + (i2 * nb2) as libc::c_long
-                        + (i3 * nb3) as libc::c_long) as isize,
+                    (ic_0 * nb0 as i64
+                        + (i1_0 * nb1) as i64
+                        + (i2 * nb2) as i64
+                        + (i3 * nb3) as i64) as isize,
                 ) as *mut f32,
                 ((*c0).data as *mut libc::c_char).offset(
-                    (ic_0 * nbc01 as libc::c_long
-                        + (i2 * nbc02) as libc::c_long
-                        + (i3 * nbc03) as libc::c_long) as isize,
+                    (ic_0 * nbc01 as i64 + (i2 * nbc02) as i64 + (i3 * nbc03) as i64) as isize,
                 ) as *mut ggml_fp16_t,
                 S16,
             );
@@ -17807,7 +17719,7 @@ unsafe extern "C" fn ggml_compute_backward(
                 (*src0).grad = ggml_add_impl(ctx, (*src0).grad, (*tensor).grad, inplace);
             }
             if !((*src1).grad).is_null() {
-                if ggml_nelements((*tensor).opt[0 as i32 as usize]) != 5 as i32 as libc::c_long {
+                if ggml_nelements((*tensor).opt[0 as i32 as usize]) != 5 as i32 as i64 {
                     fprintf(
                         stderr,
                         b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -18190,7 +18102,7 @@ unsafe extern "C" fn ggml_compute_backward(
             }
         }
         28 => {
-            if ggml_nelements((*tensor).opt[0 as i32 as usize]) != 5 as i32 as libc::c_long {
+            if ggml_nelements((*tensor).opt[0 as i32 as usize]) != 5 as i32 as i64 {
                 fprintf(
                     stderr,
                     b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -31318,7 +31230,7 @@ pub unsafe extern "C" fn ggml_graph_compute(
             }
             45 | 46 => {
                 (*node).n_tasks = n_threads;
-                if (*(*node).src0).ne[3 as i32 as usize] != 1 as i32 as libc::c_long {
+                if (*(*node).src0).ne[3 as i32 as usize] != 1 as i32 as i64 {
                     fprintf(
                         stderr,
                         b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -31328,7 +31240,7 @@ pub unsafe extern "C" fn ggml_graph_compute(
                     );
                     abort();
                 }
-                if (*(*node).src1).ne[2 as i32 as usize] != 1 as i32 as libc::c_long {
+                if (*(*node).src1).ne[2 as i32 as usize] != 1 as i32 as i64 {
                     fprintf(
                         stderr,
                         b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -31338,7 +31250,7 @@ pub unsafe extern "C" fn ggml_graph_compute(
                     );
                     abort();
                 }
-                if (*(*node).src1).ne[3 as i32 as usize] != 1 as i32 as libc::c_long {
+                if (*(*node).src1).ne[3 as i32 as usize] != 1 as i32 as i64 {
                     fprintf(
                         stderr,
                         b"GGML_ASSERT: %s:%d: %s\n\0" as *const u8 as *const libc::c_char,
@@ -31354,10 +31266,9 @@ pub unsafe extern "C" fn ggml_graph_compute(
                     && (*(*node).src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32
                 {
                     cur_3 = (::core::mem::size_of::<ggml_fp16_t>() as u64).wrapping_mul(
-                        ((nk * ggml_up32((*(*node).src0).ne[1 as i32 as usize] as i32))
-                            as libc::c_long
+                        ((nk * ggml_up32((*(*node).src0).ne[1 as i32 as usize] as i32)) as i64
                             * (*(*node).src0).ne[2 as i32 as usize]
-                            + ((2 as i32 * (nk / 2 as i32)) as libc::c_long
+                            + ((2 as i32 * (nk / 2 as i32)) as i64
                                 + (*(*node).src1).ne[0 as i32 as usize])
                                 * (*(*node).src1).ne[1 as i32 as usize])
                             as u64,
@@ -31366,10 +31277,9 @@ pub unsafe extern "C" fn ggml_graph_compute(
                     && (*(*node).src1).type_0 as u32 == GGML_TYPE_F32 as i32 as u32
                 {
                     cur_3 = (::core::mem::size_of::<f32>() as u64).wrapping_mul(
-                        ((nk * ggml_up32((*(*node).src0).ne[1 as i32 as usize] as i32))
-                            as libc::c_long
+                        ((nk * ggml_up32((*(*node).src0).ne[1 as i32 as usize] as i32)) as i64
                             * (*(*node).src0).ne[2 as i32 as usize]
-                            + ((2 as i32 * (nk / 2 as i32)) as libc::c_long
+                            + ((2 as i32 * (nk / 2 as i32)) as i64
                                 + (*(*node).src1).ne[0 as i32 as usize])
                                 * (*(*node).src1).ne[1 as i32 as usize])
                             as u64,
@@ -31628,8 +31538,8 @@ pub unsafe extern "C" fn ggml_graph_compute(
                 let _ = &mut state_shared.spin;
             }
         }
-        let mut perf_cycles_cur: int64_t = 0 as i32 as libc::c_long - perf_node_start_cycles;
-        let mut perf_time_us_cur: int64_t = 0 as i32 as libc::c_long - perf_node_start_time_us;
+        let mut perf_cycles_cur: int64_t = 0 as i32 as i64 - perf_node_start_cycles;
+        let mut perf_time_us_cur: int64_t = 0 as i32 as i64 - perf_node_start_time_us;
         (*node_0).perf_runs += 1;
         (*node_0).perf_runs;
         (*node_0).perf_cycles += perf_cycles_cur;
@@ -31664,8 +31574,8 @@ pub unsafe extern "C" fn ggml_graph_compute(
         }
         let _ = &mut state_shared.spin;
     }
-    let mut perf_cycles_cur_0: int64_t = 0 as i32 as libc::c_long - perf_start_cycles;
-    let mut perf_time_us_cur_0: int64_t = 0 as i32 as libc::c_long - perf_start_time_us;
+    let mut perf_cycles_cur_0: int64_t = 0 as i32 as i64 - perf_start_cycles;
+    let mut perf_time_us_cur_0: int64_t = 0 as i32 as i64 - perf_start_time_us;
     (*cgraph).perf_runs += 1;
     (*cgraph).perf_runs;
     (*cgraph).perf_cycles += perf_cycles_cur_0;
@@ -31746,12 +31656,11 @@ pub unsafe extern "C" fn ggml_graph_print(mut cgraph: *const ggml_cgraph) {
     let mut i: i32 = 0 as i32;
     while i < (*cgraph).n_nodes {
         let mut node: *mut ggml_tensor = (*cgraph).nodes[i as usize];
-        perf_total_per_op_us[(*node).op as usize] +=
-            if 1 as i32 as libc::c_long > (*node).perf_time_us {
-                1 as i32 as libc::c_long
-            } else {
-                (*node).perf_time_us
-            };
+        perf_total_per_op_us[(*node).op as usize] += if 1 as i32 as i64 > (*node).perf_time_us {
+            1 as i32 as i64
+        } else {
+            (*node).perf_time_us
+        };
         printf(
             b" - %3d: [ %5ld, %5ld, %5ld] %16s %s (%3d) cpu = %7.3f / %7.3f ms, wall = %7.3f / %7.3f ms\n\0"
                 as *const u8 as *const libc::c_char,
@@ -31799,7 +31708,7 @@ pub unsafe extern "C" fn ggml_graph_print(mut cgraph: *const ggml_cgraph) {
     }
     let mut i_1: i32 = 0 as i32;
     while i_1 < GGML_OP_COUNT as i32 {
-        if perf_total_per_op_us[i_1 as usize] != 0 as i32 as libc::c_long {
+        if perf_total_per_op_us[i_1 as usize] != 0 as i32 as i64 {
             printf(
                 b"perf_total_per_op_us[%16s] = %7.3f ms\n\0" as *const u8 as *const libc::c_char,
                 GGML_OP_LABEL[i_1 as usize],
@@ -31970,7 +31879,7 @@ pub unsafe extern "C" fn ggml_graph_dump_dot(
                 ((*node_0).name).as_mut_ptr(),
             );
         }
-        if ggml_nelements(node_0) == 1 as i32 as libc::c_long {
+        if ggml_nelements(node_0) == 1 as i32 as i64 {
             if (*node_0).type_0 as u32 == GGML_TYPE_I8 as i32 as u32
                 || (*node_0).type_0 as u32 == GGML_TYPE_I16 as i32 as u32
                 || (*node_0).type_0 as u32 == GGML_TYPE_I32 as i32 as u32
@@ -32227,7 +32136,7 @@ unsafe extern "C" fn ggml_opt_adam(
             let fresh15 = np;
             np += 1;
             ps[fresh15 as usize] = (*gf).nodes[i as usize];
-            nx = (nx as libc::c_long + ggml_nelements((*gf).nodes[i as usize])) as i32;
+            nx = (nx as i64 + ggml_nelements((*gf).nodes[i as usize])) as i32;
         }
         i += 1;
         i;
@@ -32449,7 +32358,7 @@ unsafe extern "C" fn ggml_opt_lbfgs(
             let fresh16 = np;
             np += 1;
             ps[fresh16 as usize] = (*gf).nodes[i as usize];
-            nx = (nx as libc::c_long + ggml_nelements((*gf).nodes[i as usize])) as i32;
+            nx = (nx as i64 + ggml_nelements((*gf).nodes[i as usize])) as i32;
         }
         i += 1;
         i;
