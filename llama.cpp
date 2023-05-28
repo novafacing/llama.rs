@@ -1144,7 +1144,6 @@ static void llama_model_load_internal(const std::string &fname,
             mem_required_state / 1024.0 / 1024.0);
 
     (void)n_gpu_layers;
-#endif
   }
 
   // populate `tensors_by_name`

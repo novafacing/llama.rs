@@ -9,8 +9,8 @@
 #![feature(extern_types)]
 #![feature(stdsimd)]
 
-
 extern crate libc;
 pub mod src {
-pub mod ggml;
+    pub mod ggml;
+    pub mod llama;
 } // mod src
